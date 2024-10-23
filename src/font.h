@@ -994,6 +994,13 @@ extern struct font_driver ftcrhbfont_driver;
 extern void syms_of_ftcrfont (void);
 #endif
 
+#ifdef USE_WEBRENDER
+extern struct font_driver const ftwrfont_driver;
+#ifdef HAVE_HARFBUZZ
+extern struct font_driver ftwrhbfont_driver;
+#endif /* HAVE_HARFBUZZ */
+#endif /* USE_WEBRENDER */
+
 #ifndef FONT_DEBUG
 #define FONT_DEBUG
 #endif

@@ -1,0 +1,122 @@
+### @configure_input@
+
+# Copyright (C) 2024 Free Software Foundation, Inc.
+
+# This file is part of GNU Emacs.
+
+# GNU Emacs is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# GNU Emacs is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+
+all: libwayland_protocols.a
+.PHONY: all
+
+srcdir=@srcdir@
+top_builddir=@top_builddir@
+abs_top_srcdir=@abs_top_srcdir@
+
+WAYLAND_PROTOCOLS_DATADIR=@WAYLAND_PROTOCOLS_DATADIR@
+WAYLAND_SCANNER=@WAYLAND_SCANNER@
+
+CC=@CC@
+RANLIB=@RANLIB@
+
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+MKDIR_P = @MKDIR_P@
+EXEEXT = @EXEEXT@
+
+OBJS = xdg-shell-protocol.o viewporter-protocol.o xdg-decoration.o cursor-shape.o
+
+-include ${top_builddir}/src/verbose.mk
+
+AUTO_DEPEND = @AUTO_DEPEND@
+DEPDIR = deps
+ifeq ($(AUTO_DEPEND),yes)
+  DEPFLAGS = -MMD -MF $(DEPDIR)/$*.d -MP
+  -include $(OBJS:%.o=$(DEPDIR)/%.d)
+else
+  DEPFLAGS =
+  include $(srcdir)/deps.mk
+endif
+
+.SUFFIXES: .c
+.c.o:
+	$(AM_V_CC)$(CC) -c $<
+
+xdg-shell-client-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS_DATADIR)/stable/xdg-shell/xdg-shell.xml $@
+
+xdg-shell-protocol.c: xdg-shell-client-protocol.h
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS_DATADIR)/stable/xdg-shell/xdg-shell.xml $@
+
+xdg-decoration-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS_DATADIR)/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml $@
+
+xdg-decoration.c: xdg-decoration-protocol.h
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS_DATADIR)/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml $@
+
+viewporter-client-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS_DATADIR)/stable/viewporter/viewporter.xml $@
+
+viewporter-protocol.c: viewporter-client-protocol.h
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS_DATADIR)/stable/viewporter/viewporter.xml $@
+
+cursor-shape-client-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS_DATADIR)/staging/cursor-shape/cursor-shape-v1.xml $@
+
+cursor-shape.c: cursor-shape-client-protocol.h
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS_DATADIR)/staging/cursor-shape/cursor-shape-v1.xml $@
+
+libwayland_protocols.a: xdg-shell-protocol.c viewporter-protocol.c $(OBJS)
+	$(AM_V_GEN)rm -f $@
+	$(AM_V_at)$(AR) $(ARFLAGS) $@ $(OBJS)
+	$(AM_V_at)$(RANLIB) $@
+
+.PHONY: mostlyclean clean distclean bootstrap-clean maintainer-clean
+
+clean mostlyclean:
+	rm -f viewporter-client-protocol.h \
+		viewporter-protocol.c \
+		xdg-shell-client-protocol.h \
+		xdg-shell-protocol.c \
+		./*.o libwayland_protocols.a \#* $(DEPDIR)/*
+
+distclean: clean
+	rm -f Makefile
+	rm -fr $(DEPDIR)
+
+bootstrap-clean maintainer-clean: distclean
+	rm -f TAGS
+
+ETAGS = ../lib-src/etags${EXEEXT}
+
+${ETAGS}: FORCE
+	${MAKE} -C ../lib-src $(notdir $@)
+
+ctagsfiles= $(wildcard ${srcdir}/*.[ch])
+
+FORCE:
+.PHONY: tags FORCE
+tags: TAGS
+TAGS: ${ETAGS} $(ctagsfiles)
+	$(AM_V_GEN)${ETAGS} $(ctagsfiles)
+
+### Makefile.in ends here

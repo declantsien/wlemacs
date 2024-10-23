@@ -2448,6 +2448,12 @@ Using an Emacs configured with --with-x-toolkit=lucid does not have this problem
       syms_of_sfntfont_android ();
 #endif /* !ANDROID_STUBIFY */
 #endif /* HAVE_ANDROID */
+#ifdef HAVE_WAYLAND_CLIENT
+      syms_of_wlcterm ();
+      syms_of_wlcfns ();
+      /* syms_of_wlcmenu (); */
+      syms_of_fontset ();
+#endif /* HAVE_WAYLAND_CLIENT */
 
       syms_of_gnutls ();
 

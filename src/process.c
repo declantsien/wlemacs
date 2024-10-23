@@ -5751,6 +5751,10 @@ wait_reading_process_output (intmax_t time_limit, int nsecs, int read_kbd,
           nfds = ns_select (max_desc + 1,
 			    &Available, (check_write ? &Writeok : 0),
 			    NULL, &timeout, NULL);
+#elif defined HAVE_WAYLAND_CLIENT
+          nfds = wlc_select (max_desc + 1,
+			    &Available, (check_write ? &Writeok : 0),
+			    NULL, &timeout, NULL);
 #else  /* !HAVE_GLIB */
 	  nfds = thread_select (pselect, max_desc + 1,
 				&Available,

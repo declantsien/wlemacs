@@ -388,3 +388,15 @@ exec/config.h.in
 exec/config-mips.m4
 exec/configure
 exec/*.s.s
+
+# auto-generated Wayland client code
+wayland-protocols/viewporter-client-protocol.h
+wayland-protocols/viewporter-protocol.c
+wayland-protocols/xdg-shell-client-protocol.h
+wayland-protocols/xdg-shell-protocol.c
+wayland-protocols/cursor-shape-client-protocol.h
+wayland-protocols/cursor-shape.c
+wayland-protocols/xdg-decoration-protocol.h
+wayland-protocols/xdg-decoration.c
+wayland-protocols/xdg-shell-decoration-protocol.h
+wayland-protocols/xdg-shell-decoration.c

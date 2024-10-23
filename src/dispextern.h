@@ -97,6 +97,12 @@ typedef struct android_gc_values Emacs_GC;
 
 #endif /* HAVE_X_WINDOWS */
 
+#ifdef HAVE_WAYLAND_CLIENT
+typedef int *Emacs_Cursor;
+typedef int Window;
+typedef struct wlc_display_info Display_Info;
+#endif /* HAVE_WAYLAND_CLIENT */
+
 #ifdef MSDOS
 #include "msdos.h"
 #endif
@@ -120,7 +126,7 @@ typedef XImage *Emacs_Pix_Context;
 #define NativeRectangle XRectangle
 #endif
 
-#ifdef USE_CAIRO
+#if defined USE_CAIRO
 /* Minimal version of XImage.  */
 typedef struct
 {
@@ -132,6 +138,14 @@ typedef struct
 typedef Emacs_Pix_Container Emacs_Pixmap;
 typedef Emacs_Pix_Container Emacs_Pix_Context;
 #endif
+
+#ifdef USE_WEBRENDER
+#include "wrgui.h"
+typedef WRImage *XImagePtr;
+typedef XImagePtr XImagePtr_or_DC;
+typedef Emacs_Pixmap Emacs_Pix_Container;
+typedef Emacs_Pixmap Emacs_Pix_Context;
+#endif /* USE_WEBRENDER */
 
 #ifdef HAVE_NTGUI
 #include "w32gui.h"
@@ -3663,7 +3677,7 @@ ptrdiff_t lookup_image (struct frame *, Lisp_Object, int);
 Lisp_Object image_spec_value (Lisp_Object, Lisp_Object, bool *);
 
 #if defined HAVE_X_WINDOWS || defined USE_CAIRO || defined HAVE_NS \
-  || defined HAVE_HAIKU || defined HAVE_ANDROID
+  || defined HAVE_HAIKU || defined HAVE_ANDROID || defined USE_WEBRENDER
 #define RGB_PIXEL_COLOR unsigned long
 #endif
 

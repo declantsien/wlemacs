@@ -22,6 +22,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #ifndef EMACS_FTFONT_H
 #define EMACS_FTFONT_H
 
+#include <config.h>
+#include <fontconfig/fontconfig.h>
+#include <fontconfig/fcfreetype.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_SIZES_H
@@ -67,6 +70,7 @@ struct font_info
   hb_font_t *hb_font;
 #endif  /* HAVE_HARFBUZZ */
 
+#ifndef USE_WEBRENDER
 #if defined (USE_CAIRO) || defined (USE_BE_CAIRO)
   cairo_scaled_font_t *cr_scaled_font;
   /* Scale factor from the bitmap strike metrics in 1/64 pixels, used
@@ -81,6 +85,7 @@ struct font_info
   Display *display;
   XftFont *xftfont;
   unsigned x_display_id;
+#endif
 #endif
 };
 

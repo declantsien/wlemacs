@@ -72,6 +72,7 @@ libsrc = ../lib-src
 etc = ../etc
 oldXMenudir = ../oldXMenu
 lwlibdir = ../lwlib
+wayland-protocolsdir = ../wayland-protocols
 
 # Configuration files for .o files to depend on.
 config_h = config.h $(srcdir)/conf_post.h
@@ -406,6 +407,14 @@ HAVE_PDUMPER = @HAVE_PDUMPER@
 
 HAVE_BE_APP = @HAVE_BE_APP@
 
+## If !HAVE_WAYLAND_CLIENT, empty.
+## Else $(wayland-protocolsdir)/libwayland_protocols.a.
+LIBWAYLAND_PROTOCOL = @LIBWAYLAND_PROTOCOL@
+WAYLAND_CLIENT_CFLAGS = -I$(wayland-protocolsdir) @WAYLAND_CLIENT_CFLAGS@
+WAYLAND_CLIENT_LIBS = $(LIBWAYLAND_PROTOCOL) @WAYLAND_CLIENT_LIBS@
+## wlfns.o wlterm.o if HAVE_WAYLAND_CLIENT, else empty.
+WAYLAND_CLIENT_OBJ = @WAYLAND_CLIENT_OBJ@
+
 ## ARM Macs require that all code have a valid signature.  Since pdump
 ## invalidates the signature, we must re-sign to fix it.
 DO_CODESIGN=$(patsubst aarch64-apple-darwin%,yes,@configuration@)
@@ -444,7 +453,7 @@ EMACS_CFLAGS=-Demacs $(MYCPPFLAGS) -I. -I$(srcdir) \
   $(LIBGNUTLS_CFLAGS) $(NOTIFY_CFLAGS) $(CAIRO_CFLAGS) \
   $(WERROR_CFLAGS) $(HAIKU_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XSHAPE_CFLAGS) \
   $(ANDROID_BUILD_CFLAGS) $(GIF_CFLAGS) $(JPEG_CFLAGS) $(SQLITE3_CFLAGS) \
-  $(LIBGMP_CFLAGS) $(TIFF_CFLAGS) $(LIBSELINUX_CFLAGS)
+  $(LIBGMP_CFLAGS) $(TIFF_CFLAGS) $(LIBSELINUX_CFLAGS) $(WAYLAND_CLIENT_CFLAGS)
 ALL_CFLAGS = $(EMACS_CFLAGS) $(WARN_CFLAGS) $(CFLAGS)
 ALL_OBJC_CFLAGS = $(EMACS_CFLAGS) \
   $(filter-out $(NON_OBJC_CFLAGS),$(WARN_CFLAGS)) $(CFLAGS) \
@@ -482,7 +491,7 @@ base_obj = dispnew.o frame.o scroll.o xdisp.o menu.o $(XMENU_OBJ) window.o     \
 	$(if $(HYBRID_MALLOC),sheap.o) 					       \
 	$(MSDOS_OBJ) $(MSDOS_X_OBJ) $(NS_OBJ) $(CYGWIN_OBJ) $(FONT_OBJ)        \
 	$(W32_OBJ) $(WINDOW_SYSTEM_OBJ) $(XGSELOBJ)			       \
-	$(HAIKU_OBJ) $(PGTK_OBJ) $(ANDROID_OBJ)
+	$(HAIKU_OBJ) $(PGTK_OBJ) $(ANDROID_OBJ) $(WAYLAND_CLIENT_OBJ)
 doc_obj = $(base_obj) $(NS_OBJC_OBJ)
 obj = $(doc_obj) $(HAIKU_CXX_OBJ)
 
@@ -608,7 +617,7 @@ LIBES = $(LIBS) $(W32_LIBS) $(LIBS_GNUSTEP) $(PGTK_LIBS) $(LIBX_BASE) $(LIBIMAGE
    $(NOTIFY_LIBS) $(LIB_MATH) $(LIBZ) $(LIBMODULES) $(LIBSYSTEMD_LIBS) \
    $(LIBGMP) $(LIBGCCJIT_LIBS) $(XINPUT_LIBS) $(HAIKU_LIBS) \
    $(TREE_SITTER_LIBS) $(SQLITE3_LIBS) $(XCOMPOSITE_LIBS) $(XSHAPE_LIBS) \
-   $(ANDROID_LIBS)
+   $(ANDROID_LIBS) $(WAYLAND_CLIENT_LIBS)
 
 ## FORCE it so that admin/unidata can decide whether this file is
 ## up-to-date.  Although since charprop depends on bootstrap-emacs,
@@ -736,7 +745,8 @@ endif
 ## This goes on to affect various things, and the emacs binary fails
 ## to start if Vinstallation_directory has the wrong value.
 temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBEGNU_ARCHIVE) $(EMACSRES) \
-  $(charsets) $(charscript) ${emoji-zwj} $(MAKE_PDUMPER_FINGERPRINT)
+  $(charsets) $(charscript) ${emoji-zwj} $(MAKE_PDUMPER_FINGERPRINT) \
+  $(LIBWAYLAND_PROTOCOL)
 ifeq ($(HAVE_BE_APP),yes)
 	$(AM_V_CXXLD)$(CXX) -o $@.tmp \
 	  $(ALL_CFLAGS) $(TEMACS_LDFLAGS) $(LDFLAGS) \
@@ -800,6 +810,9 @@ android-emacs: android-emacs.c
 	  $(ALL_CFLAGS) $(LDFLAGS)	       \
 	  $(LIBEGNU_ARCHIVE)
 endif
+
+$(wayland-protocolsdir)/libwayland_protocols.a:
+	$(MAKE) -C $(dir $@) $(notdir $@)
 
 ## The following oldxmenu-related rules are only (possibly) used if
 ## HAVE_X11 && !USE_GTK, but there is no harm in always defining them.

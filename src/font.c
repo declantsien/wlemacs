@@ -3549,7 +3549,7 @@ register_font_driver (struct font_driver const *driver, struct frame *f)
   struct font_driver_list *root = f ? f->font_driver_list : font_driver_list;
   struct font_driver_list *prev, *list;
 
-#ifdef HAVE_WINDOW_SYSTEM
+#if defined HAVE_WINDOW_SYSTEM && !defined USE_WEBRENDER
   if (f && ! driver->draw)
     error ("Unusable font driver for a frame: %s",
 	   SDATA (SYMBOL_NAME (driver->type)));

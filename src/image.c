@@ -77,7 +77,7 @@ typedef struct x_bitmap_record Bitmap_Record;
 #endif	/* !USE_CAIRO */
 #endif /* HAVE_X_WINDOWS */
 
-#if defined(USE_CAIRO) || defined(HAVE_NS)
+#if defined(USE_CAIRO) || defined(HAVE_NS) || defined(USE_WEBRENDER)
 #define RGB_TO_ULONG(r, g, b) (((r) << 16) | ((g) << 8) | (b))
 #ifndef HAVE_NS
 #define ARGB_TO_ULONG(a, r, g, b) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
@@ -150,6 +150,15 @@ typedef struct ns_bitmap_record Bitmap_Record;
 #ifdef HAVE_PGTK
 typedef struct pgtk_bitmap_record Bitmap_Record;
 #endif /* HAVE_PGTK */
+
+#ifdef HAVE_WAYLAND_CLIENT
+typedef struct wlc_bitmap_record Bitmap_Record;
+#define NO_PIXMAP 0
+#define PIX_MASK_RETAIN	0
+#define PIX_MASK_DRAW	1
+#define GET_PIXEL(ximg, x, y) wlc_get_pixel(ximg, x, y)
+#define PUT_PIXEL(ximg, x, y, pixel) wlc_put_pixel(ximg, x, y, pixel)
+#endif /* HAVE_WAYLAND_CLIENT */
 
 #if (defined HAVE_X_WINDOWS \
      && ! (defined HAVE_NTGUI || defined USE_CAIRO || defined HAVE_NS))
@@ -6904,7 +6913,7 @@ image_to_emacs_colors (struct frame *f, struct image *img, bool rgb_p)
   for (y = 0; y < img->height; ++y)
     {
 #if !defined USE_CAIRO && !defined HAVE_NS && !defined HAVE_HAIKU	\
-  && !defined HAVE_ANDROID
+  && !defined HAVE_ANDROID && !defined HAVE_WAYLAND_CLIENT
       Emacs_Color *row = p;
       for (x = 0; x < img->width; ++x, ++p)
 	p->pixel = GET_PIXEL (ximg, x, y);
@@ -7250,7 +7259,7 @@ image_disable_image (struct frame *f, struct image *img)
 #ifndef HAVE_NTGUI
 #ifndef HAVE_NS  /* TODO: NS support, however this not needed for toolbars */
 
-#if !defined USE_CAIRO && !defined HAVE_HAIKU && !defined HAVE_ANDROID
+#if !defined USE_CAIRO && !defined HAVE_HAIKU && !defined HAVE_ANDROID && !defined USE_WEBRENDER
 #define CrossForeground(f) BLACK_PIX_DEFAULT (f)
 #define MaskForeground(f)  WHITE_PIX_DEFAULT (f)
 #else  /* USE_CAIRO || HAVE_HAIKU */

@@ -1012,7 +1012,7 @@ endef
 ###      target for GCC does not delete 'libgcc.a', because recompiling it
 ###      is rarely necessary and takes a lot of time.
 mostlyclean_dirs = src oldXMenu lwlib lib lib-src nt doc/emacs doc/misc \
-  doc/lispref doc/lispintro test
+  doc/lispref doc/lispintro test wayland-protocols
 
 ### Add the libexec directory to mostlyclean_dirs if its Makefile has
 ### been created.

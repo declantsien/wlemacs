@@ -27103,12 +27103,17 @@ display_menu_bar (struct window *w)
     return;
 #endif /* HAVE_HAIKU */
 
+#ifdef HAVE_WAYLAND_CLIENT
+  if (FRAME_WLC_P (f))
+    return;
+#endif /* HAVE_WAYLAND_CLIENT */
+
 #if defined (USE_X_TOOLKIT) || defined (USE_GTK)
   eassert (!FRAME_WINDOW_P (f));
   init_iterator (&it, w, -1, -1, f->desired_matrix->rows, MENU_FACE_ID);
   it.first_visible_x = 0;
   it.last_visible_x = FRAME_PIXEL_WIDTH (f);
-#elif defined (HAVE_X_WINDOWS) || defined (HAVE_ANDROID)
+#elif defined (HAVE_X_WINDOWS) || defined (HAVE_ANDROID) || defined (HAVE_WAYLAND_CLIENT)
   struct window *menu_window = NULL;
   struct face *face = FACE_FROM_ID (f, MENU_FACE_ID);
 

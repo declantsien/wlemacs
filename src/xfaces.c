@@ -258,6 +258,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #ifdef HAVE_ANDROID
 #define GCGraphicsExposures 0
 #endif /* HAVE_ANDROID */
+#ifdef HAVE_WAYLAND_CLIENT
+#define GCGraphicsExposures 0
+#endif /* HAVE_WAYLAND_CLIENT */
 #endif /* HAVE_WINDOW_SYSTEM */
 
 #include "buffer.h"
@@ -571,7 +574,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 
 #endif  /* HAVE_NTGUI */
 
-#if defined (HAVE_NS) || defined (HAVE_HAIKU)
+#if defined (HAVE_NS) || defined (HAVE_HAIKU) || defined (HAVE_WAYLAND_CLIENT)
 /* NS and Haiku emulation of GCs */
 
 static Emacs_GC *
@@ -589,7 +592,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 {
   xfree (gc);
 }
-#endif  /* HAVE_NS */
+#endif  /* HAVE_NS || HAVE_HAIKU || HAVE_WAYLAND_CLIENT */
 
 #ifdef HAVE_PGTK
 /* PGTK emulation of GCs */

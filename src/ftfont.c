@@ -3180,6 +3180,10 @@ static struct font_driver const ftfont_driver =
   .combining_capability = ftfont_combining_capability,
   };
 
+struct font_driver const ftwrfont_driver = ftfont_driver;
+#ifdef HAVE_HARFBUZZ
+struct font_driver ftwrhbfont_driver;
+#endif /* !HAVE_HARFBUZZ */
 #endif /* !USE_CAIRO */
 
 void
@@ -3239,6 +3243,7 @@ syms_of_ftfont_for_pdumper (void)
   fthbfont_driver.shape = hbfont_shape;
   fthbfont_driver.combining_capability = hbfont_combining_capability;
   fthbfont_driver.begin_hb_font = fthbfont_begin_hb_font;
+  ftwrhbfont_driver = fthbfont_driver;
   register_font_driver (&fthbfont_driver, NULL);
 #endif	/* HAVE_HARFBUZZ */
 }

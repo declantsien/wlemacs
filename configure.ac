@@ -576,6 +576,8 @@ AC_ARG_WITH([ns],[AS_HELP_STRING([--with-ns],
 On by default on macOS.])],[],[with_ns=maybe])
 OPTION_DEFAULT_OFF([w32], [use native MS Windows GUI in a Cygwin build])
 OPTION_DEFAULT_OFF([pgtk], [use GTK to support window systems other than X])
+OPTION_DEFAULT_OFF([wayland], [use Wayland client to support window systems other than X])
+OPTION_DEFAULT_OFF([webrender],[compile with WebRender rendering])
 
 OPTION_DEFAULT_ON([gpm],[don't use -lgpm for mouse support on a GNU/Linux console])
 OPTION_DEFAULT_ON([dbus],[don't compile with D-Bus support])
@@ -2843,9 +2845,35 @@ if test "${with_pgtk}" = "yes"; then
   window_system=pgtk
 fi
 
+if test "${with_wayland}" = "yes"; then
+  window_system=wlc
+  with_webrender=yes
+fi
+
+if test "${with_webrender}" = "yes"; then
+  with_cairo=no
+  AC_DEFINE([USE_WEBRENDER], [1], [Define to 1 if you use WebRender.])
+
+  if test "$opsys" = "gnu-linux"; then
+    EMACS_CHECK_MODULES([FREETYPE], [freetype2])
+
+    test "$HAVE_FREETYPE" = "no" && AC_MSG_ERROR([WebRender on Linux requires libfreetype])
+
+    EMACS_CHECK_MODULES([FONTCONFIG], [fontconfig >= 2.2.0])
+
+    test "$HAVE_FONTCONFIG" = "no" &&
+      AC_MSG_ERROR([WebRender on Linux requires libfontconfig])
+
+    AC_DEFINE([HAVE_FREETYPE], [1],
+	      [Define to 1 if using the freetype and fontconfig libraries.])
+
+  fi
+
+fi
+
 if test "${ANDROID}" != "yes"; then
   AC_PATH_X
-  if test "$no_x" != yes && test "${with_pgtk}" != "yes"; then
+  if test "$no_x" != yes && test "${with_pgtk}" != "yes" && test "${with_wayland}" != "yes"; then
     window_system=x11
   fi
 fi
@@ -3327,6 +3355,9 @@ dnl use the toolkit if we have gtk, or X11R5 or newer.
   ;;
   android )
     term_header=androidterm.h
+  ;;
+  wlc )
+    term_header=wlcterm.h
   ;;
 esac
 
@@ -3962,6 +3993,40 @@ if test "$window_system" = "pgtk"; then
 fi
 AC_SUBST([PGTK_OBJ])
 AC_SUBST([PGTK_LIBS])
+
+WAYLAND_CLIENT_OBJ=
+HAVE_WAYLAND_CLIENT=no
+WAYLAND_PROTOCOLS_DATADIR=
+WAYLAND_SCANNER=
+LIBWAYLAND_PROTOCOL=
+if test "$window_system" = "wlc"; then
+  EMACS_CHECK_MODULES([WAYLAND_CLIENT], [wayland-client >= 1.0 xkbcommon])
+  EMACS_CHECK_MODULES([WAYLAND_PROTOCOLS], [wayland-protocols >= 1.0])
+
+  if test "$HAVE_WAYLAND_CLIENT" != yes; then
+    AC_MSG_ERROR([--with-wayland requires libwayland and libxkbcommon])
+  fi
+
+  if test "$HAVE_WAYLAND_PROTOCOLS" != yes; then
+    AC_MSG_ERROR([--with-wayland requires wayland-protocols])
+  fi
+
+  AC_CHECK_PROGS([WAYLAND_SCANNER], [wayland-scanner])
+  test -z "$WAYLAND_SCANNER" &&
+  AC_MSG_ERROR([wayland-scanner is required])
+
+  AC_DEFINE([HAVE_WAYLAND_CLIENT], [1], [Define to 1 if you have pure Wayland.])
+  WAYLAND_CLIENT_OBJ="wlcfns.o wlcterm.o"
+
+  WAYLAND_PROTOCOLS_DATADIR="`$PKG_CONFIG --variable=pkgdatadir wayland-protocols  2>/dev/null`"
+  LIBWAYLAND_PROTOCOL='$(wayland-protocolsdir)/libwayland_protocols.a'
+fi
+AC_SUBST([WAYLAND_CLIENT_CFLAGS])
+AC_SUBST([WAYLAND_CLIENT_LIBS])
+AC_SUBST([WAYLAND_CLIENT_OBJ])
+AC_SUBST([WAYLAND_SCANNER])
+AC_SUBST([WAYLAND_PROTOCOLS_DATADIR])
+AC_SUBST([LIBWAYLAND_PROTOCOL])
 
 AC_CHECK_FUNCS([malloc_trim])
 
@@ -4756,6 +4821,7 @@ else
   harfbuzz_required_ver=0.9.42
 fi
 if test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
+        || test "${with_webrender}" = "yes" && test "$opsys" = "gnu-linux" \
         || test "$window_system" = "pgtk" \
         || test "${HAVE_W32}" = "yes" \
 	|| test "$REALLY_ANDROID" = "yes"; then
@@ -7275,6 +7341,10 @@ if test "${window_system}" = "pgtk"; then
    FONT_OBJ="ftfont.o ftcrfont.o"
 fi
 
+if test "${with_webrender}" = "yes"; then
+   FONT_OBJ="ftfont.o"
+fi
+
 if test "${HAVE_BE_APP}" = "yes" ; then
   if test "${HAVE_CAIRO}" = "yes"; then
     FONT_OBJ="$FONT_OBJ ftfont.o ftcrfont.o"
@@ -7898,7 +7968,8 @@ dnl config.status treats $srcdir specially, so I think this is ok...
 ARCH_INDEPENDENT_CONFIG_FILES([$srcdir/doc/man/emacs.1])
 
 AC_CONFIG_FILES([lib/Makefile lib-src/Makefile oldXMenu/Makefile src/Makefile
-                 lwlib/Makefile nextstep/Makefile nt/Makefile])
+                 lwlib/Makefile nextstep/Makefile nt/Makefile
+		 wayland-protocols/Makefile])
 ARCH_INDEPENDENT_CONFIG_FILES([doc/emacs/Makefile doc/misc/Makefile
                                doc/lispintro/Makefile doc/lispref/Makefile
 			       lisp/Makefile leim/Makefile])

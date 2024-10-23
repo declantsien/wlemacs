@@ -1232,7 +1232,7 @@ an integer value."
            (:height
             'integerp)
            (:stipple
-            (and (memq (window-system frame) '(x ns pgtk haiku)) ; No stipple on w32
+            (and (memq (window-system frame) '(x ns pgtk haiku wlc)) ; No stipple on w32
                  (mapcar (lambda (item)
                            (cons item item))
                          (apply #'nconc
@@ -1575,7 +1575,7 @@ If FRAME is nil, the current FRAME is used."
 	    match (cond ((eq req 'type)
 			 (or (memq (window-system frame) options)
 			     (and (memq 'graphic options)
-				  (memq (window-system frame) '(x w32 ns pgtk)))
+				  (memq (window-system frame) '(x w32 ns pgtk wlc)))
 			     ;; FIXME: This should be revisited to use
 			     ;; display-graphic-p, provided that the
 			     ;; color selection depends on the number
@@ -2944,7 +2944,7 @@ Note: Other faces cannot inherit from the cursor face."
     (((type haiku))
      :foreground "B_MENU_ITEM_TEXT_COLOR"
      :background "B_MENU_BACKGROUND_COLOR")
-    (((type x w32 ns pgtk android) (class color))
+    (((type x w32 ns pgtk android wlc) (class color))
      :background "grey75")
     (((type x) (class mono))
      :background "grey"))

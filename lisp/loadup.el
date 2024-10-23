@@ -334,6 +334,11 @@
       (load "term/common-win")
       (load "term/android-win")))
 
+(if (featurep 'wlc)
+    (progn
+      (load "term/common-win")
+      (load "term/wlc-win")))
+
 (if (or (eq system-type 'windows-nt)
         (featurep 'w32))
     (progn
