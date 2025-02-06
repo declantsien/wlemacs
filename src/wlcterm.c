@@ -1003,10 +1003,10 @@ wl_keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
       dpyinfo->control_mod_mask =
 	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, XKB_MOD_NAME_CTRL);
       dpyinfo->alt_mod_mask =
-	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, XKB_MOD_NAME_ALT);
+	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, "Meta");
       /* XKB_VMOD_NAME_META since 1.8.0(unreleased at this time of writing 2025/02/02) */
       dpyinfo->meta_mod_mask =
-	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, "Meta");
+	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, XKB_MOD_NAME_ALT);
       dpyinfo->shift_mod_mask =
 	1 << xkb_map_mod_get_index (dpyinfo->xkb_keymap, XKB_MOD_NAME_SHIFT);
       dpyinfo->shift_lock_mask =
