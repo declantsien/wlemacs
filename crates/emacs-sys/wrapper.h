@@ -35,10 +35,8 @@
 #include "menu.h"
 #include "nsterm.h"
 #include "process.h"
-#include "puresize.h"
 /* #include "regex.h" */
 #include "region-cache.h"
-#include "sheap.h"
 #include "syntax.h"
 #include "sysselect.h"
 #include "syssignal.h"

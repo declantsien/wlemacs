@@ -5,7 +5,6 @@ use libc::c_void;
 use crate::bindings::Fcons;
 use crate::bindings::Lisp_Cons;
 use crate::bindings::Lisp_Type;
-use crate::bindings::CHECK_IMPURE;
 use crate::globals::Qconsp;
 use crate::globals::Qlistp;
 use crate::lisp::LispObject;
@@ -287,13 +286,6 @@ impl LispCons {
     pub fn set_cdr(self, n: impl Into<LispObject>) {
         unsafe {
             *(*self._extract()).u.s.as_mut().u.cdr.as_mut() = n.into();
-        }
-    }
-
-    /// Check that "self" is an impure (i.e. not readonly) cons cell.
-    pub fn check_impure(self) {
-        unsafe {
-            CHECK_IMPURE(self.0, self._extract() as *mut c_void);
         }
     }
 

@@ -1659,7 +1659,7 @@ syms_of_wlcterm (void)
 
   DEFVAR_LISP ("x-keysym-table", Vx_keysym_table,
 	       doc: /* Hash table of character codes indexed by X keysym codes.  */);
-  Vx_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None, false);
+  Vx_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None);
 
   DEFVAR_BOOL ("x-use-underline-position-properties",
 	       x_use_underline_position_properties,
