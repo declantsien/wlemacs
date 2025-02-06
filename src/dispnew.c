@@ -7229,8 +7229,7 @@ init_display_interactive (void)
 #ifdef HAVE_WAYLAND_CLIENT
   if (!inhibit_window_system && !will_dump_p ())
     {
-      //reuse x lisp infrusture
-      Vinitial_window_system = Qx;
+      Vinitial_window_system = Qwlc;
       return;
     }
 #endif

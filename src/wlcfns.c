@@ -235,7 +235,7 @@ If omitted or nil, that stands for the selected frame's display.  */)
   return make_fixnum (1 << min (dpyinfo->n_planes, 24));
 }
 
-DEFUN ("x-open-connection", Fx_open_connection, Sx_open_connection, 1, 3, 0,
+DEFUN ("wlc-open-connection", Fwlc_open_connection, Swlc_open_connection, 1, 3, 0,
        doc: /* Open a connection to Wayland display server.
 DISPLAY is the name of the display to connect to.
 Optional second arg XRM-STRING is a string of resources in xrdb format.
@@ -1239,7 +1239,7 @@ syms_of_wlcfns (void)
   defsubr (&Sxw_color_values);
   defsubr (&Sxw_display_color_p);
   defsubr (&Sx_display_grayscale_p);
-  defsubr (&Sx_open_connection);
+  defsubr (&Swlc_open_connection);
   defsubr (&Sx_create_frame);
   defsubr (&Sx_display_planes);
   defsubr (&Sx_display_color_cells);

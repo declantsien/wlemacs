@@ -763,7 +763,7 @@ Otherwise, VALUE must be a property list of the form:
 `(:color COLOR :style STYLE)'.
 
 COLOR can be either a color name string or `foreground-color'.
-STYLE can be either `line' or `wave'.
+STYLE can be `line' `wave' `dotted' or 'dashed'.
 If a keyword/value pair is missing from the property list, a
 default value will be used for the value.
 The default value of COLOR is the foreground color of the face.
@@ -1005,7 +1005,7 @@ If UNDERLINE is a string, underline with that color.
 
 UNDERLINE may also be a list of the form (:color COLOR :style STYLE),
 where COLOR is a string or `foreground-color', and STYLE is either
-`line' or `wave'.  :color may be omitted, which means to use the
+`line' `wave' `dotted' or `dashed'.  :color may be omitted, which means to use the
 foreground color.  :style may be omitted, which means to use a line.
 
 FRAME nil or not specified means change face on all frames.
@@ -1220,7 +1220,7 @@ an integer value."
            (:height
             'integerp)
            (:stipple
-            (and (memq (window-system frame) '(x ns pgtk haiku)) ; No stipple on w32
+            (and (memq (window-system frame) '(x ns pgtk haiku wlc)) ; No stipple on w32
                  (mapcar (lambda (item)
                            (cons item item))
                          (apply #'nconc
@@ -1563,7 +1563,7 @@ If FRAME is nil, the current FRAME is used."
 	    match (cond ((eq req 'type)
 			 (or (memq (window-system frame) options)
 			     (and (memq 'graphic options)
-				  (memq (window-system frame) '(x w32 ns pgtk)))
+				  (memq (window-system frame) '(x w32 ns pgtk wlc)))
 			     ;; FIXME: This should be revisited to use
 			     ;; display-graphic-p, provided that the
 			     ;; color selection depends on the number
@@ -2230,41 +2230,41 @@ the X resource \"reverseVideo\" is present, handle that."
         (setq delayed-font (cdr (assq 'font parameters))))
       (setq params (assq-delete-all param params)))
     (setq frame (x-create-frame `((visibility . nil) . ,params)))
-    ;; (unwind-protect
-    ;;     (progn
-    ;;       (x-setup-function-keys frame)
-    ;;       (dolist (face (face-list))
-    ;;         (face-spec-recalc face frame))
-    ;;       (x-handle-reverse-video frame parameters)
-    ;;       (frame-set-background-mode frame t)
-    ;;       (face-set-after-frame-default frame parameters)
-    ;;       ;; The code above will not set the `font-parameter' frame
-    ;;       ;; property, which is used by dynamic-setting.el to respect
-    ;;       ;; fonts specified by the user via frame parameters (as
-    ;;       ;; opposed to face attributes).  Set the parameter manually.
-    ;;       (set-frame-parameter frame 'font-parameter delayed-font)
-    ;;       ;; Mark frame as 'was-invisible' when it was created as
-    ;;       ;; invisible or iconified and PARAMETERS contains either a
-    ;;       ;; width or height specification.  This should be sufficient
-    ;;       ;; to handle Bug#24526 (where a frame is initially iconified
-    ;;       ;; to allow manipulating its size in a non-obtrusive way) and
-    ;;       ;; avoid that a tiling window manager for GTK3 gets a resize
-    ;;       ;; request it cannot handle (Bug#48268).  The 'was-invisible'
-    ;;       ;; flag is eventually processed in xterm.c after we receive a
-    ;;       ;; MapNotify event; non-X builds ignore it.
-    ;;       (frame--set-was-invisible
-    ;;        frame
-    ;;        (and visibility-spec
-    ;;             (memq (cdr visibility-spec) '(nil icon))
-    ;;             (or (assq 'width parameters)
-    ;;                 (assq 'height parameters))))
+    (unwind-protect
+        (progn
+          (x-setup-function-keys frame)
+          (dolist (face (face-list))
+            (face-spec-recalc face frame))
+          (x-handle-reverse-video frame parameters)
+          (frame-set-background-mode frame t)
+          (face-set-after-frame-default frame parameters)
+          ;; The code above will not set the `font-parameter' frame
+          ;; property, which is used by dynamic-setting.el to respect
+          ;; fonts specified by the user via frame parameters (as
+          ;; opposed to face attributes).  Set the parameter manually.
+          (set-frame-parameter frame 'font-parameter delayed-font)
+          ;; Mark frame as 'was-invisible' when it was created as
+          ;; invisible or iconified and PARAMETERS contains either a
+          ;; width or height specification.  This should be sufficient
+          ;; to handle Bug#24526 (where a frame is initially iconified
+          ;; to allow manipulating its size in a non-obtrusive way) and
+          ;; avoid that a tiling window manager for GTK3 gets a resize
+          ;; request it cannot handle (Bug#48268).  The 'was-invisible'
+          ;; flag is eventually processed in xterm.c after we receive a
+          ;; MapNotify event; non-X builds ignore it.
+          (frame--set-was-invisible
+           frame
+           (and visibility-spec
+                (memq (cdr visibility-spec) '(nil icon))
+                (or (assq 'width parameters)
+                    (assq 'height parameters))))
 
-    ;;       (if (null visibility-spec)
-    ;;           (make-frame-visible frame)
-    ;;         (modify-frame-parameters frame (list visibility-spec)))
-    ;;       (setq success t))
-    ;;   (unless success
-    ;;     (delete-frame frame)))
+          (if (null visibility-spec)
+              (make-frame-visible frame)
+            (modify-frame-parameters frame (list visibility-spec)))
+          (setq success t))
+      (unless success
+        (delete-frame frame)))
     frame))
 
 (defun face-set-after-frame-default (frame &optional parameters)
@@ -2947,7 +2947,7 @@ Note: Other faces cannot inherit from the cursor face."
     (((type haiku))
      :foreground "B_MENU_ITEM_TEXT_COLOR"
      :background "B_MENU_BACKGROUND_COLOR")
-    (((type x w32 ns pgtk android) (class color))
+    (((type x w32 ns pgtk android wlc) (class color))
      :background "grey75")
     (((type x) (class mono))
      :background "grey"))

@@ -1070,6 +1070,7 @@ This is either the value of variable `browse-url-browser-display' if
 non-nil, or the same display as Emacs if different from the current
 environment, otherwise just use the current environment."
   (let ((display (or browse-url-browser-display (browse-url-emacs-display))))
+    ;; WLC_TODO set WAYLAND_DISPLAY
     (if display
 	(cons (concat (if (and (eq window-system 'pgtk)
                                (equal (pgtk-backend-display-class)
