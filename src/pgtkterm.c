@@ -536,6 +536,9 @@ pgtk_destroy_window (struct frame *f)
   struct pgtk_display_info *dpyinfo = FRAME_DISPLAY_INFO (f);
 
   check_window_system (f);
+#ifdef USE_WEBRENDER
+  gl_renderer_free_frame_resources(f);
+#endif /*USE_WEBRENDER*/
   if (dpyinfo->gdpy != NULL)
     pgtk_free_frame_resources (f);
 
@@ -827,6 +830,7 @@ pgtk_make_frame_visible_invisible (struct frame *f, bool visible)
     pgtk_make_frame_invisible (f);
 }
 
+#ifndef USE_WEBRENDER
 static Lisp_Object
 pgtk_new_font (struct frame *f, Lisp_Object font_object, int fontset)
 {
@@ -888,6 +892,7 @@ pgtk_new_font (struct frame *f, Lisp_Object font_object, int fontset)
 
   return font_object;
 }
+#endif  /* USE_WEBRENDER */
 
 int
 pgtk_display_pixel_height (struct pgtk_display_info *dpyinfo)
@@ -1091,6 +1096,7 @@ pgtk_initialize_display_info (struct pgtk_display_info *dpyinfo)
   reset_mouse_highlight (&dpyinfo->mouse_highlight);
 }
 
+#ifndef USE_WEBRENDER
 /* Set S->gc to a suitable GC for drawing glyph string S in cursor
    face.  */
 
@@ -2778,6 +2784,7 @@ pgtk_draw_glyph_string (struct glyph_string *s)
   pgtk_end_cr_clip (s->f);
   s->num_clips = 0;
 }
+#endif  /* USE_WEBRENDER */
 
 /* RIF: Define cursor CURSOR on frame F.  */
 
@@ -2790,6 +2797,7 @@ pgtk_define_frame_cursor (struct frame *f, Emacs_Cursor cursor)
   FRAME_X_OUTPUT (f)->current_cursor = cursor;
 }
 
+#ifndef USE_WEBRENDER
 static void
 pgtk_after_update_window_line (struct window *w,
 			       struct glyph_row *desired_row)
@@ -3198,6 +3206,7 @@ pgtk_scroll_run (struct window *w, struct run *run)
 
   unblock_input ();
 }
+#endif  /* USE_WEBRENDER */
 
 /* Icons.  */
 
@@ -3296,6 +3305,7 @@ pgtk_text_icon (struct frame *f, const char *icon_name)
    each window being updated.  Currently, there is nothing to do here
    because all interesting stuff is done on a window basis.  */
 
+#ifndef USE_WEBRENDER
 static void
 pgtk_update_begin (struct frame *f)
 {
@@ -3388,6 +3398,7 @@ pgtk_update_end (struct frame *f)
   /* Mouse highlight may be displayed again.  */
   MOUSE_HL_INFO (f)->mouse_face_defer = false;
 }
+#endif  /* USE_WEBRENDER */
 
 static void
 pgtk_frame_up_to_date (struct frame *f)
@@ -3582,6 +3593,7 @@ pgtk_clip_to_row (struct window *w, struct glyph_row *row,
   cairo_clip (cr);
 }
 
+#ifndef USE_WEBRENDER
 static void
 pgtk_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 			 struct draw_fringe_bitmap_params *p)
@@ -3625,6 +3637,7 @@ pgtk_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 
   pgtk_end_cr_clip (f);
 }
+#endif  /* USE_WEBRENDER */
 
 static struct atimer *hourglass_atimer = NULL;
 static int hourglass_enter_count = 0;
@@ -3691,6 +3704,38 @@ pgtk_flush_display (struct frame *f)
 
 extern frame_parm_handler pgtk_frame_parm_handlers[];
 
+#ifdef USE_WEBRENDER
+static struct redisplay_interface pgtk_redisplay_interface = {
+  pgtk_frame_parm_handlers,
+  gui_produce_glyphs,
+  gui_write_glyphs,
+  gui_insert_glyphs,
+  gui_clear_end_of_line,
+  wr_scroll_run,
+  wr_after_update_window_line,
+  wr_update_window_begin,
+  wr_update_window_end,
+  wr_flush_display,
+  gui_clear_window_mouse_face,
+  gui_get_glyph_overhangs,
+  gui_fix_overlapping_area,
+  wr_draw_fringe_bitmap,
+  NULL,
+  NULL,
+  NULL,
+  wr_draw_glyph_string,
+  pgtk_define_frame_cursor,
+  wr_clear_frame_area,
+  pgtk_clear_under_internal_border,
+  wr_draw_window_cursor,
+  wr_draw_vertical_window_border,
+  wr_draw_window_divider,
+  NULL,				/* pgtk_shift_glyphs_for_insert, */
+  pgtk_show_hourglass,
+  pgtk_hide_hourglass,
+  pgtk_default_font_parameter,
+};
+#else
 static struct redisplay_interface pgtk_redisplay_interface = {
   pgtk_frame_parm_handlers,
   gui_produce_glyphs,
@@ -3721,6 +3766,7 @@ static struct redisplay_interface pgtk_redisplay_interface = {
   pgtk_hide_hourglass,
   pgtk_default_font_parameter,
 };
+#endif  /* USE_WEBRENDER */
 
 void
 pgtk_clear_frame (struct frame *f)
@@ -4504,6 +4550,10 @@ pgtk_delete_terminal (struct terminal *terminal)
 
   block_input ();
 
+#ifdef USE_WEBRENDER
+  gl_renderer_free_terminal_resources(terminal);
+#endif /*USE_WEBRENDER*/
+
   pgtk_im_finish (dpyinfo);
 
   /* Normally, the display is available...  */
@@ -4553,6 +4603,7 @@ pgtk_query_frame_background_color (struct frame *f, Emacs_Color * bgcolor)
   pgtk_query_color (f, bgcolor);
 }
 
+#ifndef USE_WEBRENDER
 static void
 pgtk_free_pixmap (struct frame *f, Emacs_Pixmap pixmap)
 {
@@ -4562,6 +4613,7 @@ pgtk_free_pixmap (struct frame *f, Emacs_Pixmap pixmap)
       xfree (pixmap);
     }
 }
+#endif  /* USE_WEBRENDER */
 
 void
 pgtk_focus_frame (struct frame *f, bool noactivate)
@@ -4811,8 +4863,12 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->clear_frame_hook = pgtk_clear_frame;
   terminal->ring_bell_hook = pgtk_ring_bell;
   terminal->toggle_invisible_pointer_hook = pgtk_toggle_invisible_pointer;
+#ifndef USE_WEBRENDER
   terminal->update_begin_hook = pgtk_update_begin;
   terminal->update_end_hook = pgtk_update_end;
+#else
+  terminal->update_end_hook = wr_update_end;
+#endif  /* USE_WEBRENDER */
   terminal->read_socket_hook = pgtk_read_socket;
   terminal->frame_up_to_date_hook = pgtk_frame_up_to_date;
   terminal->mouse_position_hook = pgtk_mouse_position;
@@ -4835,7 +4891,11 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->delete_terminal_hook = pgtk_delete_terminal;
   terminal->query_frame_background_color = pgtk_query_frame_background_color;
   terminal->defined_color_hook = pgtk_defined_color;
+#ifndef USE_WEBRENDER
   terminal->set_new_font_hook = pgtk_new_font;
+#else
+  terminal->set_new_font_hook = wr_new_font;
+#endif  /* USE_WEBRENDER */
   terminal->set_bitmap_icon_hook = pgtk_bitmap_icon;
   terminal->implicit_set_name_hook = pgtk_implicitly_set_name;
   terminal->iconify_frame_hook = pgtk_iconify_frame;
@@ -4848,7 +4908,11 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->get_focus_frame = pgtk_get_focus_frame;
   terminal->focus_frame_hook = pgtk_focus_frame;
   terminal->set_frame_offset_hook = pgtk_set_offset;
+#ifndef USE_WEBRENDER
   terminal->free_pixmap = pgtk_free_pixmap;
+#else
+  terminal->free_pixmap = wr_free_pixmap;
+#endif  /* USE_WEBRENDER */
 
   /* Other hooks are NULL by default.  */
 
@@ -4894,6 +4958,16 @@ pgtk_window_is_of_frame (struct frame *f, GdkWindow *window)
   pgtk_window_is_of_frame_recursive (FRAME_WIDGET (f), &data);
   return data.result;
 }
+
+#ifdef USE_WEBRENDER
+struct frame *
+pgtk_fixed_to_frame (GtkWidget *fixed)
+{
+  struct frame *f;
+  f = pgtk_any_window_to_frame (gtk_widget_get_window (fixed));
+  return f;
+}
+#endif
 
 /* Like x_window_to_frame but also compares the window with the widget's
    windows.  */
@@ -4963,6 +5037,7 @@ pgtk_handle_event (GtkWidget *widget, GdkEvent *event, gpointer *data)
   return FALSE;
 }
 
+#ifndef USE_WEBRENDER
 static void
 pgtk_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
 		     int width, int height, bool respect_alpha_background)
@@ -4974,6 +5049,7 @@ pgtk_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
   cairo_fill (cr);
   pgtk_end_cr_clip (f);
 }
+#endif  /* USE_WEBRENDER */
 
 void
 pgtk_clear_under_internal_border (struct frame *f)
@@ -4982,6 +5058,9 @@ pgtk_clear_under_internal_border (struct frame *f)
       && (!FRAME_GTK_OUTER_WIDGET (f)
 	  || gtk_widget_get_realized (FRAME_GTK_OUTER_WIDGET (f))))
     {
+#ifdef USE_WEBRENDER
+      gl_clear_under_internal_border(f);
+#else
       int border = FRAME_INTERNAL_BORDER_WIDTH (f);
       int width = FRAME_PIXEL_WIDTH (f);
       int height = FRAME_PIXEL_HEIGHT (f);
@@ -5021,6 +5100,7 @@ pgtk_clear_under_internal_border (struct frame *f)
 	}
 
       unblock_input ();
+#endif  /* USE_WEBRENDER */
     }
 }
 
@@ -5033,8 +5113,11 @@ pgtk_handle_draw (GtkWidget *widget, cairo_t *cr, gpointer *data)
 
   if (win != NULL)
     {
-      cairo_surface_t *src = NULL;
       f = pgtk_any_window_to_frame (win);
+#ifdef USE_WEBRENDER
+    /* redraw_frame (f); */
+#else
+      cairo_surface_t *src = NULL;
       if (f != NULL)
 	{
 	  src = FRAME_X_OUTPUT (f)->cr_surface_visible_bell;
@@ -5046,6 +5129,7 @@ pgtk_handle_draw (GtkWidget *widget, cairo_t *cr, gpointer *data)
 	  cairo_set_source_surface (cr, src, 0, 0);
 	  cairo_paint (cr);
 	}
+#endif  /* USE_WEBRENDER */
     }
   return FALSE;
 }
@@ -7325,7 +7409,11 @@ pgtk_defined_color (struct frame *f, const char *name,
   block_input ();
   r = xg_check_special_colors (f, name, color_def);
   if (!r)
+#ifndef USE_WEBRENDER
     r = pgtk_parse_color (f, name, color_def);
+#else
+    r = gl_renderer_parse_color (f, name, color_def);
+#endif
   unblock_input ();
   return r;
 }

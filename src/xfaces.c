@@ -258,6 +258,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #ifdef HAVE_ANDROID
 #define GCGraphicsExposures 0
 #endif /* HAVE_ANDROID */
+
+#ifdef HAVE_WAYLAND_CLIENT
+#define GCGraphicsExposures 0
+#endif /* HAVE_WAYLAND_CLIENT */
 #endif /* HAVE_WINDOW_SYSTEM */
 
 #include "buffer.h"
@@ -571,7 +575,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 
 #endif  /* HAVE_NTGUI */
 
-#if defined (HAVE_NS) || defined (HAVE_HAIKU)
+#if (defined (HAVE_NS) || defined (HAVE_HAIKU)) && !defined USE_WEBRENDER
 /* NS and Haiku emulation of GCs */
 
 static Emacs_GC *
@@ -591,7 +595,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 }
 #endif  /* HAVE_NS */
 
-#ifdef HAVE_PGTK
+#if defined HAVE_PGTK && !defined USE_WEBRENDER
 /* PGTK emulation of GCs */
 
 static Emacs_GC *
@@ -610,6 +614,26 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
   xfree (gc);
 }
 #endif  /* HAVE_NS */
+
+#ifdef USE_WEBRENDER
+/* webrender emulation of GCs */
+
+static GC
+x_create_gc (struct frame *f,
+	     unsigned long mask,
+	     Emacs_GC *xgcv)
+{
+  GC gc = malloc (sizeof *gc);
+  *gc = *xgcv;
+  return gc;
+}
+
+static void
+x_free_gc (struct frame *f, GC gc)
+{
+  free (gc);
+}
+#endif  /* USE_WEBRENDER */
 
 #ifdef HAVE_ANDROID
 
@@ -7567,6 +7591,8 @@ Each element is a regular expression that matches names of fonts to
 ignore.  */);
 #ifdef HAVE_XFT
   /* This font causes libXft crashes, so ignore it by default.  Bug#37786.  */
+  /* WebRender currently has issue rendering Color Font.
+     See: https://bugzilla.mozilla.org/show_bug.cgi?id=1565588 */
   Vface_ignored_fonts = list1 (build_string ("Noto Color Emoji"));
 #else
   Vface_ignored_fonts = Qnil;

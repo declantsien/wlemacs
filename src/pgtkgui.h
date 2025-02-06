@@ -29,9 +29,11 @@ typedef struct _XCharStruct
   int descent;
 } XCharStruct;
 
+#ifndef USE_WEBRENDER
 /* Fake structure from Xlib.h to represent two-byte characters.  */
 typedef unsigned short unichar;
 typedef unichar XChar2b;
+#endif
 
 #define STORE_XCHAR2B(chp, b1, b2) \
   (*(chp) = ((XChar2b)((((b1) & 0x00ff) << 8) | ((b2) & 0x00ff))))
@@ -45,7 +47,9 @@ typedef unichar XChar2b;
 
 typedef struct _GdkCursor *Emacs_Cursor;
 
+#ifndef USE_WEBRENDER
 typedef void *Color;
+#endif  /* USE_WEBRENDER */
 typedef int Window;
 typedef struct _GdkDisplay Display;
 
@@ -55,11 +59,13 @@ typedef void *XrmDatabase;
 
 /* Some sort of attempt to normalize rectangle handling.. seems a bit much
    for what is accomplished.  */
+#ifndef USE_WEBRENDER
 typedef struct
 {
   int x, y;
   unsigned width, height;
 } XRectangle;
+#endif  /* USE_WEBRENDER */
 
 /* This stuff is needed by frame.c.  */
 #define ForgetGravity		0
@@ -96,6 +102,7 @@ typedef struct
 #define PWinGravity	(1L << 9)	/* program specified window gravity */
 
 
+#ifndef USE_WEBRENDER
 #define NativeRectangle XRectangle
 
 #define CONVERT_TO_EMACS_RECT(xr, nr)		\
@@ -115,5 +122,6 @@ typedef struct
    (nr).y      = (py),					\
    (nr).width  = (pwidth),				\
    (nr).height = (pheight))
+#endif  /* USE_WEBRENDER */
 
 #endif /* __PGTKGUI_H__ */

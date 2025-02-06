@@ -305,7 +305,7 @@
 (if (featurep 'dynamic-setting)
     (load "dynamic-setting"))
 
-(if (featurep 'x)
+(if (or (featurep 'x) (featurep 'wlc))
     (progn
       (load "touch-screen")
       (load "x-dnd")

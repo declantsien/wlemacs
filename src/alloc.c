@@ -6033,6 +6033,10 @@ garbage_collect (void)
 #endif
 #endif
 
+#ifdef HAVE_WAYLAND_CLIENT
+  mark_wlcterm ();
+#endif
+
 #ifdef HAVE_NS
   mark_nsterm ();
 #endif

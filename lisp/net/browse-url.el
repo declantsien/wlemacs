@@ -942,6 +942,8 @@ invert the prefix arg instead."
           ;; which interferes with any X server the user may have
           ;; expressly set.
           nil)
+         ((featurep 'wlc)
+          (setenv "WAYLAND_DISPLAY" dpy))
          (t
           (setenv "DISPLAY" dpy)))))
     (if (functionp function)

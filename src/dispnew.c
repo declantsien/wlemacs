@@ -7226,6 +7226,15 @@ init_display_interactive (void)
     }
 #endif
 
+#ifdef HAVE_WAYLAND_CLIENT
+  if (!inhibit_window_system && !will_dump_p ())
+    {
+      //reuse x lisp infrusture
+      Vinitial_window_system = Qx;
+      return;
+    }
+#endif
+
   /* If no window system has been specified, try to use the terminal.  */
   if (! isatty (STDIN_FILENO))
     fatal ("standard input is not a tty");

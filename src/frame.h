@@ -440,7 +440,7 @@ struct frame
   /* The output method says how the contents of this frame are
      displayed.  It could be using termcap, or using an X window.
      This must be the same as the terminal->type. */
-  ENUM_BF (output_method) output_method : 4;
+  ENUM_BF (output_method) output_method : 10;
 
   /* True if this is an undecorated frame.  */
   bool_bf undecorated : 1;
@@ -652,6 +652,7 @@ struct frame
     struct pgtk_output *pgtk;		/* From pgtkterm.h. */
     struct haiku_output *haiku;		/* From haikuterm.h. */
     struct android_output *android;	/* From androidterm.h.  */
+    struct wlc_output *wlc;	        /* From wlcterm.h.  */
   }
   output_data;
 
@@ -948,6 +949,11 @@ default_pixels_per_inch_y (void)
 #else
 #define FRAME_ANDROID_P(f) ((f)->output_method == output_android)
 #endif
+#ifndef HAVE_WAYLAND_CLIENT
+#define FRAME_WLC_P(f) false
+#else
+#define FRAME_WLC_P(f) ((f)->output_method == output_wlc)
+#endif
 
 /* FRAME_WINDOW_P tests whether the frame is a graphical window system
    frame.  */
@@ -968,6 +974,9 @@ default_pixels_per_inch_y (void)
 #endif
 #ifdef HAVE_ANDROID
 #define FRAME_WINDOW_P(f) FRAME_ANDROID_P (f)
+#endif
+#ifdef HAVE_WAYLAND_CLIENT
+#define FRAME_WINDOW_P(f) FRAME_WLC_P (f)
 #endif
 #ifndef FRAME_WINDOW_P
 #define FRAME_WINDOW_P(f) ((void) (f), false)

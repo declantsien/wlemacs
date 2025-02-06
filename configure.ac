@@ -26,6 +26,19 @@ dnl Note this is parsed by (at least) make-dist and lisp/cedet/ede/emacs.el.
 AC_INIT([GNU Emacs], [31.0.50], [bug-gnu-emacs@gnu.org], [],
   [https://www.gnu.org/software/emacs/])
 
+AC_CHECK_PROGS([RUSTC], [rustc])
+test -z "$RUSTC" &&
+   AC_MSG_ERROR([Rust is required])
+
+case `($RUSTC --version) 2>/dev/null` in
+  *nightly* ) ;;
+  *) AC_MSG_ERROR([Rust Nightly Channel is required]);;
+esac
+
+AC_CHECK_PROGS([CARGO], [cargo])
+test -z "$CARGO" &&
+      AC_MSG_ERROR([CARGO is required])
+
 if test "$XCONFIGURE" = "android"; then
   # configure is being called recursively to configure Emacs for
   # Android!
@@ -549,6 +562,7 @@ AC_ARG_WITH([ns],[AS_HELP_STRING([--with-ns],
 On by default on macOS.])],[],[with_ns=maybe])
 OPTION_DEFAULT_OFF([w32], [use native MS Windows GUI in a Cygwin build])
 OPTION_DEFAULT_OFF([pgtk], [use GTK to support window systems other than X])
+OPTION_DEFAULT_OFF([wayland], [use Wayland client to support window systems other than X])
 
 OPTION_DEFAULT_ON([gpm],[don't use -lgpm for mouse support on a GNU/Linux console])
 OPTION_DEFAULT_IFAVAILABLE([dbus],[compile with D-Bus support])
@@ -615,6 +629,9 @@ otherwise for the first of 'inotify', 'kqueue' or 'gfile' that is usable.])
 
 OPTION_DEFAULT_OFF([xwidgets],
   [enable use of xwidgets in Emacs buffers (requires gtk3 or macOS Cocoa)])
+
+OPTION_DEFAULT_OFF([webrender],
+  [enable use of webrender(written in Rust) as rendering engine (experimental)])
 
 OPTION_DEFAULT_OFF([be-app],
   [enable use of Haiku's Application Kit as a window system])
@@ -1972,6 +1989,31 @@ if test "$enable_silent_rules" = no; then
 else
   AM_DEFAULT_VERBOSITY=0
 fi
+
+AC_ARG_ENABLE(rust-debug,
+[AS_HELP_STRING([--enable-rust-debug],
+[build rust-src in debug mode
+Useful for debugging rust component of emacs-ng.])],
+[ac_enable_rust_debug="${enableval}"],[])
+
+AC_ARG_WITH([wr-gl],[AS_HELP_STRING([--with-wr-gl=KIT],
+ [use an GL context creation toolkit (KIT one of: yes or surfman, glutin, gtk3).
+ Surfman will be used if none given.])],
+[	  case "${withval}" in
+	    y | ye | yes )	val=surfman ;;
+	    s | su | sur | surf | surfm | surfma | surfman )	val=surfman ;;
+	    g | gl | glu | glut | gluti | glutin )	val=glutin ;;
+	    * )
+AC_MSG_ERROR(['--with-wr-gl=$withval' is invalid;
+this option's value should be 'yes', 'surfman' or 'glutin'.
+'yes' and 'surfman' are synonyms.])
+	    ;;
+	  esac
+	  with_wr_gl=$val
+],
+  [AS_IF([test "$with_wayland" != "no"],
+   [with_wr_gl=surfman])])
+
 AC_SUBST([AM_DEFAULT_VERBOSITY])
 ARCH_INDEPENDENT_CONFIG_FILES([src/verbose.mk])
 
@@ -2681,11 +2723,29 @@ if test "${with_pgtk}" = "yes"; then
   window_system=pgtk
 fi
 
+if test "${with_wayland}" = "yes"; then
+  window_system=wlc
+  with_webrender=yes
+fi
+
 if test "${ANDROID}" != "yes"; then
   AC_PATH_X
-  if test "$no_x" != yes && test "${with_pgtk}" != "yes"; then
+  if test "$no_x" != yes && test "${with_pgtk}" != "yes" \
+  && test "${with_wayland}" != "yes"; then
     window_system=x11
   fi
+fi
+
+if test "${with_webrender}" = "yes" ; then
+  with_cairo=no
+dnl WebRender support these images from native image support
+  with_xpm=no
+  with_jpeg=no
+  with_tiff=no
+  with_gif=no
+  with_png=no
+  with_rsvg=no
+  with_webp=no
 fi
 
 LD_SWITCH_X_SITE_RPATH=
@@ -3162,6 +3222,9 @@ dnl use the toolkit if we have gtk, or X11R5 or newer.
   ;;
   android )
     term_header=androidterm.h
+  ;;
+  wlc )
+    term_header=wlcterm.h
   ;;
 esac
 
@@ -3778,6 +3841,40 @@ if test "$window_system" = "pgtk"; then
 fi
 AC_SUBST([PGTK_OBJ])
 AC_SUBST([PGTK_LIBS])
+
+WAYLAND_CLIENT_OBJ=
+HAVE_WAYLAND_CLIENT=no
+WAYLAND_PROTOCOLS_DATADIR=
+WAYLAND_SCANNER=
+LIBWAYLAND_PROTOCOL=
+if test "$window_system" = "wlc"; then
+  EMACS_CHECK_MODULES([WAYLAND_CLIENT], [wayland-client >= 1.0 xkbcommon])
+  EMACS_CHECK_MODULES([WAYLAND_PROTOCOLS], [wayland-protocols >= 1.0])
+
+  if test "$HAVE_WAYLAND_CLIENT" != yes; then
+    AC_MSG_ERROR([--with-wayland requires libwayland and libxkbcommon])
+  fi
+
+  if test "$HAVE_WAYLAND_PROTOCOLS" != yes; then
+    AC_MSG_ERROR([--with-wayland requires wayland-protocols])
+  fi
+
+  AC_CHECK_PROGS([WAYLAND_SCANNER], [wayland-scanner])
+  test -z "$WAYLAND_SCANNER" &&
+  AC_MSG_ERROR([wayland-scanner is required])
+
+  AC_DEFINE([HAVE_WAYLAND_CLIENT], [1], [Define to 1 if you have pure Wayland.])
+  WAYLAND_CLIENT_OBJ="wlcfns.o wlcterm.o"
+
+  WAYLAND_PROTOCOLS_DATADIR="`$PKG_CONFIG --variable=pkgdatadir wayland-protocols  2>/dev/null`"
+  LIBWAYLAND_PROTOCOL='$(wayland-protocolsdir)/libwayland_protocols.a'
+fi
+AC_SUBST([WAYLAND_CLIENT_CFLAGS])
+AC_SUBST([WAYLAND_CLIENT_LIBS])
+AC_SUBST([WAYLAND_CLIENT_OBJ])
+AC_SUBST([WAYLAND_SCANNER])
+AC_SUBST([WAYLAND_PROTOCOLS_DATADIR])
+AC_SUBST([LIBWAYLAND_PROTOCOL])
 
 AC_CHECK_FUNCS([malloc_trim])
 
@@ -4533,7 +4630,7 @@ if test "${HAVE_X11}" = "yes"; then
     fi
   fi
 else # "${HAVE_X11}" != "yes"
-  if test $window_system = pgtk; then
+  if test $window_system = pgtk && test "${with_webrender}" != "yes"; then
     EMACS_CHECK_MODULES([FONTCONFIG], [fontconfig >= 2.2.0])
     EMACS_CHECK_MODULES([FREETYPE], [freetype2])
     if test "$HAVE_FONTCONFIG" != yes -o "$HAVE_FREETYPE" != yes; then
@@ -4571,10 +4668,11 @@ if test "${HAVE_W32}" = "yes"; then
 else
   harfbuzz_required_ver=0.9.42
 fi
-if test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
+if (test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
         || test "$window_system" = "pgtk" \
         || test "${HAVE_W32}" = "yes" \
-	|| test "$REALLY_ANDROID" = "yes"; then
+	|| test "$REALLY_ANDROID" = "yes") \
+        && test "${with_webrender}" != "yes"; then
   if test "${with_harfbuzz}" != "no"; then
     EMACS_CHECK_MODULES([HARFBUZZ], [harfbuzz >= $harfbuzz_required_ver])
     AS_IF([test "$HAVE_HARFBUZZ" = "yes"],[
@@ -7084,7 +7182,9 @@ if test "${HAVE_X_WINDOWS}" = "yes" ; then
 fi
 
 if test "${window_system}" = "pgtk"; then
-   FONT_OBJ="ftfont.o ftcrfont.o"
+  if test "$HAVE_FREETYPE" = "yes"; then
+    FONT_OBJ="ftfont.o ftcrfont.o"
+  fi
 fi
 
 if test "${HAVE_BE_APP}" = "yes" ; then
@@ -7100,6 +7200,23 @@ AC_SUBST([FONT_OBJ])
 AC_SUBST([XMENU_OBJ])
 AC_SUBST([XOBJ])
 AC_SUBST([FONT_OBJ])
+
+WEBRENDER_LIBS=
+if test "${with_webrender}" = "yes" ; then
+
+  if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc"; then
+     AC_MSG_ERROR(Webrender currently only supports wlc and pgtk window system.
+     Current window system detection is $window_system. Please explicitly
+     provide --with-wayland.)
+  fi
+
+  AC_DEFINE(USE_WEBRENDER, 1,
+	    [Define to 1 if you want to use the webrender.])
+
+  AC_DEFINE(HAVE_NATIVE_IMAGE_API, 1, [Define to use native OS APIs for images.])
+            NATIVE_IMAGE_API="yes (webrender)"
+fi
+AC_SUBST(WEBRENDER_LIBS)
 
 WIDGET_OBJ=
 MOTIF_LIBW=
@@ -7270,6 +7387,66 @@ gl_INIT
 CFLAGS=$SAVE_CFLAGS
 LIBS=$SAVE_LIBS
 
+# Add Rust variables, libs and utilities
+
+RUSTFLAGS=$RUSTFLAGS
+CARGO="cargo"
+CARGO_BUILD="$CARGO build"
+CARGO_CLEAN="$CARGO clean"
+CARGO_TEST="$CARGO test"
+CARGO_CLIPPY="$CARGO clippy"
+CARGO_RUN="$CARGO run"
+CARGO_DOC="$CARGO doc --all --open --document-private-items"
+if test x$ac_enable_rust_debug != x ; then
+CARGO_FLAGS="$CARGO_FLAGS"
+else
+CARGO_FLAGS="$CARGO_FLAGS --release"
+fi
+CARGO_FLAGS="$CARGO_FLAGS -Zgitoxide=fetch -Zgit=shallow-deps,shallow-index"
+CARGO_FLAGS="$CARGO_FLAGS -Z unstable-options"
+
+RUST_CFLAGS=
+case "${opsys}" in
+  darwin) RUST_DEPS="-ldl -lm -lresolv -lstdc++"
+        RUST_CFLAGS="-pthread -DEMACS_EXTERN_INLINE" ;;
+  gnu*) RUST_DEPS="-ldl -lm -lrt -lstdc++"
+        RUST_CFLAGS="-pthread -DEMACS_EXTERN_INLINE" ;;
+esac
+case "$opsys" in
+  darwin)
+   RUST_DEPS="-ldl -lm -lresolv -lstdc++" ;;
+  gnu*)
+   RUST_DEPS="-ldl -lm -lrt -lstdc++" ;;
+esac
+
+RUST_ARCHIVE_EXTENSION=".a"
+if test "${HAVE_W32}" = "yes"; then
+    RUST_ARCHIVE_EXTENSION=".lib"
+    RUST_DEPS="$RUST_DEPS -lws2_32 -luserenv"
+
+    # Windows fails linking in the 'cargo test' stage, skip for now.
+    CARGO_TEST="true"
+fi
+
+# On macOS, rand crate needs '_SecRandomCopyBytes' symbol in Security framework.
+if test "${opsys}" = "darwin"; then
+LDFLAGS_REMACS="$LDFLAGS_REMACS -framework Security"
+fi
+
+LDFLAGS="$LDFLAGS $LDFLAGS_REMACS"
+
+AC_SUBST(CARGO_BUILD)
+AC_SUBST(CARGO_CLEAN)
+AC_SUBST(CARGO_CLIPPY)
+AC_SUBST(CARGO_DOC)
+AC_SUBST(CARGO_FLAGS)
+AC_SUBST(CARGO_RUN)
+AC_SUBST(CARGO_TEST)
+AC_SUBST(RUSTFLAGS)
+AC_SUBST(RUST_CFLAGS)
+AC_SUBST(RUST_ARCHIVE_EXTENSION)
+AC_SUBST(RUST_DEPS)
+
 # Set up libgmp on Android.  Make sure to override what gnulib has
 # found.
 LIBGMP_CFLAGS=
@@ -7320,7 +7497,11 @@ case "$opsys" in
   cygwin) LD_SWITCH_SYSTEM_TEMACS="-Wl,-stack,0x00800000" ;;
 
   darwin)
-   if test "$HAVE_NS" = "yes"; then
+   if test "${with_webrender}" = "yes"; then
+     libs_nsgui="-framework AppKit -framework IOKit -framework Carbon \
+                 -framework IOSurface -framework QuartzCore -framework OpenGL \
+		 -framework Metal"
+   elif test "$HAVE_NS" = "yes"; then
      libs_nsgui="-framework AppKit"
      if test "$NS_IMPL_COCOA" = "yes"; then
         libs_nsgui="$libs_nsgui -framework IOKit -framework Carbon \
@@ -7469,6 +7650,7 @@ Configured for '${canonical}'.
   Should Emacs use mmap(2) for buffer allocation?         $use_mmap_for_buffers
   What window system should Emacs use?                    ${window_system}
   What toolkit should Emacs use?                          ${USE_X_TOOLKIT}
+  What libraries will Rust link against?                  ${RUST_DEPS}
   Where do we find X Windows header files?                ${x_includes:-$emacs_standard_dirs}
   Where do we find X Windows libraries?                   ${x_libraries:-$emacs_standard_dirs}"])
 
@@ -7480,11 +7662,13 @@ for opt in ACL BE_APP CAIRO DBUS FREETYPE GCONF GIF GLIB GMP GNUTLS GPM GSETTING
  M17N_FLT MODULES NATIVE_COMP NOTIFY NS OLDXMENU PDUMPER PGTK PNG RSVG SECCOMP \
  SOUND SQLITE3 THREADS TIFF TOOLKIT_SCROLL_BARS TREE_SITTER \
  UNEXEC WEBP X11 XAW3D XDBE XFT XIM XINERAMA XINPUT2 XPM XRANDR XWIDGETS \
- X_TOOLKIT ZLIB; do
+ X_TOOLKIT ZLIB WEBRENDER WAYLAND; do
 
     case $opt in
       PDUMPER) val=${with_pdumper} ;;
       UNEXEC) val=no ;;
+      WEBRENDER) val=${with_webrender} ;;
+      WAYLAND) val=${with_wayland} ;;
       GLIB) val=${emacs_cv_links_glib} ;;
       NOTIFY|ACL) eval val=\${${opt}_SUMMARY} ;;
       TOOLKIT_SCROLL_BARS|X_TOOLKIT) eval val=\${USE_$opt} ;;
@@ -7517,6 +7701,43 @@ done
 AC_DEFINE_UNQUOTED([EMACS_CONFIG_FEATURES], ["${emacs_config_features}"],
   [Summary of some of the main features enabled by configure.])
 
+CARGO_FEATURES=
+optsep=
+if test $window_system = pgtk && test "${with_webrender}" = "yes"; then
+    pgtk_use_wr=yes
+fi
+for opt in use-xml2 pgtk glyph-debug profiling wr_pgtk wlc; do
+    tmp=no
+    if test "${window_system}" = "$opt"; then
+	tmp=yes
+    fi
+    case $opt in
+      use-xml2) val=${HAVE_LIBXML2} ;;
+      glyph-debug) val=${ac_enable_glyphs_debug} ;;
+      profiling) val=${ac_enable_profiling} ;;
+      wr_pgtk) val=${pgtk_use_wr} ;;
+      x11|w32|haiku|pgtk|android|nextstep|wlc) val=${tmp} ;;
+      *) eval val=\${with_$opt} ;;
+    esac
+
+    case x$val in
+      xno|xnone|x) continue ;;
+    esac
+    case $opt in
+      x11|w32|haiku|pgtk|android|nextstep|wlc) opt="window-system-${opt}" ;;
+      glyph-debug|profiling) opt="${window_system}/${opt}" ;;
+    esac
+    AS_VAR_APPEND([CARGO_FEATURES], ["$optsep$opt"])
+    optsep=' '
+done
+AC_SUBST(CARGO_FEATURES)
+
+dnl Rust sources which has Lisp symbols definitions
+AS_ECHO(["Collecting Rust sources..."])
+RUST_CRATES_SOURCES=`(ABS_TOP_SRCDIR=$(pwd) cargo run -p codegen --bin print-source ${CARGO_FEATURES})`
+AS_ECHO(["Collecting Rust sources...done"])
+AC_SUBST(RUST_CRATES_SOURCES)
+
 # This is just a printable representation of the shared user ID.
 android_shared_user=
 AS_IF([test -n "$with_shared_user_id"],[android_shared_user="($with_shared_user_id)"])
@@ -7533,6 +7754,7 @@ AS_ECHO(["  Does Emacs use -lXaw3d?                                 ${HAVE_XAW3D
   Does Emacs use -lwebp?                                  ${HAVE_WEBP}
   Does Emacs use -lsqlite3?                               ${HAVE_SQLITE3}
   Does Emacs use cairo?                                   ${HAVE_CAIRO}
+  Does Emacs use webrender?                               ${with_webrender}
   Does Emacs use -llcms2?                                 ${HAVE_LCMS2}
   Does Emacs use imagemagick?                             ${HAVE_IMAGEMAGICK}
   Does Emacs use native APIs for images?                  ${NATIVE_IMAGE_API}
@@ -7562,6 +7784,7 @@ AS_ECHO(["  Does Emacs use -lXaw3d?                                 ${HAVE_XAW3D
   Does Emacs support the portable dumper?                 ${with_pdumper}
   Which dumping strategy does Emacs use?                  ${with_dumping}
   Does Emacs have native lisp compiler?                   ${HAVE_NATIVE_COMP}
+  Does Emacs include JavaScript?                          ${with_javascript}
   Does Emacs use version 2 of the X Input Extension?      ${HAVE_XINPUT2}
   Does Emacs generate a smaller-size Japanese dictionary? ${with_small_ja_dic}
 "])
@@ -7575,7 +7798,7 @@ fi
 
 echo
 
-if test "$HAVE_NS" = "yes"; then
+if test "$HAVE_NS" = "yes" || test "${window_system}" = "winit"; then
    echo
    AS_ECHO(["Run '${MAKE-make}' to build Emacs, then run 'src/emacs' to test it.
 Run '${MAKE-make} install' in order to build an application bundle.
@@ -7628,7 +7851,8 @@ dnl config.status treats $srcdir specially, so I think this is ok...
 ARCH_INDEPENDENT_CONFIG_FILES([$srcdir/doc/man/emacs.1])
 
 AC_CONFIG_FILES([lib/Makefile lib-src/Makefile oldXMenu/Makefile src/Makefile
-                 lwlib/Makefile nextstep/Makefile nt/Makefile])
+                 lwlib/Makefile nextstep/Makefile nt/Makefile
+		 wayland-protocols/Makefile])
 ARCH_INDEPENDENT_CONFIG_FILES([doc/emacs/Makefile doc/misc/Makefile
                                doc/lispintro/Makefile doc/lispref/Makefile
 			       lisp/Makefile leim/Makefile])
@@ -7671,6 +7895,13 @@ AC_SUBST([SUBDIR_MAKEFILES_IN])
 
 SMALL_JA_DIC=$with_small_ja_dic
 AC_SUBST([SMALL_JA_DIC])
+
+if test "$HAVE_JAVASCRIPT" = "yes"; then
+  AC_DEFINE(USE_JAVASCRIPT, 1, [Define to 1 if you want to use deno/javascript.])
+fi
+
+dnl AC_CONFIG_FILES([$srcdir/.cargo/config:$srcdir/.cargo/config.in])
+AC_CONFIG_FILES([$srcdir/crates/emacs-sys/build.rs])
 
 dnl The following commands are run on the build system when building
 dnl Emacs.
@@ -7817,7 +8048,8 @@ if test "${HAVE_XFT}" = yes; then
     relevant development headers are installed).])
 fi
 
-if test "${HAVE_CAIRO}" = "yes" && test "${HAVE_HARFBUZZ}" = no; then
+if test "${HAVE_CAIRO}" = "yes" && test "${HAVE_HARFBUZZ}" = no \
+   && test "${with_webrender}" != "yes"; then
   AC_MSG_WARN([This configuration uses the Cairo graphics library,
     but not the HarfBuzz font shaping library (minimum version $harfbuzz_required_ver).
     We recommend the use of HarfBuzz when using Cairo, please install

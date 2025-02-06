@@ -120,7 +120,7 @@ typedef XImage *Emacs_Pix_Context;
 #define NativeRectangle XRectangle
 #endif
 
-#ifdef USE_CAIRO
+#if defined USE_CAIRO && !defined USE_WEBRENDER
 /* Minimal version of XImage.  */
 typedef struct
 {
@@ -132,6 +132,14 @@ typedef struct
 typedef Emacs_Pix_Container Emacs_Pixmap;
 typedef Emacs_Pix_Container Emacs_Pix_Context;
 #endif
+
+#ifdef USE_WEBRENDER
+#include "wrgui.h"
+typedef WRImage *XImagePtr;
+typedef XImagePtr XImagePtr_or_DC;
+typedef Emacs_Pixmap Emacs_Pix_Container;
+typedef Emacs_Pixmap Emacs_Pix_Context;
+#endif /* USE_WEBRENDER */
 
 #ifdef HAVE_NTGUI
 #include "w32gui.h"
@@ -152,8 +160,10 @@ typedef Emacs_Pixmap Emacs_Pix_Context;
 #include "pgtkgui.h"
 /* Following typedef needed to accommodate the MSDOS port, believe it or not.  */
 typedef struct pgtk_display_info Display_Info;
+#ifndef USE_WEBRENDER
 typedef Emacs_Pixmap XImagePtr;
 typedef XImagePtr XImagePtr_or_DC;
+#endif /* USE_WEBRENDER_ */
 #endif /* HAVE_PGTK */
 
 #ifdef HAVE_HAIKU
@@ -162,6 +172,11 @@ typedef struct haiku_display_info Display_Info;
 typedef Emacs_Pixmap Emacs_Pix_Container;
 typedef Emacs_Pixmap Emacs_Pix_Context;
 #endif
+
+#ifdef HAVE_WAYLAND_CLIENT
+#include "wlcgui.h"
+typedef struct wlc_display_info Display_Info;
+#endif /* HAVE_WAYLAND_CLIENT */
 
 #ifdef HAVE_ANDROID
 #include "androidgui.h"
@@ -1457,6 +1472,9 @@ struct glyph_string
 #endif
 #if defined (HAVE_PGTK)
   Emacs_GC xgcv;
+#endif
+#if defined (USE_WEBRENDER)
+  Emacs_GC *gc;
 #endif
 
   /* A pointer to the first glyph in the string.  This glyph
@@ -3159,9 +3177,10 @@ struct redisplay_interface
 
 #ifdef HAVE_WINDOW_SYSTEM
 
-# if (defined USE_CAIRO || defined HAVE_XRENDER				\
-      || defined HAVE_NS || defined HAVE_NTGUI || defined HAVE_HAIKU	\
-      || defined HAVE_ANDROID)
+
+# if (defined USE_CAIRO || defined HAVE_XRENDER \
+      || defined HAVE_NS || defined HAVE_NTGUI || defined HAVE_HAIKU \
+      || defined HAVE_ANDROID || defined USE_WEBRENDER)
 #  define HAVE_NATIVE_TRANSFORMS
 # endif
 
@@ -3701,7 +3720,7 @@ ptrdiff_t lookup_image (struct frame *, Lisp_Object, int);
 Lisp_Object image_spec_value (Lisp_Object, Lisp_Object, bool *);
 
 #if defined HAVE_X_WINDOWS || defined USE_CAIRO || defined HAVE_NS \
-  || defined HAVE_HAIKU || defined HAVE_ANDROID
+  || defined HAVE_HAIKU || defined HAVE_ANDROID || defined USE_WEBRENDER
 #define RGB_PIXEL_COLOR unsigned long
 #endif
 

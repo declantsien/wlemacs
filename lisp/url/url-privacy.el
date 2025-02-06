@@ -56,6 +56,7 @@
 	    ('x "X11")
 	    ('ns "OpenStep")
             ('pgtk "PureGTK")
+            ('wlc "Wayland Client")
 	    ('tty "TTY")
 	    (_ nil)))))
 

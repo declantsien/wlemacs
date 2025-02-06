@@ -520,8 +520,10 @@ pgtk_change_tab_bar_height (struct frame *f, int height)
      here.  */
   adjust_frame_glyphs (f);
   SET_FRAME_GARBAGED (f);
+#ifndef USE_WEBRENDER
   if (FRAME_X_WINDOW (f))
     pgtk_clear_under_internal_border (f);
+#endif /* USE_WEBRENDER */
 }
 
 /* Set the pixel height of the tool bar of frame F to HEIGHT.  */
@@ -1126,6 +1128,9 @@ update_watched_scale_factor (struct atimer *timer)
 					   FRAME_CR_SURFACE_DESIRED_WIDTH (f),
 					   FRAME_CR_SURFACE_DESIRED_HEIGHT (f),
 					   true);
+#ifdef USE_WEBRENDER
+      gl_renderer_fit_context (f);
+#endif
     }
 }
 
@@ -1371,10 +1376,14 @@ This function is an internal primitive--use `make-frame' instead.  */ )
       specbind (Qx_resource_name, name);
     }
 
+#ifndef USE_WEBRENDER
   register_font_driver (&ftcrfont_driver, f);
 #ifdef HAVE_HARFBUZZ
   register_font_driver (&ftcrhbfont_driver, f);
 #endif	/* HAVE_HARFBUZZ */
+#else
+register_swash_font_driver(f);
+#endif  /* USE_WEBRENDER */
 
   gui_default_parameter (f, parms, Qfont_backend, Qnil,
 			 "fontBackend", "FontBackend", RES_TYPE_STRING);
@@ -2727,10 +2736,14 @@ x_create_tip_frame (struct pgtk_display_info *dpyinfo, Lisp_Object parms, struct
       specbind (Qx_resource_name, name);
     }
 
+#ifndef USE_WEBRENDER
   register_font_driver (&ftcrfont_driver, f);
 #ifdef HAVE_HARFBUZZ
   register_font_driver (&ftcrhbfont_driver, f);
 #endif	/* HAVE_HARFBUZZ */
+#else
+register_swash_font_driver(f);
+#endif  /* USE_WEBRENDER */
 
   gui_default_parameter (f, parms, Qfont_backend, Qnil,
                          "fontBackend", "FontBackend", RES_TYPE_STRING);
@@ -3759,6 +3772,7 @@ If omitted or nil, that stands for the selected frame's display.  */)
   return build_string (type_name);
 }
 
+#ifndef USE_WEBRENDER
 DEFUN ("x-select-font", Fx_select_font, Sx_select_font, 0, 2, 0,
        doc: /* Read a font using a GTK dialog and return a font spec.
 
@@ -3804,6 +3818,7 @@ nil, it defaults to the selected frame. */)
 
   return unbind_to (count, font);
 }
+#endif
 
 DEFUN ("x-gtk-debug", Fx_gtk_debug, Sx_gtk_debug, 1, 1, 0,
        doc: /* SKIP: real doc in xfns.c.  */)
@@ -3941,7 +3956,9 @@ syms_of_pgtkfns (void)
   defsubr (&Spgtk_set_monitor_scale_factor);
 
   defsubr (&Sx_file_dialog);
+#ifndef USE_WEBRENDER
   defsubr (&Sx_select_font);
+#endif
 
   monitor_scale_factor_alist = Qnil;
   staticpro (&monitor_scale_factor_alist);

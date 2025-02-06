@@ -70,6 +70,12 @@ static void scan_c_file (char *filename, const char *mode);
 static void scan_c_stream (FILE *infile);
 static void start_globals (void);
 static void write_globals (void);
+struct global *add_global (int type, char const *name, int value, char const *svalue);
+
+typedef struct global * (*add_global_fn) (int, char const *, int, char const *);
+
+/* Implemented in Rust crate lisp-doc. */
+void scan_rust_file (char *filename, int generate_globals, add_global_fn add_global);
 
 #include <unistd.h>
 
@@ -214,17 +220,26 @@ main (int argc, char **argv)
   return EXIT_SUCCESS;
 }
 
+static bool
+is_rust_file (char *filename)
+{
+  ptrdiff_t len = strlen (filename);
+  return (len > 3 && !strcmp (filename + len - 3, ".rs"));
+}
+
 /* Add a source file name boundary marker in the output file.  */
 static void
 put_filename (char *filename)
 {
-  char *tmp;
+  if (!is_rust_file (filename)) {
+    char *tmp;
 
-  for (tmp = filename; *tmp; tmp++)
-    {
-      if (IS_DIRECTORY_SEP (*tmp))
-	filename = tmp + 1;
-    }
+    for (tmp = filename; *tmp; tmp++)
+      {
+	if (IS_DIRECTORY_SEP (*tmp))
+	  filename = tmp + 1;
+      }
+  }
 
   printf ("\037S%s\n", filename);
 }
@@ -237,7 +252,10 @@ scan_file (char *filename)
 {
   if (!generate_globals)
     put_filename (filename);
-  scan_c_file (filename, "r");
+  if (is_rust_file (filename))
+    scan_rust_file (filename, generate_globals, add_global);
+  else
+    scan_c_file (filename, "r");
 }
 
 static void
@@ -585,9 +603,8 @@ static ptrdiff_t num_globals;
 static ptrdiff_t num_globals_allocated;
 static struct global *globals;
 
-static struct global *
-add_global (enum global_type type, char const *name, int value,
-	    char const *svalue)
+struct global *
+add_global (int type, char const *name, int value, char const *svalue)
 {
   /* Ignore the one non-symbol that can occur.  */
   if (strcmp (name, "..."))

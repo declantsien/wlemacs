@@ -145,6 +145,12 @@ struct scroll_bar
 
 struct pgtk_display_info
 {
+
+#ifdef USE_WEBRENDER
+  /* Gl Renderer global data in Rust */
+  void *gl_renderer_data;
+#endif  /*USE_WEBRENDER*/
+
   /* Chain of all pgtk_display_info structures.  */
   struct pgtk_display_info *next;
 
@@ -285,6 +291,12 @@ extern struct pgtk_display_info *x_display_list;
 
 struct pgtk_output
 {
+
+#ifdef USE_WEBRENDER
+  /* Inner perporty in Rust */
+  void *gl_renderer;
+#endif  /*USE_WEBRENDER*/
+
   unsigned long foreground_color;
   unsigned long background_color;
   void *toolbar;
@@ -514,8 +526,10 @@ enum
 #define FRAME_FONTSET(f) (FRAME_X_OUTPUT (f)->fontset)
 
 #define FRAME_BASELINE_OFFSET(f) (FRAME_X_OUTPUT (f)->baseline_offset)
+#ifndef USE_WEBRENDER
 #define BLACK_PIX_DEFAULT(f) 0x000000
 #define WHITE_PIX_DEFAULT(f) 0xFFFFFF
+#endif  /* USE_WEBRENDER */
 
 /* First position where characters can be shown (instead of scrollbar, if
    it is on left. */
@@ -676,6 +690,11 @@ extern bool pgtk_text_icon (struct frame *, const char *);
 
 extern double pgtk_frame_scale_factor (struct frame *);
 extern int pgtk_emacs_to_gtk_modifiers (struct pgtk_display_info *, int);
+
+#ifdef USE_WEBRENDER
+extern struct frame *pgtk_fixed_to_frame (GtkWidget *);
+#include "webrender_ffi.h"
+#endif  /* USE_WEBRENDER */
 
 #endif /* HAVE_PGTK */
 #endif /* _PGTKTERM_H_ */
