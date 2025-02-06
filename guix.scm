@@ -121,7 +121,7 @@
 	       libxkbcommon-1.7)))
     (native-inputs (modify-inputs (package-native-inputs emacs-next-pgtk)
 		     (prepend
-		      (rustup "nightly-2025-01-25")
+		      (rustup "nightly-2025-01-25" #:components (list 'rust-analyzer 'rust-src))
 		      clang-toolchain ;; required for bindgen from emacs-sys   Unable to generate bindings: ClangDiagnostic("../../src/config.h:3754:13: fatal error: 'stdbool.h' file not found\n")
 		      ;; and for linker cc
 		      gcc-toolchain ;; webrender-c04a6b14b677b8ea/build-script-build: error while loading shared libraries: libstdc++.so.6: cannot open shared object file: No such file or directory

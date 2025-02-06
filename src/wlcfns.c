@@ -72,6 +72,61 @@ wlc_set_background_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
   unblock_input ();
 }
 
+static void
+wlc_set_border_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  int pix;
+
+  CHECK_STRING (arg);
+  pix = wlc_decode_color (f, arg, BLACK_PIX_DEFAULT (f));
+  FRAME_OUTPUT_DATA (f)->border_pixel = pix;
+  /* TODO */
+  /* wlc_frame_rehighlight (FRAME_DISPLAY_INFO (f)); */
+}
+
+static void
+wlc_set_cursor_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  unsigned long fore_pixel, pixel;
+  struct wlc_output *x = FRAME_OUTPUT_DATA (f);
+
+  if (!NILP (Vx_cursor_fore_pixel))
+    {
+      fore_pixel = wlc_decode_color (f, Vx_cursor_fore_pixel,
+				   WHITE_PIX_DEFAULT (f));
+    }
+  else
+    fore_pixel = FRAME_BACKGROUND_PIXEL (f);
+
+  pixel = wlc_decode_color (f, arg, BLACK_PIX_DEFAULT (f));
+
+  /* Make sure that the cursor color differs from the background color.  */
+  if (pixel == FRAME_BACKGROUND_PIXEL (f))
+    {
+      pixel = x->mouse_color;
+      if (pixel == fore_pixel)
+	{
+	  fore_pixel = FRAME_BACKGROUND_PIXEL (f);
+	}
+    }
+
+  x->cursor_foreground_color = fore_pixel;
+  x->cursor_color = pixel;
+
+  /* if (FRAME_X_WINDOW (f) != 0) */
+  /*   { */
+      x->cursor_gc.background = x->cursor_color;
+      x->cursor_gc.foreground = fore_pixel;
+
+      if (FRAME_VISIBLE_P (f))
+	{
+	  gui_update_cursor (f, false);
+	  gui_update_cursor (f, true);
+	}
+    /* } */
+
+  update_face_from_frame_parameter (f, Qcursor_color, arg);
+}
 
 /* Keep this list in the same order as frame_parms in frame.c.
    Use 0 for unsupported frame parameters.  */
@@ -81,9 +136,9 @@ frame_parm_handler wlc_frame_parm_handlers[] =
   gui_set_autoraise,
   gui_set_autolower,
   wlc_set_background_color,
-  NULL, /* wl_set_border_color, */
+  wlc_set_border_color,
   gui_set_border_width,
-  NULL, /* x_set_cursor_color, */
+  wlc_set_cursor_color,
   NULL, /* x_set_cursor_type, */
   gui_set_font,
   NULL, /* x_set_foreground_color, */
@@ -1243,4 +1298,8 @@ syms_of_wlcfns (void)
   defsubr (&Sx_create_frame);
   defsubr (&Sx_display_planes);
   defsubr (&Sx_display_color_cells);
+
+  DEFVAR_LISP ("x-cursor-fore-pixel", Vx_cursor_fore_pixel,
+	       doc: /* SKIP: real doc in xfns.c.  */);
+  Vx_cursor_fore_pixel = Qnil;
 }

@@ -370,7 +370,6 @@ int
 wlc_select (int fds_lim, fd_set *rfds, fd_set *wfds, fd_set *efds,
 	    struct timespec const *timeout, sigset_t const *sigmask)
 {
-  fprintf(stderr, "wlc_select\n");
   int retval;
 
   if (x_display_list && x_display_list->display)
@@ -388,7 +387,6 @@ wlc_select (int fds_lim, fd_set *rfds, fd_set *wfds, fd_set *efds,
       wl_display_flush (x_display_list->display);
     }
 
-  fprintf(stderr, "wlc_select end\n");
   return retval;
 }
 

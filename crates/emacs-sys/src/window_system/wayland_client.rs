@@ -9,18 +9,16 @@ use raw_window_handle::WindowHandle;
 
 impl FrameRef {
     pub fn cursor_color(&self) -> ::libc::c_ulong {
-        // unimplemented!();
-        0xFFFFFF
+        self.output().cursor_color
+    }
+
+    pub fn cursor_foreground_color(&self) -> ::libc::c_ulong {
+        self.output().cursor_foreground_color
     }
 
     pub fn scale_factor(&self) -> f64 {
         //TODO
         1.0
-    }
-
-    pub fn cursor_foreground_color(&self) -> ::libc::c_ulong {
-        0x000000
-        // unimplemented!();
     }
 }
 

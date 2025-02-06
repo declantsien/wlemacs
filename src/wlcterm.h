@@ -299,6 +299,12 @@ struct wlc_output
   Emacs_Cursor bottom_edge_cursor;
   Emacs_Cursor bottom_left_corner_cursor;
 
+  unsigned long border_pixel;
+  unsigned long mouse_color;
+  unsigned long cursor_color;
+  unsigned long cursor_foreground_color;
+
+  Emacs_GC cursor_gc;
 };
 
 extern struct wlc_display_info *check_wlc_display_info (Lisp_Object);
