@@ -12,7 +12,6 @@ use crate::bindings::update_face_from_frame_parameter;
 use crate::bindings::Fassq;
 use crate::bindings::Fselected_frame;
 use crate::bindings::Lisp_Type;
-use crate::bindings::Vframe_list;
 use crate::display_traits::FaceRef;
 #[cfg(have_window_system)]
 use crate::display_traits::FrameParam;
@@ -21,23 +20,11 @@ use crate::display_traits::ImageCacheRef;
 use crate::globals::*;
 use crate::lisp::ExternalPtr;
 use crate::lisp::LispObject;
-use crate::list::LispConsCircularChecks;
-use crate::list::LispConsEndChecks;
 use crate::vector::LispVectorlikeRef;
 use crate::window::WindowRef;
 
 #[cfg(have_window_system)]
-use crate::bindings::globals;
-#[cfg(have_window_system)]
 use crate::bindings::gui_default_parameter;
-#[cfg(have_window_system)]
-use crate::bindings::make_frame;
-#[cfg(have_window_system)]
-use crate::bindings::make_frame_without_minibuffer;
-#[cfg(have_window_system)]
-use crate::bindings::make_minibuffer_frame;
-#[cfg(have_window_system)]
-use crate::bindings::specbind;
 #[cfg(have_window_system)]
 use crate::bindings::vertical_scroll_bar_type;
 #[cfg(have_window_system)]
@@ -46,12 +33,6 @@ use crate::bindings::Fcons;
 use crate::display_info::DisplayInfoRef;
 #[cfg(have_window_system)]
 use crate::font::FontRef;
-#[cfg(have_window_system)]
-use crate::globals::Qnone;
-#[cfg(have_window_system)]
-use crate::globals::Qonly;
-#[cfg(have_window_system)]
-use crate::globals::Qx_resource_name;
 #[cfg(have_window_system)]
 use crate::output::OutputRef;
 #[cfg(have_window_system)]
