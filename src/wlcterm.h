@@ -179,6 +179,10 @@ struct wlc_display_info
   /* Mask of things that cause the mouse to be grabbed.  */
   int grabbed;
 
+  /* Emacs bitmap-id of the default icon bitmap for this frame.
+     Or -1 if none has been allocated yet.  */
+  ptrdiff_t icon_bitmap_id;
+
   /* The root window of this screen.  */
   Window root_window;
 
@@ -253,6 +257,10 @@ struct wlc_output
   uint32_t last_surface_frame;
   float offset;
 
+  /* If >=0, a bitmap index.  The indicated bitmap is used for the
+     icon. */
+  ptrdiff_t icon_bitmap;
+
   /* Default ASCII font of this frame.  */
   struct font *font;
 
@@ -318,6 +326,10 @@ struct wlc_output
   unsigned long cursor_foreground_color;
 
   Emacs_GC cursor_gc;
+
+  /* True if this frame's alpha value is the same for both the active
+     and inactive states.  */
+  bool_bf alpha_identical_p : 1;
 };
 
 extern struct wlc_display_info *check_wlc_display_info (Lisp_Object);
@@ -343,6 +355,9 @@ extern void wlc_make_frame_visible (struct frame *);
 extern void wlc_make_frame_invisible (struct frame *);
 extern void wlc_iconify_frame (struct frame *);
 
+/* Defined in wlcfns.c */
+extern void wlc_implicitly_set_name (struct frame *, Lisp_Object, Lisp_Object);
+
 extern int xkb_to_emacs_modifiers (struct wlc_display_info *, int);
 extern int emacs_to_xkb_modifiers (struct wlc_display_info *, intmax_t);
 
@@ -360,6 +375,7 @@ extern int emacs_to_xkb_modifiers (struct wlc_display_info *, intmax_t);
 #define FRAME_WLC_EMBEDDED_P(f) false
 #define FRAME_FONT(f) ((f)->output_data.wlc->font)
 #define FRAME_FONTSET(f) ((f)->output_data.wlc->fontset)
+#define FRAME_XDG_TOPLEVEL(f) ((f)->output_data.wlc->xdg_toplevel)
 
 /* This gives the wl_display_info structure for the display F is on.  */
 #define FRAME_DISPLAY_INFO(f) ((f)->output_data.wlc->display_info)

@@ -49,22 +49,11 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
 
+static void wlc_set_name_internal (struct frame *f, Lisp_Object name);
+static void wlc_set_name (struct frame *f, Lisp_Object name, bool explicit);
+
 
-static void
-wlc_set_foreground_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
-{
-  unsigned long fg, old_fg;
-
-  block_input ();
-  fg = wlc_decode_color (f, arg, BLACK_PIX_DEFAULT (f));
-  FRAME_FOREGROUND_PIXEL (f) = fg;
-  FRAME_X_OUTPUT (f)->cursor_gc.background = fg;
-  update_face_from_frame_parameter (f, Qforeground_color, arg);
-  if (FRAME_VISIBLE_P (f))
-    SET_FRAME_GARBAGED (f);
-  unblock_input ();
-}
-
+/* frame parm handlers */
 static void
 wlc_set_background_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 {
@@ -149,6 +138,498 @@ wlc_set_cursor_type (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
   set_frame_cursor_types (f, arg);
 }
 
+static void
+wlc_set_foreground_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  unsigned long fg, old_fg;
+
+  block_input ();
+  fg = wlc_decode_color (f, arg, BLACK_PIX_DEFAULT (f));
+  FRAME_FOREGROUND_PIXEL (f) = fg;
+  FRAME_X_OUTPUT (f)->cursor_gc.background = fg;
+  update_face_from_frame_parameter (f, Qforeground_color, arg);
+  if (FRAME_VISIBLE_P (f))
+    SET_FRAME_GARBAGED (f);
+  unblock_input ();
+}
+
+static void
+wlc_set_icon_name (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  bool result;
+
+  if (STRINGP (arg))
+    {
+      if (STRINGP (oldval) && BASE_EQ (Fstring_equal (oldval, arg), Qt))
+	return;
+    }
+  else if (!NILP (arg) || NILP (oldval))
+    return;
+
+  fset_icon_name (f, arg);
+
+  if (FRAME_OUTPUT_DATA (f)->icon_bitmap != 0)
+    return;
+
+  /* block_input (); */
+
+  /* result = x_text_icon (f, */
+  /* 			SSDATA ((!NILP (f->icon_name) */
+  /* 				 ? f->icon_name */
+  /* 				 : !NILP (f->title) */
+  /* 				 ? f->title */
+  /* 				 : f->name))); */
+
+  /* if (result) */
+  /*   { */
+  /*     unblock_input (); */
+  /*     error ("No icon window available"); */
+  /*   } */
+
+  /* XFlush (FRAME_X_DISPLAY (f)); */
+  /* unblock_input (); */
+}
+
+static void
+wlc_set_icon_type (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  bool result;
+
+  if (STRINGP (arg))
+    {
+      if (STRINGP (oldval) && BASE_EQ (Fstring_equal (oldval, arg), Qt))
+	return;
+    }
+  else if (!STRINGP (oldval) && NILP (oldval) == NILP (arg))
+    return;
+
+  /* block_input (); */
+  /* if (NILP (arg)) */
+  /*   result = x_text_icon (f, */
+  /* 			  SSDATA ((!NILP (f->icon_name) */
+  /* 				   ? f->icon_name */
+  /* 				   : f->name))); */
+  /* else */
+  /*   result = FRAME_TERMINAL (f)->set_bitmap_icon_hook (f, arg); */
+
+  /* if (result) */
+  /*   { */
+  /*     unblock_input (); */
+  /*     error ("No icon window available"); */
+  /*   } */
+
+  /* XFlush (FRAME_X_DISPLAY (f)); */
+  /* unblock_input (); */
+}
+
+static void
+wlc_set_child_frame_border_width (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  int border;
+
+  if (NILP (arg))
+    border = -1;
+  else if (RANGED_FIXNUMP (0, arg, INT_MAX))
+    border = XFIXNAT (arg);
+  else
+    signal_error ("Invalid child frame border width", arg);
+
+  if (border != FRAME_CHILD_FRAME_BORDER_WIDTH (f))
+    {
+      f->child_frame_border_width = border;
+
+/* #ifdef USE_X_TOOLKIT */
+/*       if (FRAME_X_OUTPUT (f)->edit_widget) */
+/* 	widget_store_internal_border (FRAME_X_OUTPUT (f)->edit_widget); */
+/* #endif */
+
+/*       if (FRAME_X_WINDOW (f)) */
+/* 	{ */
+/* 	  adjust_frame_size (f, -1, -1, 3, false, Qchild_frame_border_width); */
+/* 	  x_clear_under_internal_border (f); */
+/* 	} */
+    }
+
+}
+
+static void
+wlc_set_internal_border_width (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  int border = check_int_nonnegative (arg);
+
+  if (border != FRAME_INTERNAL_BORDER_WIDTH (f))
+    {
+      f->internal_border_width = border;
+
+/* #ifdef USE_X_TOOLKIT */
+/*       if (FRAME_X_OUTPUT (f)->edit_widget) */
+/* 	widget_store_internal_border (FRAME_X_OUTPUT (f)->edit_widget); */
+/* #endif */
+
+/*       if (FRAME_X_WINDOW (f)) */
+/* 	{ */
+/* 	  adjust_frame_size (f, -1, -1, 3, false, Qinternal_border_width); */
+/* 	  x_clear_under_internal_border (f); */
+/* 	} */
+    }
+
+}
+
+static void
+wlc_set_menu_bar_lines (struct frame *f, Lisp_Object value, Lisp_Object oldval)
+{
+  /* TODO */
+}
+
+static void
+wlc_set_mouse_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+/*   struct x_output *x = f->output_data.x; */
+/*   Display *dpy = FRAME_X_DISPLAY (f); */
+/*   struct mouse_cursor_data cursor_data = { -1, -1 }; */
+/*   unsigned long pixel = x_decode_color (f, arg, BLACK_PIX_DEFAULT (f)); */
+/*   unsigned long mask_color = FRAME_BACKGROUND_PIXEL (f); */
+/*   int i; */
+
+/*   /\* Don't let pointers be invisible.  *\/ */
+/*   if (mask_color == pixel) */
+/*     { */
+/*       x_free_colors (f, &pixel, 1); */
+/*       pixel = x_copy_color (f, FRAME_FOREGROUND_PIXEL (f)); */
+/*     } */
+
+/*   unload_color (f, x->mouse_pixel); */
+/*   x->mouse_pixel = pixel; */
+
+/*   for (i = 0; i < mouse_cursor_max; i++) */
+/*     { */
+/*       Lisp_Object shape_var = *mouse_cursor_types[i].shape_var_ptr; */
+/*       cursor_data.cursor_num[i] */
+/* 	= (!NILP (shape_var) */
+/* 	   ? check_uinteger_max (shape_var, UINT_MAX) */
+/* 	   : mouse_cursor_types[i].default_shape); */
+/*     } */
+
+/*   block_input (); */
+
+/*   /\* It's not okay to crash if the user selects a screwy cursor.  *\/ */
+/*   x_catch_errors_with_handler (dpy, x_set_mouse_color_handler, &cursor_data); */
+
+/*   for (i = 0; i < mouse_cursor_max; i++) */
+/*     { */
+/*       cursor_data.x_request_serial[i] = XNextRequest (dpy); */
+/*       cursor_data.last_cursor_create_request = i; */
+
+/*       cursor_data.cursor[i] */
+/* 	= x_create_font_cursor (FRAME_DISPLAY_INFO (f), */
+/* 				cursor_data.cursor_num[i]); */
+/*     } */
+
+/*   /\* Now sync up and process all received errors from cursor */
+/*      creation.  *\/ */
+/*   if (x_had_errors_p (dpy)) */
+/*     { */
+/*       const char *bad_cursor_name = NULL; */
+/*       /\* Bounded by X_ERROR_MESSAGE_SIZE in xterm.c.  *\/ */
+/*       size_t message_length = strlen (cursor_data.error_string); */
+/*       char *xmessage = alloca (1 + message_length); */
+/*       memcpy (xmessage, cursor_data.error_string, message_length); */
+
+/*       x_uncatch_errors_after_check (); */
+
+/*       /\* XFreeCursor can generate BadCursor errors, because */
+/* 	 XCreateFontCursor is not a request that waits for a reply, */
+/* 	 and as such can return IDs that will not actually be used by */
+/* 	 the server.  *\/ */
+/*       x_ignore_errors_for_next_request (FRAME_DISPLAY_INFO (f), 0); */
+
+/*       /\* Free any successfully created cursors.  *\/ */
+/*       for (i = 0; i < mouse_cursor_max; i++) */
+/* 	if (cursor_data.cursor[i] != 0) */
+/* 	  XFreeCursor (dpy, cursor_data.cursor[i]); */
+
+/*       x_stop_ignoring_errors (FRAME_DISPLAY_INFO (f)); */
+
+/*       /\* This should only be able to fail if the server's serial */
+/* 	 number tracking is broken.  *\/ */
+/*       if (cursor_data.error_cursor >= 0) */
+/* 	bad_cursor_name = mouse_cursor_types[cursor_data.error_cursor].name; */
+/*       if (bad_cursor_name) */
+/* 	error ("Bad %s pointer cursor: %s", bad_cursor_name, xmessage); */
+/*       else */
+/* 	error ("Can't set cursor shape: %s", xmessage); */
+/*     } */
+
+/*   x_uncatch_errors_after_check (); */
+
+/*   { */
+/*     XColor colors[2]; /\* 0=foreground, 1=background *\/ */
+
+/*     colors[0].pixel = x->mouse_pixel; */
+/*     colors[1].pixel = mask_color; */
+/*     x_query_colors (f, colors, 2); */
+
+/*     for (i = 0; i < mouse_cursor_max; i++) */
+/*       XRecolorCursor (dpy, cursor_data.cursor[i], &colors[0], &colors[1]); */
+/*   } */
+
+/*   if (FRAME_X_WINDOW (f) != 0) */
+/*     { */
+/*       f->output_data.x->current_cursor = cursor_data.cursor[mouse_cursor_text]; */
+/*       XDefineCursor (dpy, FRAME_X_WINDOW (f), */
+/* 		     f->output_data.x->current_cursor); */
+/*     } */
+
+/* #define INSTALL_CURSOR(FIELD, SHORT_INDEX)				\ */
+/*   eassert (x->FIELD != cursor_data.cursor[mouse_cursor_ ## SHORT_INDEX]); \ */
+/*   if (x->FIELD != 0)							\ */
+/*     XFreeCursor (dpy, x->FIELD);					\ */
+/*   x->FIELD = cursor_data.cursor[mouse_cursor_ ## SHORT_INDEX]; */
+
+/*   INSTALL_CURSOR (text_cursor, text); */
+/*   INSTALL_CURSOR (nontext_cursor, nontext); */
+/*   INSTALL_CURSOR (hourglass_cursor, hourglass); */
+/*   INSTALL_CURSOR (modeline_cursor, mode); */
+/*   INSTALL_CURSOR (hand_cursor, hand); */
+/*   INSTALL_CURSOR (horizontal_drag_cursor, horizontal_drag); */
+/*   INSTALL_CURSOR (vertical_drag_cursor, vertical_drag); */
+/*   INSTALL_CURSOR (left_edge_cursor, left_edge); */
+/*   INSTALL_CURSOR (top_left_corner_cursor, top_left_corner); */
+/*   INSTALL_CURSOR (top_edge_cursor, top_edge); */
+/*   INSTALL_CURSOR (top_right_corner_cursor, top_right_corner); */
+/*   INSTALL_CURSOR (right_edge_cursor, right_edge); */
+/*   INSTALL_CURSOR (bottom_right_corner_cursor, bottom_right_corner); */
+/*   INSTALL_CURSOR (bottom_edge_cursor, bottom_edge); */
+/*   INSTALL_CURSOR (bottom_left_corner_cursor, bottom_left_corner); */
+
+/* #undef INSTALL_CURSOR */
+
+/*   XFlush (dpy); */
+/*   unblock_input (); */
+
+/*   update_face_from_frame_parameter (f, Qmouse_color, arg); */
+}
+
+/* This function should be called when the user's lisp code has
+   specified a name for the frame; the name will override any set by the
+   redisplay code.  */
+static void
+wlc_explicitly_set_name (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  wlc_set_name (f, arg, true);
+}
+
+/* This function should be called by Emacs redisplay code to set the
+   name; names set this way will never override names set by the user's
+   lisp code.  */
+void
+wlc_implicitly_set_name (struct frame *f, Lisp_Object arg,
+			  Lisp_Object oldval)
+{
+  wlc_set_name (f, arg, false);
+}
+
+/* Change the title of frame F to TITLE.
+   If TITLE is nil, use the frame name as the title.  */
+
+static void
+wlc_set_title (struct frame *f, Lisp_Object title, Lisp_Object old_title)
+{
+  /* Don't change the title if it's already NAME.  */
+  if (EQ (title, f->title))
+    return;
+
+  update_mode_lines = 38;
+
+  fset_title (f, title);
+
+  if (NILP (title))
+    title = f->name;
+  else
+    CHECK_STRING (title);
+
+  wlc_set_name_internal (f, title);
+}
+
+
+/* Set the number of lines used for the tab bar of frame F to VALUE.
+   VALUE not an integer, or < 0 means set the lines to zero.  OLDVAL
+   is the old number of tab bar lines.  This function may change the
+   height of all windows on frame F to match the new tab bar height.
+   The frame's height may change if frame_inhibit_implied_resize was
+   set accordingly.  */
+
+static void
+wlc_set_tab_bar_lines (struct frame *f, Lisp_Object value, Lisp_Object oldval)
+{
+  int olines = FRAME_TAB_BAR_LINES (f);
+  int nlines;
+
+  /* Treat tab bars like menu bars.  */
+  if (FRAME_MINIBUF_ONLY_P (f))
+    return;
+
+  /* Use VALUE only if an int >= 0.  */
+  if (RANGED_FIXNUMP (0, value, INT_MAX))
+    nlines = XFIXNAT (value);
+  else
+    nlines = 0;
+
+  //TODO
+  /* if (nlines != olines && (olines == 0 || nlines == 0)) */
+  /*   x_change_tab_bar_height (f, nlines * FRAME_LINE_HEIGHT (f)); */
+}
+
+/* Set the number of lines used for the tool bar of frame F to VALUE.
+   VALUE not an integer, or < 0 means set the lines to zero.  OLDVAL
+   is the old number of tool bar lines.  This function changes the
+   height of all windows on frame F to match the new tool bar height.
+   The frame's height doesn't change.  */
+
+static void
+wlc_set_tool_bar_lines (struct frame *f, Lisp_Object value, Lisp_Object oldval)
+{
+  int nlines;
+
+  /* Treat tool bars like menu bars.  */
+  if (FRAME_MINIBUF_ONLY_P (f))
+    return;
+
+  /* Use VALUE only if an int >= 0.  */
+  if (RANGED_FIXNUMP (0, value, INT_MAX))
+    nlines = XFIXNAT (value);
+  else
+    nlines = 0;
+
+  // TODO
+  /* x_change_tool_bar_height (f, nlines * FRAME_LINE_HEIGHT (f)); */
+}
+
+/* Set the foreground color for scroll bars on frame F to VALUE.
+   VALUE should be a string, a color name.  If it isn't a string or
+   isn't a valid color name, do nothing.  OLDVAL is the old value of
+   the frame parameter.  */
+
+static void
+wlc_set_scroll_bar_foreground (struct frame *f, Lisp_Object value, Lisp_Object oldval)
+{
+  unsigned long pixel;
+
+  if (STRINGP (value))
+    pixel = wlc_decode_color (f, value, BLACK_PIX_DEFAULT (f));
+  else
+    pixel = -1;
+
+  FRAME_OUTPUT_DATA (f)->scroll_bar_foreground_pixel = pixel;
+  if (FRAME_NATIVE_WINDOW (f) && FRAME_VISIBLE_P (f))
+    {
+      /* Remove all scroll bars because they have wrong colors.  */
+      if (FRAME_TERMINAL (f)->condemn_scroll_bars_hook)
+	(*FRAME_TERMINAL (f)->condemn_scroll_bars_hook) (f);
+      if (FRAME_TERMINAL (f)->judge_scroll_bars_hook)
+	(*FRAME_TERMINAL (f)->judge_scroll_bars_hook) (f);
+
+      update_face_from_frame_parameter (f, Qscroll_bar_foreground, value);
+      redraw_frame (f);
+    }
+}
+
+
+/* Set the background color for scroll bars on frame F to VALUE VALUE
+   should be a string, a color name.  If it isn't a string or isn't a
+   valid color name, do nothing.  OLDVAL is the old value of the frame
+   parameter.  */
+
+static void
+wlc_set_scroll_bar_background (struct frame *f, Lisp_Object value, Lisp_Object oldval)
+{
+  unsigned long pixel;
+
+  if (STRINGP (value))
+    pixel = wlc_decode_color (f, value, WHITE_PIX_DEFAULT (f));
+  else
+    pixel = -1;
+
+  FRAME_OUTPUT_DATA (f)->scroll_bar_background_pixel = pixel;
+  if (FRAME_NATIVE_WINDOW (f) && FRAME_VISIBLE_P (f))
+    {
+      /* Remove all scroll bars because they have wrong colors.  */
+      if (FRAME_TERMINAL (f)->condemn_scroll_bars_hook)
+	(*FRAME_TERMINAL (f)->condemn_scroll_bars_hook) (f);
+      if (FRAME_TERMINAL (f)->judge_scroll_bars_hook)
+	(*FRAME_TERMINAL (f)->judge_scroll_bars_hook) (f);
+
+      update_face_from_frame_parameter (f, Qscroll_bar_background, value);
+      redraw_frame (f);
+    }
+}
+
+/* Change the `wait-for-wm' frame parameter of frame F.  OLD_VALUE is
+   the previous value of that parameter, NEW_VALUE is the new value. */
+
+static void
+wlc_set_wait_for_wm (struct frame *f, Lisp_Object new_value, Lisp_Object old_value)
+{
+  // not used
+}
+
+static void
+wlc_set_alpha (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
+{
+  double alpha = 1.0;
+  double newval[2];
+  int i;
+  Lisp_Object item;
+  bool alpha_identical_p;
+
+  alpha_identical_p = true;
+
+  for (i = 0; i < 2; i++)
+    {
+      newval[i] = 1.0;
+      if (CONSP (arg))
+        {
+          item = CAR (arg);
+          arg  = CDR (arg);
+
+	  alpha_identical_p = false;
+        }
+      else
+        item = arg;
+
+      if (NILP (item))
+	alpha = - 1.0;
+      else if (FLOATP (item))
+	{
+	  alpha = XFLOAT_DATA (item);
+	  if (! (0 <= alpha && alpha <= 1.0))
+	    args_out_of_range (make_float (0.0), make_float (1.0));
+	}
+      else if (FIXNUMP (item))
+	{
+	  EMACS_INT ialpha = XFIXNUM (item);
+	  if (! (0 <= ialpha && ialpha <= 100))
+	    args_out_of_range (make_fixnum (0), make_fixnum (100));
+	  alpha = ialpha / 100.0;
+	}
+      else
+	wrong_type_argument (Qnumberp, item);
+      newval[i] = alpha;
+    }
+
+  for (i = 0; i < 2; i++)
+    f->alpha[i] = newval[i];
+
+  FRAME_OUTPUT_DATA (f)->alpha_identical_p = alpha_identical_p;
+
+  if (FRAME_TERMINAL (f)->set_frame_alpha_hook)
+    {
+      block_input ();
+      FRAME_TERMINAL (f)->set_frame_alpha_hook (f);
+      unblock_input ();
+    }
+}
+
 /* Keep this list in the same order as frame_parms in frame.c.
    Use 0 for unsupported frame parameters.  */
 
@@ -163,41 +644,37 @@ frame_parm_handler wlc_frame_parm_handlers[] =
   wlc_set_cursor_type,
   gui_set_font,
   wlc_set_foreground_color,
-  NULL, /* x_set_icon_name, */
-  NULL, /* x_set_icon_type, */
-  NULL, /* x_set_child_frame_border_width, */
-  NULL, /* x_set_internal_border_width, */
+  wlc_set_icon_name,
+  wlc_set_icon_type,
+  wlc_set_child_frame_border_width,
+  wlc_set_internal_border_width,
   gui_set_right_divider_width,
   gui_set_bottom_divider_width,
-  NULL, /* x_set_menu_bar_lines, */
-  NULL, /* x_set_mouse_color, */
-  NULL, /* x_explicitly_set_name, */
+  wlc_set_menu_bar_lines,
+  wlc_set_mouse_color,
+  wlc_explicitly_set_name,
   gui_set_scroll_bar_width,
   gui_set_scroll_bar_height,
-  NULL, /* x_set_title, */
+  wlc_set_title,
   gui_set_unsplittable,
   gui_set_vertical_scroll_bars,
   gui_set_horizontal_scroll_bars,
   gui_set_visibility,
-  NULL, /* x_set_tab_bar_lines, */
-  NULL, /* x_set_tool_bar_lines, */
-  NULL, /* x_set_scroll_bar_foreground, */
-  NULL, /* x_set_scroll_bar_background, */
+  wlc_set_tab_bar_lines,
+  wlc_set_tool_bar_lines,
+  wlc_set_scroll_bar_foreground,
+  wlc_set_scroll_bar_background,
   gui_set_screen_gamma,
   gui_set_line_spacing,
   gui_set_left_fringe,
   gui_set_right_fringe,
-  NULL, /* x_set_wait_for_wm, */
+  wlc_set_wait_for_wm,
   gui_set_fullscreen,
   gui_set_font_backend,
-  NULL, /* x_set_alpha, */
+  wlc_set_alpha,
   NULL, /* x_set_sticky, */
   NULL, /* x_set_tool_bar_position, */
-#ifdef HAVE_XDBE
   NULL, /* x_set_inhibit_double_buffering, */
-#else
-  NULL,
-#endif
   NULL, /* x_set_undecorated, */
   NULL, /* x_set_parent_frame, */
   NULL, /* x_set_skip_taskbar, */
@@ -641,7 +1118,7 @@ init_xdg_window (struct frame *f, long window_prompting)
   assert(FRAME_OUTPUT_DATA(f)->xdg_toplevel);
 
   xdg_toplevel_set_title (FRAME_OUTPUT_DATA (f)->xdg_toplevel,
-			  "Emacs");
+			  SSDATA (Vinvocation_name));
   xdg_toplevel_set_app_id(FRAME_OUTPUT_DATA (f)->xdg_toplevel,
 			  "org.gnu.emacs");
 
@@ -764,6 +1241,79 @@ draw_frame(struct frame *f)
 }
 
 
+static void
+wlc_set_name_internal (struct frame *f, Lisp_Object name)
+{
+  if (FRAME_XDG_TOPLEVEL (f))
+    {
+      block_input ();
+      {
+	Lisp_Object encoded_name;
+
+	/* As ENCODE_UTF_8 may cause GC and relocation of string data,
+	   we use it before x_encode_text that may return string data.  */
+	encoded_name = ENCODE_UTF_8 (name);
+
+	xdg_toplevel_set_title(FRAME_XDG_TOPLEVEL (f), SSDATA(encoded_name));
+      }
+      unblock_input ();
+    }
+}
+
+/* Change the name of frame F to NAME.  If NAME is nil, set F's name to
+       x_id_name.
+
+   If EXPLICIT is true, that indicates that lisp code is setting the
+       name; if NAME is a string, set F's name to NAME and set
+       F->explicit_name; if NAME is Qnil, then clear F->explicit_name.
+
+   If EXPLICIT is false, that indicates that Emacs redisplay code is
+       suggesting a new name, which lisp code should override; if
+       F->explicit_name is set, ignore the new name; otherwise, set it.  */
+
+static void
+wlc_set_name (struct frame *f, Lisp_Object name, bool explicit)
+{
+  /* Make sure that requests from lisp code override requests from
+     Emacs redisplay code.  */
+  if (explicit)
+    {
+      /* If we're switching from explicit to implicit, we had better
+	 update the mode lines and thereby update the title.  */
+      if (f->explicit_name && NILP (name))
+	update_mode_lines = 37;
+
+      f->explicit_name = ! NILP (name);
+    }
+  else if (f->explicit_name)
+    return;
+
+  /* If NAME is nil, set the name to the x_id_name.  */
+  if (NILP (name))
+    {
+      /* Check for no change needed in this very common case
+	 before we do any consing.  */
+      if (!strcmp (SSDATA (Vinvocation_name), SSDATA (f->name)))
+	return;
+      name = Vinvocation_name;
+    }
+  else
+    CHECK_STRING (name);
+
+  /* Don't change the name if it's already NAME.  */
+  if (! NILP (Fstring_equal (name, f->name)))
+    return;
+
+  fset_name (f, name);
+
+  /* For setting the frame title, the title parameter should override
+     the name parameter.  */
+  if (! NILP (f->title))
+    name = f->title;
+
+  wlc_set_name_internal (f, name);
+}
+
 /* Create and set up the wl_surface for frame F.  */
 static void
 wlc_window (struct frame *f, long window_prompting)

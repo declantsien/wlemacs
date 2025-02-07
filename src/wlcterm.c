@@ -710,7 +710,7 @@ wlc_create_terminal (struct wlc_display_info *dpyinfo)
 /*   terminal->set_frame_alpha_hook = x_set_frame_alpha; */
   terminal->set_new_font_hook = wr_new_font;
 /*   terminal->set_bitmap_icon_hook = x_bitmap_icon; */
-/*   terminal->implicit_set_name_hook = x_implicitly_set_name; */
+  terminal->implicit_set_name_hook = wlc_implicitly_set_name;
 /*   terminal->menu_show_hook = x_menu_show; */
 /* #ifdef HAVE_EXT_MENU_BAR */
 /*   terminal->activate_menubar_hook = x_activate_menubar; */
