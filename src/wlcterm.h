@@ -299,7 +299,20 @@ struct wlc_output
   Emacs_Cursor bottom_edge_cursor;
   Emacs_Cursor bottom_left_corner_cursor;
 
+  unsigned long cursor_pixel;
   unsigned long border_pixel;
+  unsigned long mouse_pixel;
+  unsigned long cursor_foreground_pixel;
+
+  /* Foreground color for scroll bars.  A value of -1 means use the
+     default (black for non-toolkit scroll bars).  */
+  unsigned long scroll_bar_foreground_pixel;
+
+  /* Background color for scroll bars.  A value of -1 means use the
+     default (background color of the frame for non-toolkit scroll
+     bars).  */
+  unsigned long scroll_bar_background_pixel;
+
   unsigned long mouse_color;
   unsigned long cursor_color;
   unsigned long cursor_foreground_color;
@@ -326,6 +339,9 @@ extern void image_sync_to_pixmaps (struct frame *, struct image *);
 /* Defined in wlcterm.c */
 extern void wlc_delete_terminal (struct terminal *);
 extern bool wlc_handle_xdg_toplevel_close (struct frame *);
+extern void wlc_make_frame_visible (struct frame *);
+extern void wlc_make_frame_invisible (struct frame *);
+extern void wlc_iconify_frame (struct frame *);
 
 extern int xkb_to_emacs_modifiers (struct wlc_display_info *, int);
 extern int emacs_to_xkb_modifiers (struct wlc_display_info *, intmax_t);
@@ -340,7 +356,8 @@ extern int emacs_to_xkb_modifiers (struct wlc_display_info *, intmax_t);
 #define FRAME_NATIVE_WINDOW(f) FRAME_WAYLAND_WINDOW (f)
 #define FRAME_BASELINE_OFFSET(f) ((f)->output_data.wlc->baseline_offset)
 
-
+/* TODO TBD */
+#define FRAME_WLC_EMBEDDED_P(f) false
 #define FRAME_FONT(f) ((f)->output_data.wlc->font)
 #define FRAME_FONTSET(f) ((f)->output_data.wlc->fontset)
 

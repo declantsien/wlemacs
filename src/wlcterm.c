@@ -359,6 +359,19 @@ wlc_iconify_frame (struct frame *f)
   /* TODO */
 }
 
+/* This tries to wait until the frame is really visible, depending on
+   the value of Vx_wait_for_event_timeout.
+   However, if the window manager asks the user where to position
+   the frame, this will return before the user finishes doing that.
+   The frame will not actually be visible at that time,
+   but it will become visible later when the window manager
+   finishes with it.  */
+
+void
+wlc_make_frame_visible (struct frame *f)
+{
+}
+
 /* `wl_select' is a `pselect' replacement.  To announce the intention
    to read from the fd, we need to call wl_display_prepare_read before
    pselect, and then actully read events with wl_display_read_events.
