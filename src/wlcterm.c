@@ -752,6 +752,7 @@ wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
   struct frame *f = wl_surface_get_user_data(surface);
   struct wlc_display_info *dpyinfo = data;
   dpyinfo->x_focus_frame = f;
+  dpyinfo->highlight_frame = f;
 
   dpyinfo->pointer_event.event_mask |= POINTER_EVENT_ENTER;
   dpyinfo->pointer_event.serial = serial;
@@ -1065,6 +1066,7 @@ wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
   struct frame *f = wl_surface_get_user_data(surface);
   struct wlc_display_info *dpyinfo = data;
   dpyinfo->x_focus_frame = f;
+  dpyinfo->highlight_frame = f;
   /* fprintf(stderr, "keyboard enter; keys pressed are:\n"); */
   /* uint32_t *key; */
   /* wl_array_for_each(key, keys) { */
