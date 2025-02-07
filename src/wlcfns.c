@@ -521,20 +521,22 @@ xdg_toplevel_configure(void *data,
   fprintf(stderr, "new size %d, %d ", width, height);
   fprintf(stderr, "emacs size %d, %d ", FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
 
-  FRAME_PIXEL_WIDTH(f) = width;
-  FRAME_PIXEL_HEIGHT (f) = height;
-  /* if (!FRAME_OUTPUT_DATA (f)->wait_for_configure) */
-  /*   { */
-  /*     wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH(f), */
-  /* 				  FRAME_PIXEL_HEIGHT(f)); */
-  /*     if (FRAME_OUTPUT_DATA (f)->enable_compositor) { */
-  /* 	wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH(f), */
-  /* 				    FRAME_PIXEL_HEIGHT(f)); */
-  /*     } else { */
-  /* 	/\* wl_egl_window_resize(window->egl_window, window->geometry.width, *\/ */
-  /* 	/\* 			 window->geometry.height, 0, 0); *\/ */
-  /*     } */
-  /*   } */
+
+
+  if (width > 0 && height > 0) {
+    FRAME_PIXEL_WIDTH (f) = width;
+    FRAME_PIXEL_HEIGHT (f) = height;
+
+    if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
+      if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
+        wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH (f),
+				    FRAME_PIXEL_HEIGHT (f));
+      } else {
+	gl_renderer_fit_context(f);
+	wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
+      }
+    }
+  }
   FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
 }
 
@@ -563,6 +565,44 @@ xdg_surface_configure(void *data,
     /* wl_surface_commit(FRAME_OUTPUT_DATA(f)->surface); */
     // Emacs redisplay check FRAME_REDISPLAY_P before
     f->visible = true;
+    int width = FRAME_PIXEL_WIDTH (f);
+    int height = FRAME_PIXEL_HEIGHT (f) ;
+    xdg_surface_set_window_geometry(FRAME_OUTPUT_DATA (f)->xdg_surface, 0, 0, width, height);
+
+    if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
+      if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
+
+	/* window->egl_window = wl_egl_window_create(window->surface, 1, 1); */
+	/* window->egl_surface = eglCreateWindowSurface( */
+	/* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
+	/* assert(window->egl_surface != EGL_NO_SURFACE); */
+
+	/* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
+	/* 			       window->egl_surface, window->eglContext); */
+	/* assert(ok); */
+
+	/* glClearColor(1.0, 1.0, 1.0, 1.0); */
+	/* glClear(GL_COLOR_BUFFER_BIT); */
+
+	FRAME_OUTPUT_DATA (f)->viewport = wp_viewporter_get_viewport(FRAME_DISPLAY_INFO (f)->viewporter,
+						      FRAME_OUTPUT_DATA (f)->surface);
+	wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, width, height);
+
+	/* eglSwapBuffers(window->eglDisplay, window->egl_surface); */
+      } else {
+	/* window->egl_window = wl_egl_window_create( */
+	/* 					  window->surface, window->geometry.width, window->geometry.height); */
+	/* window->egl_surface = eglCreateWindowSurface( */
+	/* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
+	/* assert(window->egl_surface != EGL_NO_SURFACE); */
+
+	/* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
+	/* 			       window->egl_surface, window->eglContext); */
+	/* assert(ok); */
+      }
+    }
+
+    FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
 }
 
 static const struct xdg_surface_listener xdg_surface_listener = {
@@ -1042,6 +1082,16 @@ This function is an internal primitive--use `make-frame' instead.  */)
     /* wp_viewport_set_source(FRAME_OUTPUT_DATA(f)->viewport, 0, 0, f->pixel_width, f->pixel_height);     */
     /* wp_viewport_set_destination(FRAME_OUTPUT_DATA(f)->viewport, f->pixel_width, f->pixel_height); */
     init_xdg_window (f, window_prompting);
+
+    struct wl_region* region =
+      wl_compositor_create_region(FRAME_DISPLAY_INFO (f)->compositor);
+    wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
+    wl_surface_set_opaque_region(FRAME_OUTPUT_DATA (f)->surface, region);
+    wl_region_destroy(region);
+
+    FRAME_OUTPUT_DATA (f)->wait_for_configure = true;
+    wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
+
     /* struct wl_callback *cb */
     /*   = wl_surface_frame (FRAME_OUTPUT_DATA (f)->surface); */
     /* wl_callback_add_listener(cb, &wl_surface_frame_listener, f); */
@@ -1051,232 +1101,6 @@ This function is an internal primitive--use `make-frame' instead.  */)
   f->terminal->reference_count++;
   FRAME_DISPLAY_INFO (f)->reference_count++;
   Vframe_list = Fcons (frame, Vframe_list);
-
-/*   /\* We need to do this after creating the X window, so that the */
-/*      icon-creation functions can say whose icon they're describing.  *\/ */
-/*   gui_default_parameter (f, parms, Qicon_type, Qt, */
-/*                          "bitmapIcon", "BitmapIcon", RES_TYPE_BOOLEAN); */
-
-/*   gui_default_parameter (f, parms, Qauto_raise, Qnil, */
-/*                          "autoRaise", "AutoRaiseLower", RES_TYPE_BOOLEAN); */
-/*   gui_default_parameter (f, parms, Qauto_lower, Qnil, */
-/*                          "autoLower", "AutoRaiseLower", RES_TYPE_BOOLEAN); */
-/*   gui_default_parameter (f, parms, Qcursor_type, Qbox, */
-/*                          "cursorType", "CursorType", RES_TYPE_SYMBOL); */
-/*   gui_default_parameter (f, parms, Qscroll_bar_width, Qnil, */
-/*                          "scrollBarWidth", "ScrollBarWidth", */
-/*                          RES_TYPE_NUMBER); */
-/*   gui_default_parameter (f, parms, Qscroll_bar_height, Qnil, */
-/*                          "scrollBarHeight", "ScrollBarHeight", */
-/*                          RES_TYPE_NUMBER); */
-/*   gui_default_parameter (f, parms, Qalpha, Qnil, */
-/*                          "alpha", "Alpha", RES_TYPE_NUMBER); */
-/*   gui_default_parameter (f, parms, Qalpha_background, Qnil, */
-/*                          "alphaBackground", "AlphaBackground", RES_TYPE_NUMBER); */
-
-/*   if (!NILP (parent_frame)) */
-/*     { */
-/*       struct frame *p = XFRAME (parent_frame); */
-
-/*       block_input (); */
-/* /\*       XReparentWindow (FRAME_X_DISPLAY (f), FRAME_OUTER_WINDOW (f), *\/ */
-/* /\* 		       FRAME_X_WINDOW (p), f->left_pos, f->top_pos); *\/ */
-/* /\* #ifdef USE_GTK *\/ */
-/* /\*       if (EQ (x_gtk_resize_child_frames, Qresize_mode)) *\/ */
-/* /\* 	gtk_container_set_resize_mode *\/ */
-/* /\* 	  (GTK_CONTAINER (FRAME_GTK_OUTER_WIDGET (f)), GTK_RESIZE_IMMEDIATE); *\/ */
-/* /\* #endif *\/ */
-/* /\* #ifdef HAVE_GTK3 *\/ */
-/* /\*       gwin = gtk_widget_get_window (FRAME_GTK_OUTER_WIDGET (f)); *\/ */
-/* /\*       gdk_x11_window_set_frame_sync_enabled (gwin, FALSE); *\/ */
-/* /\* #endif *\/ */
-/*       unblock_input (); */
-/*     } */
-
-/*   gui_default_parameter (f, parms, Qno_focus_on_map, Qnil, */
-/*                          NULL, NULL, RES_TYPE_BOOLEAN); */
-/*   gui_default_parameter (f, parms, Qno_accept_focus, Qnil, */
-/*                          NULL, NULL, RES_TYPE_BOOLEAN); */
-
-/* /\* #if defined (USE_X_TOOLKIT) || defined (USE_GTK) *\/ */
-/* /\*   /\\* Create the menu bar.  *\\/ *\/ */
-/* /\*   if (!minibuffer_only && FRAME_EXTERNAL_MENU_BAR (f)) *\/ */
-/* /\*     { *\/ */
-/* /\*       /\\* If this signals an error, we haven't set size hints for the *\/ */
-/* /\* 	 frame and we didn't make it visible.  *\\/ *\/ */
-/* /\*       initialize_frame_menubar (f); *\/ */
-
-/* /\* #ifndef USE_GTK *\/ */
-/* /\*       /\\* This is a no-op, except under Motif where it arranges the *\/ */
-/* /\* 	 main window for the widgets on it.  *\\/ *\/ */
-/* /\*       lw_set_main_areas (f->output_data.x->column_widget, *\/ */
-/* /\* 			 f->output_data.x->menubar_widget, *\/ */
-/* /\* 			 f->output_data.x->edit_widget); *\/ */
-/* /\* #endif /\\* not USE_GTK *\\/ *\/ */
-/* /\*     } *\/ */
-/* /\* #endif /\\* USE_X_TOOLKIT || USE_GTK *\\/ *\/ */
-
-/*   /\* Consider frame official, now.  *\/ */
-/*   f->can_set_window_size = true; */
-
-/*   /\* /\\* Tell the server what size and position, etc, we want, and how *\/ */
-/*   /\*    badly we want them.  This should be done after we have the menu *\/ */
-/*   /\*    bar so that its size can be taken into account.  *\\/ *\/ */
-/*   /\* block_input (); *\/ */
-/*   /\* x_wm_set_size_hint (f, window_prompting, false); *\/ */
-/*   /\* unblock_input (); *\/ */
-
-/*   adjust_frame_size (f, FRAME_TEXT_WIDTH (f), FRAME_TEXT_HEIGHT (f), */
-/* 		     0, true, Qx_create_frame_2); */
-
-/*   /\* Process fullscreen parameter here in the hope that normalizing a */
-/*      fullheight/fullwidth frame will produce the size set by the last */
-/*      adjust_frame_size call.  *\/ */
-/*   gui_default_parameter (f, parms, Qfullscreen, Qnil, */
-/*                          "fullscreen", "Fullscreen", RES_TYPE_SYMBOL); */
-
-/* /\* #ifdef USE_CAIRO *\/ */
-/* /\*   /\\* Set the initial size of the Cairo surface to the frame's current *\/ */
-/* /\*      width and height.  If the window manager doesn't resize the new *\/ */
-/* /\*      frame after it's first mapped, Emacs will create a surface with *\/ */
-/* /\*      empty dimensions in response to to the initial exposure event, *\/ */
-/* /\*      which will persist until the next time it's resized. *\/ */
-/* /\*      (bug#64923) *\\/ *\/ */
-/* /\*   x_cr_update_surface_desired_size (f, FRAME_PIXEL_WIDTH (f), *\/ */
-/* /\* 				    FRAME_PIXEL_HEIGHT (f)); *\/ */
-/* /\* #endif /\\* USE_CAIRO *\\/ *\/ */
-
-/*   /\* Make the window appear on the frame and enable display, unless */
-/*      the caller says not to.  However, with explicit parent, Emacs */
-/*      cannot control visibility, so don't try.  *\/ */
-/*   if (!FRAME_OUTPUT_DATA(f)->explicit_parent) */
-/*     { */
-/*       /\* When called from `x-create-frame-with-faces' visibility is */
-/* 	 always explicitly nil.  *\/ */
-/*       Lisp_Object visibility */
-/* 	= gui_display_get_arg (dpyinfo, parms, Qvisibility, 0, 0, */
-/*                                RES_TYPE_SYMBOL); */
-/*       Lisp_Object height */
-/* 	= gui_display_get_arg (dpyinfo, parms, Qheight, 0, 0, RES_TYPE_NUMBER); */
-/*       Lisp_Object width */
-/* 	= gui_display_get_arg (dpyinfo, parms, Qwidth, 0, 0, RES_TYPE_NUMBER); */
-
-/*       if (EQ (visibility, Qicon)) */
-/* 	{ */
-/* 	  f->was_invisible = true; */
-/* 	  wlc_iconify_frame (f); */
-/* 	} */
-/*       else */
-/* 	{ */
-/* 	  if (BASE_EQ (visibility, Qunbound)) */
-/* 	    visibility = Qt; */
-
-/* 	  if (!NILP (visibility)) */
-/* 	    wlc_make_frame_visible (f); */
-/* 	  else */
-/* 	    f->was_invisible = true; */
-/* 	} */
-
-/*       /\* Leave f->was_invisible true only if height or width were */
-/* 	 specified too.  This takes effect only when we are not called */
-/* 	 from `x-create-frame-with-faces' (see above comment).  *\/ */
-/*       f->was_invisible */
-/* 	= (f->was_invisible */
-/* 	   && (!BASE_EQ (height, Qunbound) || !BASE_EQ (width, Qunbound))); */
-
-/*       store_frame_param (f, Qvisibility, visibility); */
-/*     } */
-
-/*   block_input (); */
-
-/*   /\* /\\* Set machine name and pid for the purpose of window managers.  *\\/ *\/ */
-/*   /\* set_machine_and_pid_properties (f); *\/ */
-
-/*   /\* /\\* Set the WM leader property.  GTK does this itself, so this is not *\/ */
-/*   /\*    needed when using GTK.  *\\/ *\/ */
-/*   /\* if (dpyinfo->client_leader_window != 0) *\/ */
-/*   /\*   { *\/ */
-/*   /\*     XChangeProperty (FRAME_X_DISPLAY (f), *\/ */
-/*   /\* 		       FRAME_OUTER_WINDOW (f), *\/ */
-/*   /\* 		       dpyinfo->Xatom_wm_client_leader, *\/ */
-/*   /\* 		       XA_WINDOW, 32, PropModeReplace, *\/ */
-/*   /\* 		       (unsigned char *) &dpyinfo->client_leader_window, 1); *\/ */
-/*   /\*   } *\/ */
-
-/* /\* #ifdef HAVE_XSYNC *\/ */
-/* /\*   if (dpyinfo->xsync_supported_p *\/ */
-/* /\*       /\\* Frame synchronization isn't supported in child frames.  *\\/ *\/ */
-/* /\*       && NILP (parent_frame) *\/ */
-/* /\*       && !f->output_data.x->explicit_parent) *\/ */
-/* /\*     { *\/ */
-/* /\* #ifndef HAVE_GTK3 *\/ */
-/* /\*       XSyncValue initial_value; *\/ */
-/* /\*       XSyncCounter counters[2]; *\/ */
-
-/* /\*       AUTO_STRING (synchronizeResize, "synchronizeResize"); *\/ */
-/* /\*       AUTO_STRING (SynchronizeResize, "SynchronizeResize"); *\/ */
-
-/* /\*       Lisp_Object value = gui_display_get_resource (dpyinfo, *\/ */
-/* /\* 						    synchronizeResize, *\/ */
-/* /\* 						    SynchronizeResize, *\/ */
-/* /\* 						    Qnil, Qnil); *\/ */
-
-/* /\*       XSyncIntToValue (&initial_value, 0); *\/ */
-/* /\*       counters[0] *\/ */
-/* /\* 	= FRAME_X_BASIC_COUNTER (f) *\/ */
-/* /\* 	= XSyncCreateCounter (FRAME_X_DISPLAY (f), *\/ */
-/* /\* 			      initial_value); *\/ */
-
-/* /\*       if (STRINGP (value) && !strcmp (SSDATA (value), "extended")) *\/ */
-/* /\* 	counters[1] *\/ */
-/* /\* 	  = FRAME_X_EXTENDED_COUNTER (f) *\/ */
-/* /\* 	  = XSyncCreateCounter (FRAME_X_DISPLAY (f), *\/ */
-/* /\* 				initial_value); *\/ */
-
-/* /\*       FRAME_X_OUTPUT (f)->current_extended_counter_value *\/ */
-/* /\* 	= initial_value; *\/ */
-
-/* /\*       XChangeProperty (FRAME_X_DISPLAY (f), FRAME_OUTER_WINDOW (f), *\/ */
-/* /\* 		       dpyinfo->Xatom_net_wm_sync_request_counter, *\/ */
-/* /\* 		       XA_CARDINAL, 32, PropModeReplace, *\/ */
-/* /\* 		       (unsigned char *) &counters, *\/ */
-/* /\* 		       ((STRINGP (value) *\/ */
-/* /\* 			 && !strcmp (SSDATA (value), "extended")) ? 2 : 1)); *\/ */
-
-/* /\* #if defined HAVE_XSYNCTRIGGERFENCE && !defined USE_GTK \ *\/ */
-/* /\*   && defined HAVE_CLOCK_GETTIME *\/ */
-/* /\*       x_sync_init_fences (f); *\/ */
-/* /\* #endif *\/ */
-/* /\* #endif *\/ */
-/* /\*     } *\/ */
-/* /\* #endif *\/ */
-
-/*   unblock_input (); */
-
-/*   /\* Set whether or not frame synchronization is enabled.  *\/ */
-/*   gui_default_parameter (f, parms, Quse_frame_synchronization, Qt, */
-/* 			 NULL, NULL, RES_TYPE_BOOLEAN); */
-
-/*   /\* Works iff frame has been already mapped.  *\/ */
-/*   gui_default_parameter (f, parms, Qskip_taskbar, Qnil, */
-/*                          NULL, NULL, RES_TYPE_BOOLEAN); */
-/*   /\* The `z-group' parameter works only for visible frames.  *\/ */
-/*   gui_default_parameter (f, parms, Qz_group, Qnil, */
-/*                          NULL, NULL, RES_TYPE_SYMBOL); */
-
-/*   /\* Initialize `default-minibuffer-frame' in case this is the first */
-/*      frame on this terminal.  *\/ */
-/*   if (FRAME_HAS_MINIBUF_P (f) */
-/*       && (!FRAMEP (KVAR (kb, Vdefault_minibuffer_frame)) */
-/*           || !FRAME_LIVE_P (XFRAME (KVAR (kb, Vdefault_minibuffer_frame))))) */
-/*     kset_default_minibuffer_frame (kb, frame); */
-
-/*   /\* All remaining specified parameters, which have not been "used" by */
-/*      gui_display_get_arg and friends, now go in the misc. alist of the */
-/*      frame.  *\/ */
-/*   for (tem = parms; CONSP (tem); tem = XCDR (tem)) */
-/*     if (CONSP (XCAR (tem)) && !NILP (XCAR (XCAR (tem)))) */
-/*       fset_param_alist (f, Fcons (XCAR (tem), f->param_alist)); */
 
   /* Make sure windows on this frame appear in calls to next-window
      and similar functions.  */
