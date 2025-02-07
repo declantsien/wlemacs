@@ -324,14 +324,14 @@ get_keysym_name (int keysym)
 static int
 wlc_read_socket (struct terminal *terminal, struct input_event *hold_quit)
 {
-  printf("wlc_read_socket\n");
+  /* printf("wlc_read_socket\n"); */
 
   int count;
 
   count = evq_flush (hold_quit);
   if (count > 0)
     {
-      printf("event count %d", count);
+      /* printf("event count %d", count); */
       return count;
     }
 
@@ -343,11 +343,11 @@ wlc_read_socket (struct terminal *terminal, struct input_event *hold_quit)
   count = evq_flush (hold_quit);
   if (count > 0)
     {
-      printf("event count %d", count);
+      /* printf("event count %d", count); */
       return count;
     }
 
-  printf("event count %d\n", 0);
+  /* printf("event count %d\n", 0); */
   return 0;
 };
 
