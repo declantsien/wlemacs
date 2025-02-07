@@ -49,6 +49,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
 
+
 static void
 wlc_set_foreground_color (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 {
@@ -427,62 +428,298 @@ check_wlc_display_info (Lisp_Object object)
   return dpyinfo;
 }
 
+
+/* Wayland client stuff */
+/* Compositor handlers */
+static void
+wl_surface_preferred_buffer_scale_handler (void *data,
+					   struct wl_surface *wl_surface,
+					   int32_t factor)
+{
+}
+
+static void
+wl_surface_preferred_buffer_transform_handler (void *data,
+					       struct wl_surface *wl_surface,
+					       uint32_t transform)
+{
+}
+
+static void
+wl_surface_enter_handler (void *data,
+			  struct wl_surface *wl_surface,
+			  struct wl_output *output) {
+}
+
+static void
+wl_surface_leave_handler (void *data,
+			  struct wl_surface *wl_surface,
+			  struct wl_output *output) {
+}
+
+const static struct wl_surface_listener wl_surface_handlers = {
+  .enter = wl_surface_enter_handler,
+  .leave = wl_surface_leave_handler,
+  .preferred_buffer_scale = wl_surface_preferred_buffer_scale_handler,
+  .preferred_buffer_transform = wl_surface_preferred_buffer_transform_handler
+};
+
+const static struct wl_callback_listener wl_surface_frame_listener;
+
+static void
+wl_surface_frame_handler(void *data, struct wl_callback *cb, uint32_t time)
+{
+  /* Destroy this callback */
+  wl_callback_destroy(cb);
+
+  /* Request another frame */
+  struct frame *f = data;
+  cb = wl_surface_frame(FRAME_OUTPUT_DATA(f)->surface);
+  wl_callback_add_listener(cb, &wl_surface_frame_listener, f);
+
+  /* Update scroll amount at 24 pixels per second */
+  if (FRAME_OUTPUT_DATA(f)->last_surface_frame != 0) {
+    int elapsed = time - FRAME_OUTPUT_DATA(f)->last_surface_frame;
+    FRAME_OUTPUT_DATA(f)->offset += elapsed / 1000.0 * 24;
+  }
+
+  /* /\* Submit a frame for this event *\/ */
+  /* struct wl_buffer *buffer = draw_frame(f); */
+  /* wl_surface_attach(FRAME_OUTPUT_DATA(f)->surface, buffer, 0, 0); */
+  /* wl_surface_damage_buffer(FRAME_OUTPUT_DATA(f)->surface, 0, 0, INT32_MAX, INT32_MAX); */
+  /* wl_surface_commit(FRAME_OUTPUT_DATA(f)->surface); */
+  /* redraw_frame (f); */
+  /* update_frame (f, true); */
+  /* wr_flush_display(f); */
+  /* redisplay() */
+
+  FRAME_OUTPUT_DATA(f)->last_surface_frame = time;
+}
+
+const static struct wl_callback_listener wl_surface_frame_listener = {
+  .done = wl_surface_frame_handler,
+};
+
+
+/* XDG shell */
+static void
+xdg_toplevel_configure_handler(void *data,
+			       struct xdg_toplevel *xdg_toplevel, int32_t width, int32_t height,
+			       struct wl_array *states)
+{
+  struct frame *f = data;
+  if (width == 0 || height == 0)
+    {
+      fprintf(stderr, "TODO: set xdg top level size");
+      /* Compositor is deferring to us */
+      return;
+    }
+  fprintf(stderr, "new size %d, %d ", width, height);
+  fprintf(stderr, "emacs size %d, %d ", FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+
+
+
+  if (width > 0 && height > 0) {
+    FRAME_PIXEL_WIDTH (f) = width;
+    FRAME_PIXEL_HEIGHT (f) = height;
+
+    if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
+      if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
+        wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH (f),
+				    FRAME_PIXEL_HEIGHT (f));
+      } else {
+	gl_renderer_fit_context(f);
+	wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
+      }
+    }
+  }
+  FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
+}
+
+static void
+xdg_toplevel_close_handler(void *data, struct xdg_toplevel *toplevel)
+{
+  struct frame *f = data;
+  fprintf(stderr, "close frame");
+  wlc_handle_xdg_toplevel_close(f);
+}
+
+const static struct xdg_toplevel_listener xdg_toplevel_handlers = {
+  .configure = xdg_toplevel_configure_handler,
+  .close = xdg_toplevel_close_handler,
+};
+
+static void
+xdg_surface_configure_handler(void *data,
+			      struct xdg_surface *xdg_surface, uint32_t serial)
+{
+  struct frame *f = data;
+  gl_renderer_fit_context(f);
+  xdg_surface_ack_configure(xdg_surface, serial);
+  /* struct wl_buffer *buffer = draw_frame(f); */
+  /* wl_surface_attach(FRAME_OUTPUT_DATA(f)->surface, buffer, 0, 0); */
+  /* wl_surface_commit(FRAME_OUTPUT_DATA(f)->surface); */
+  // Emacs redisplay check FRAME_REDISPLAY_P before
+  f->visible = true;
+  int width = FRAME_PIXEL_WIDTH (f);
+  int height = FRAME_PIXEL_HEIGHT (f) ;
+  xdg_surface_set_window_geometry(FRAME_OUTPUT_DATA (f)->xdg_surface, 0, 0, width, height);
+
+  if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
+    if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
+
+      /* window->egl_window = wl_egl_window_create(window->surface, 1, 1); */
+      /* window->egl_surface = eglCreateWindowSurface( */
+      /* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
+      /* assert(window->egl_surface != EGL_NO_SURFACE); */
+
+      /* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
+      /* 			       window->egl_surface, window->eglContext); */
+      /* assert(ok); */
+
+      /* glClearColor(1.0, 1.0, 1.0, 1.0); */
+      /* glClear(GL_COLOR_BUFFER_BIT); */
+
+      FRAME_OUTPUT_DATA (f)->viewport = wp_viewporter_get_viewport(FRAME_DISPLAY_INFO (f)->viewporter,
+								   FRAME_OUTPUT_DATA (f)->surface);
+      wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, width, height);
+
+      /* eglSwapBuffers(window->eglDisplay, window->egl_surface); */
+    } else {
+      /* window->egl_window = wl_egl_window_create( */
+      /* 					  window->surface, window->geometry.width, window->geometry.height); */
+      /* window->egl_surface = eglCreateWindowSurface( */
+      /* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
+      /* assert(window->egl_surface != EGL_NO_SURFACE); */
+
+      /* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
+      /* 			       window->egl_surface, window->eglContext); */
+      /* assert(ok); */
+    }
+  }
+
+  FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
+}
+
+static const struct xdg_surface_listener xdg_surface_handlers = {
+  .configure = xdg_surface_configure_handler,
+};
+
+static void
+zxdg_toplevel_decoration_v1_handle_configure(void *data, struct zxdg_toplevel_decoration_v1 *deco, uint32_t mode)
+{
+  struct frame *wl = data;
+  int csd = mode == ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+  if (csd)
+    fprintf (stderr, "Using xdg toplevel decoration client mode");
+  else
+    fprintf (stderr, "Using xdg toplevel decoration server mode");
+  /* if(csd == wl->client_side_deco){ */
+  /*   return; */
+  /* } */
+
+  /* wl->client_side_deco = csd; */
+}
+
+static const struct zxdg_toplevel_decoration_v1_listener zxdg_toplevel_decoration_v1_listener = {
+  .configure = zxdg_toplevel_decoration_v1_handle_configure,
+};
+
+static void
+init_xdg_window (struct frame *f, long window_prompting)
+{
+  FRAME_OUTPUT_DATA(f)->xdg_surface =
+    xdg_wm_base_get_xdg_surface(FRAME_DISPLAY_INFO(f)->wm_base,
+				FRAME_OUTPUT_DATA(f)->surface);
+  assert(FRAME_OUTPUT_DATA(f)->xdg_surface);
+
+  xdg_surface_add_listener(FRAME_OUTPUT_DATA(f)->xdg_surface, &xdg_surface_handlers, f);
+  FRAME_OUTPUT_DATA(f)->xdg_toplevel = xdg_surface_get_toplevel(FRAME_OUTPUT_DATA(f)->xdg_surface);
+
+  xdg_toplevel_add_listener(FRAME_OUTPUT_DATA(f)->xdg_toplevel,
+			    &xdg_toplevel_handlers, f);
+  assert(FRAME_OUTPUT_DATA(f)->xdg_toplevel);
+
+  xdg_toplevel_set_title (FRAME_OUTPUT_DATA (f)->xdg_toplevel,
+			  "Emacs");
+  xdg_toplevel_set_app_id(FRAME_OUTPUT_DATA (f)->xdg_toplevel,
+			  "org.gnu.emacs");
+
+  xdg_surface_set_window_geometry(FRAME_OUTPUT_DATA(f)->xdg_surface, f->left_pos, f->top_pos,
+				  FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+
+  FRAME_OUTPUT_DATA (f)->wait_for_configure = true;
+
+  if (FRAME_DISPLAY_INFO (f)->decoration_manager)
+    {
+
+      FRAME_OUTPUT_DATA (f)->decoration
+	= zxdg_decoration_manager_v1_get_toplevel_decoration (
+							      FRAME_DISPLAY_INFO (f)->decoration_manager,
+							      FRAME_OUTPUT_DATA (f)->xdg_toplevel);
+      zxdg_toplevel_decoration_v1_add_listener(FRAME_OUTPUT_DATA (f)->decoration, &zxdg_toplevel_decoration_v1_listener, f);
+      zxdg_toplevel_decoration_v1_set_mode(FRAME_OUTPUT_DATA (f)->decoration, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+      wl_display_roundtrip(FRAME_DISPLAY_INFO (f)->display);
+    }
+}
+
+
 /* Shared memory support code */
 static void
 randname(char *buf)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    long r = ts.tv_nsec;
-    for (int i = 0; i < 6; ++i) {
-        buf[i] = 'A'+(r&15)+(r&16)*2;
-        r >>= 5;
-    }
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  long r = ts.tv_nsec;
+  for (int i = 0; i < 6; ++i) {
+    buf[i] = 'A'+(r&15)+(r&16)*2;
+    r >>= 5;
+  }
 }
 
 static int
 create_shm_file(void)
 {
-    int retries = 100;
-    do {
-        char name[] = "/wl_shm-XXXXXX";
-        randname(name + sizeof(name) - 7);
-        --retries;
-        int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
-        if (fd >= 0) {
-            shm_unlink(name);
-            return fd;
-        }
-    } while (retries > 0 && errno == EEXIST);
-    return -1;
+  int retries = 100;
+  do {
+    char name[] = "/wl_shm-XXXXXX";
+    randname(name + sizeof(name) - 7);
+    --retries;
+    int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+    if (fd >= 0) {
+      shm_unlink(name);
+      return fd;
+    }
+  } while (retries > 0 && errno == EEXIST);
+  return -1;
 }
 
 static int
 allocate_shm_file(size_t size)
 {
-    int fd = create_shm_file();
-    if (fd < 0)
-        return -1;
-    int ret;
-    do {
-        ret = ftruncate(fd, size);
-    } while (ret < 0 && errno == EINTR);
-    if (ret < 0) {
-        close(fd);
-        return -1;
-    }
-    return fd;
+  int fd = create_shm_file();
+  if (fd < 0)
+    return -1;
+  int ret;
+  do {
+    ret = ftruncate(fd, size);
+  } while (ret < 0 && errno == EINTR);
+  if (ret < 0) {
+    close(fd);
+    return -1;
+  }
+  return fd;
 }
 
 static void
 wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
 {
-    /* Sent by the compositor when it's no longer using this buffer */
-    wl_buffer_destroy(wl_buffer);
+  /* Sent by the compositor when it's no longer using this buffer */
+  wl_buffer_destroy(wl_buffer);
 }
 
 static const struct wl_buffer_listener wl_buffer_listener = {
-    .release = wl_buffer_release,
+  .release = wl_buffer_release,
 };
 
 static struct wl_buffer *
@@ -526,204 +763,37 @@ draw_frame(struct frame *f)
   return buffer;
 }
 
+
+/* Create and set up the wl_surface for frame F.  */
 static void
-xdg_toplevel_configure(void *data,
-		struct xdg_toplevel *xdg_toplevel, int32_t width, int32_t height,
-		struct wl_array *states)
+wlc_window (struct frame *f, long window_prompting)
 {
-  struct frame *f = data;
-  if (width == 0 || height == 0)
-    {
-    fprintf(stderr, "TODO: set xdg top level size");
-    /* Compositor is deferring to us */
-    return;
-    }
-  fprintf(stderr, "new size %d, %d ", width, height);
-  fprintf(stderr, "emacs size %d, %d ", FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+  /* setup wayland xdg-toplevel/surface and event listeners here */
+  FRAME_OUTPUT_DATA (f)->surface = wl_compositor_create_surface (
+								 FRAME_DISPLAY_INFO (f)->compositor);
+  wl_surface_set_user_data(FRAME_OUTPUT_DATA (f)->surface, f);
+  wl_surface_add_listener(FRAME_OUTPUT_DATA (f)->surface, &wl_surface_handlers, f);
+  /* FRAME_OUTPUT_DATA (f)->viewport */
+  /*   = wp_viewporter_get_viewport (FRAME_DISPLAY_INFO (f) */
+  /* 				      ->viewporter, */
+  /* 				    FRAME_OUTPUT_DATA (f)->surface); */
+  /* wp_viewport_set_source(FRAME_OUTPUT_DATA(f)->viewport, 0, 0, f->pixel_width, f->pixel_height);     */
+  /* wp_viewport_set_destination(FRAME_OUTPUT_DATA(f)->viewport, f->pixel_width, f->pixel_height); */
+  init_xdg_window (f, window_prompting);
 
-
-
-  if (width > 0 && height > 0) {
-    FRAME_PIXEL_WIDTH (f) = width;
-    FRAME_PIXEL_HEIGHT (f) = height;
-
-    if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
-      if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
-        wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH (f),
-				    FRAME_PIXEL_HEIGHT (f));
-      } else {
-	gl_renderer_fit_context(f);
-	wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
-      }
-    }
-  }
-  FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
-}
-
-static void
-xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
-{
-  struct frame *f = data;
-  fprintf(stderr, "close frame");
-  wlc_handle_xdg_toplevel_close(f);
-}
-
-const static struct xdg_toplevel_listener xdg_toplevel_listener = {
-	.configure = xdg_toplevel_configure,
-	.close = xdg_toplevel_close,
-};
-
-static void
-xdg_surface_configure(void *data,
-        struct xdg_surface *xdg_surface, uint32_t serial)
-{
-    struct frame *f = data;
-    gl_renderer_fit_context(f);
-    xdg_surface_ack_configure(xdg_surface, serial);
-    /* struct wl_buffer *buffer = draw_frame(f); */
-    /* wl_surface_attach(FRAME_OUTPUT_DATA(f)->surface, buffer, 0, 0); */
-    /* wl_surface_commit(FRAME_OUTPUT_DATA(f)->surface); */
-    // Emacs redisplay check FRAME_REDISPLAY_P before
-    f->visible = true;
-    int width = FRAME_PIXEL_WIDTH (f);
-    int height = FRAME_PIXEL_HEIGHT (f) ;
-    xdg_surface_set_window_geometry(FRAME_OUTPUT_DATA (f)->xdg_surface, 0, 0, width, height);
-
-    if (FRAME_OUTPUT_DATA (f)->wait_for_configure) {
-      if (FRAME_OUTPUT_DATA (f)->enable_compositor) {
-
-	/* window->egl_window = wl_egl_window_create(window->surface, 1, 1); */
-	/* window->egl_surface = eglCreateWindowSurface( */
-	/* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
-	/* assert(window->egl_surface != EGL_NO_SURFACE); */
-
-	/* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
-	/* 			       window->egl_surface, window->eglContext); */
-	/* assert(ok); */
-
-	/* glClearColor(1.0, 1.0, 1.0, 1.0); */
-	/* glClear(GL_COLOR_BUFFER_BIT); */
-
-	FRAME_OUTPUT_DATA (f)->viewport = wp_viewporter_get_viewport(FRAME_DISPLAY_INFO (f)->viewporter,
-						      FRAME_OUTPUT_DATA (f)->surface);
-	wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, width, height);
-
-	/* eglSwapBuffers(window->eglDisplay, window->egl_surface); */
-      } else {
-	/* window->egl_window = wl_egl_window_create( */
-	/* 					  window->surface, window->geometry.width, window->geometry.height); */
-	/* window->egl_surface = eglCreateWindowSurface( */
-	/* 					     window->eglDisplay, window->config, window->egl_window, NULL); */
-	/* assert(window->egl_surface != EGL_NO_SURFACE); */
-
-	/* EGLBoolean ok = eglMakeCurrent(window->eglDisplay, window->egl_surface, */
-	/* 			       window->egl_surface, window->eglContext); */
-	/* assert(ok); */
-      }
-    }
-
-    FRAME_OUTPUT_DATA (f)->wait_for_configure = false;
-}
-
-static const struct xdg_surface_listener xdg_surface_listener = {
-  .configure = xdg_surface_configure,
-};
-
-static void
-zxdg_toplevel_decoration_v1_handle_configure(void *data, struct zxdg_toplevel_decoration_v1 *deco, uint32_t mode)
-{
-  struct frame *wl = data;
-  int csd = mode == ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
-  if (csd)
-    fprintf (stderr, "Using xdg toplevel decoration client mode");
-  else
-    fprintf (stderr, "Using xdg toplevel decoration server mode");
-  /* if(csd == wl->client_side_deco){ */
-  /*   return; */
-  /* } */
-
-  /* wl->client_side_deco = csd; */
-}
-
-static const struct zxdg_toplevel_decoration_v1_listener zxdg_toplevel_decoration_v1_listener = {
-	.configure = zxdg_toplevel_decoration_v1_handle_configure,
-};
-
-
-static void
-init_xdg_window (struct frame *f, long window_prompting)
-{
-  FRAME_OUTPUT_DATA(f)->xdg_surface =
-    xdg_wm_base_get_xdg_surface(FRAME_DISPLAY_INFO(f)->wm_base,
-				FRAME_OUTPUT_DATA(f)->surface);
-  assert(FRAME_OUTPUT_DATA(f)->xdg_surface);
-
-  xdg_surface_add_listener(FRAME_OUTPUT_DATA(f)->xdg_surface, &xdg_surface_listener, f);
-  FRAME_OUTPUT_DATA(f)->xdg_toplevel = xdg_surface_get_toplevel(FRAME_OUTPUT_DATA(f)->xdg_surface);
-
-  xdg_toplevel_add_listener(FRAME_OUTPUT_DATA(f)->xdg_toplevel,
-			    &xdg_toplevel_listener, f);
-  assert(FRAME_OUTPUT_DATA(f)->xdg_toplevel);
-
-  xdg_toplevel_set_title (FRAME_OUTPUT_DATA (f)->xdg_toplevel,
-			  "Emacs");
-  xdg_toplevel_set_app_id(FRAME_OUTPUT_DATA (f)->xdg_toplevel,
-                            "org.gnu.emacs");
-
-  xdg_surface_set_window_geometry(FRAME_OUTPUT_DATA(f)->xdg_surface, f->left_pos, f->top_pos,
-				  FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+  struct wl_region* region =
+    wl_compositor_create_region(FRAME_DISPLAY_INFO (f)->compositor);
+  wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
+  wl_surface_set_opaque_region(FRAME_OUTPUT_DATA (f)->surface, region);
+  wl_region_destroy(region);
 
   FRAME_OUTPUT_DATA (f)->wait_for_configure = true;
-  wl_surface_commit (FRAME_OUTPUT_DATA (f)->surface);
+  wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
 
-  if (FRAME_DISPLAY_INFO (f)->decoration_manager)
-    {
-
-    FRAME_OUTPUT_DATA (f)->decoration
-	= zxdg_decoration_manager_v1_get_toplevel_decoration (
-	  FRAME_DISPLAY_INFO (f)->decoration_manager,
-	  FRAME_OUTPUT_DATA (f)->xdg_toplevel);
-    zxdg_toplevel_decoration_v1_add_listener(FRAME_OUTPUT_DATA (f)->decoration, &zxdg_toplevel_decoration_v1_listener, f);
-    zxdg_toplevel_decoration_v1_set_mode(FRAME_OUTPUT_DATA (f)->decoration, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-    wl_display_roundtrip(FRAME_DISPLAY_INFO (f)->display);
-  }
+  /* struct wl_callback *cb */
+  /*   = wl_surface_frame (FRAME_OUTPUT_DATA (f)->surface); */
+  /* wl_callback_add_listener(cb, &wl_surface_frame_listener, f); */
 }
-
-const static struct wl_callback_listener wl_surface_frame_listener;
-
-static void
-wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time)
-{
-  /* Destroy this callback */
-  wl_callback_destroy(cb);
-
-  /* Request another frame */
-  struct frame *f = data;
-  cb = wl_surface_frame(FRAME_OUTPUT_DATA(f)->surface);
-  wl_callback_add_listener(cb, &wl_surface_frame_listener, f);
-
-  /* Update scroll amount at 24 pixels per second */
-  if (FRAME_OUTPUT_DATA(f)->last_surface_frame != 0) {
-    int elapsed = time - FRAME_OUTPUT_DATA(f)->last_surface_frame;
-    FRAME_OUTPUT_DATA(f)->offset += elapsed / 1000.0 * 24;
-  }
-
-  /* /\* Submit a frame for this event *\/ */
-  /* struct wl_buffer *buffer = draw_frame(f); */
-  /* wl_surface_attach(FRAME_OUTPUT_DATA(f)->surface, buffer, 0, 0); */
-  /* wl_surface_damage_buffer(FRAME_OUTPUT_DATA(f)->surface, 0, 0, INT32_MAX, INT32_MAX); */
-  /* wl_surface_commit(FRAME_OUTPUT_DATA(f)->surface); */
-  /* redraw_frame (f); */
-  /* update_frame (f, true); */
-  /* wr_flush_display(f); */
-  /* redisplay() */
-
-  FRAME_OUTPUT_DATA(f)->last_surface_frame = time;
-}
-
-const static struct wl_callback_listener wl_surface_frame_listener = {
-	.done = wl_surface_frame_done,
-};
 
 DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
        1, 1, 0,
@@ -1082,32 +1152,7 @@ This function is an internal primitive--use `make-frame' instead.  */)
                              RES_TYPE_BOOLEAN);
   f->no_split = minibuffer_only || EQ (tem, Qt);
 
-  {
-    /* setup wayland xdg-toplevel/surface and event listeners here */
-    FRAME_OUTPUT_DATA (f)->surface = wl_compositor_create_surface (
-								   FRAME_DISPLAY_INFO (f)->compositor);
-    wl_surface_set_user_data(FRAME_OUTPUT_DATA (f)->surface, f);
-    /* FRAME_OUTPUT_DATA (f)->viewport */
-    /*   = wp_viewporter_get_viewport (FRAME_DISPLAY_INFO (f) */
-    /* 				      ->viewporter, */
-    /* 				    FRAME_OUTPUT_DATA (f)->surface); */
-    /* wp_viewport_set_source(FRAME_OUTPUT_DATA(f)->viewport, 0, 0, f->pixel_width, f->pixel_height);     */
-    /* wp_viewport_set_destination(FRAME_OUTPUT_DATA(f)->viewport, f->pixel_width, f->pixel_height); */
-    init_xdg_window (f, window_prompting);
-
-    struct wl_region* region =
-      wl_compositor_create_region(FRAME_DISPLAY_INFO (f)->compositor);
-    wl_region_add(region, 0, 0, INT32_MAX, INT32_MAX);
-    wl_surface_set_opaque_region(FRAME_OUTPUT_DATA (f)->surface, region);
-    wl_region_destroy(region);
-
-    FRAME_OUTPUT_DATA (f)->wait_for_configure = true;
-    wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
-
-    /* struct wl_callback *cb */
-    /*   = wl_surface_frame (FRAME_OUTPUT_DATA (f)->surface); */
-    /* wl_callback_add_listener(cb, &wl_surface_frame_listener, f); */
-  }
+  wlc_window (f, window_prompting);
 
   /* Now consider the frame official.  */
   f->terminal->reference_count++;
