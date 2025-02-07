@@ -1,4 +1,3 @@
-#![feature(lazy_cell)]
 #![recursion_limit = "256"]
 
 use proc_macro::TokenStream;

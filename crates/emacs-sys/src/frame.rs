@@ -199,7 +199,7 @@ impl FrameRef {
     }
 
     pub fn parent_frame(self) -> Option<FrameRef> {
-        if cfg!(window_system) {
+        if cfg!(have_window_system) {
             if self.parent_frame.is_not_nil() {
                 Some(FrameRef::from(self.parent_frame))
             } else {

@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 mod data;
 mod error;
 use data::package_targets;

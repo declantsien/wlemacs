@@ -1,7 +1,4 @@
 //! Operations on lists.
-
-use libc::c_void;
-
 use crate::bindings::Fcons;
 use crate::bindings::Lisp_Cons;
 use crate::bindings::Lisp_Type;

@@ -112,7 +112,7 @@ impl LispObject {
             self.get_untaggedptr() as EmacsInt
         };
 
-        let lispsym_offset = unsafe { ptr::addr_of!(lispsym) as *const _ as EmacsInt };
+        let lispsym_offset = ptr::addr_of!(lispsym) as *const _ as EmacsInt;
         ptr_value + lispsym_offset
     }
 }
