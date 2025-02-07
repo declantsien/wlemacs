@@ -425,104 +425,6 @@ impl FrameRef {
     pub fn image_cache(self) -> ImageCacheRef {
         ImageCacheRef::new(self.image_cache as *mut _)
     }
-
-    #[cfg(have_window_system)]
-    pub fn build(mut dpyinfo: DisplayInfoRef, params: LispObject) -> Self {
-        let name = dpyinfo.gui_arg(params, FrameParam::Name);
-
-        if !name.is_string() && !name.eq(Qunbound) && !name.is_nil() {
-            error!("Invalid frame name--not a string or nil");
-        }
-
-        if name.is_string() {
-            unsafe {
-                globals.Vx_resource_name = name;
-            }
-        }
-
-        /* Check if parent window is specified. Return early if parent_id is not number
-        The validation is inside gui_arg func call*/
-        let parent_id = dpyinfo.gui_arg(params, FrameParam::ParentId);
-
-        let terminal = dpyinfo.terminal();
-
-        if terminal.name == std::ptr::null_mut() {
-            error!("Terminal is not live, can't create new frames on it");
-        }
-
-        let kb = terminal.kboard;
-
-        let tem = dpyinfo.gui_arg(params, FrameParam::Minibuffer);
-        let display_arg = dpyinfo.gui_arg(params, FrameParam::Display);
-
-        let f = if tem.eq(Qnone) || tem.is_nil() {
-            unsafe { make_frame_without_minibuffer(Qnil, kb, display_arg) }
-        } else if tem.eq(Qonly) {
-            unsafe { make_minibuffer_frame() }
-        } else if tem.is_window() {
-            unsafe { make_frame_without_minibuffer(tem, kb, display_arg) }
-        } else {
-            unsafe { make_frame(true) }
-        };
-
-        let mut f = Self::new(f);
-        /* Set the name; the functions to which we pass f expect the name to
-        be set.  */
-        if name.base_eq(Qunbound) || name.is_nil() {
-            // pgtk using dpyinfo->x_id_name here
-            let default_name = "default frame name";
-            let default_name: LispObject = default_name.to_string().into();
-            f.set_name(default_name);
-            f.set_explicit_name(false);
-        } else {
-            f.set_name(name);
-            f.set_explicit_name(true);
-            unsafe { specbind(Qx_resource_name, name) };
-        }
-
-        f.terminal = dpyinfo.terminal;
-        f.set_icon_name(dpyinfo.gui_arg(params, FrameParam::IconName));
-
-        let mut process_bool_arg = |param: FrameParam| {
-            let value = dpyinfo.gui_arg(params, param);
-            let value = value.is_not_nil() && !value.base_eq(Qunbound);
-            if param == FrameParam::Undecorated {
-                f.set_undecorated_(value);
-            } else if param == FrameParam::OverrideRedirect {
-                f.set_override_redirect_(value);
-            }
-            let value = if value { Qt } else { Qnil };
-            f.store_param(param, value);
-        };
-
-        process_bool_arg(FrameParam::Undecorated);
-        process_bool_arg(FrameParam::OverrideRedirect);
-
-        let mut process_num_arg = |param: FrameParam| {
-            let value = dpyinfo.gui_arg(params, param);
-            if value.is_fixnum() {
-                f.store_param(param, value);
-            }
-        };
-
-        process_num_arg(FrameParam::MinWidth);
-        process_num_arg(FrameParam::MinHeight);
-
-        /* Accept parent-frame if parent-id was not specified.  */
-        let parent_frame = if parent_id.is_nil() {
-            dpyinfo.gui_arg(params, FrameParam::ParentFrame)
-        } else {
-            Qnil
-        };
-        f.set_parent(parent_frame);
-        f.store_param(FrameParam::ParentFrame, parent_frame);
-
-        let unsplittable =
-            f.is_minibuf_only() || dpyinfo.gui_arg(params, FrameParam::Unsplittable).is_t();
-        f.set_no_split(unsplittable);
-
-        f
-    }
 }
 
 impl From<LispObject> for FrameRef {
@@ -576,12 +478,4 @@ pub fn window_frame_live_or_selected(object: LispObject) -> FrameRef {
     } else {
         object.as_live_frame_or_error()
     }
-}
-
-pub fn all_frames() -> impl Iterator<Item = FrameRef> {
-    let frame_it =
-        unsafe { Vframe_list.iter_cars(LispConsEndChecks::off, LispConsCircularChecks::off) }
-            .map(FrameRef::from);
-
-    frame_it
 }

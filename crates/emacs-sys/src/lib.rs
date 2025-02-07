@@ -50,18 +50,15 @@ pub mod display_traits;
 pub mod eval;
 pub mod font;
 pub mod frame;
-pub mod keyboard;
 pub mod list;
 pub mod multibyte;
 pub mod number;
 pub mod obarray;
 #[cfg(have_window_system)]
 pub mod output;
-pub mod process;
 pub mod string;
 pub mod symbol;
 pub mod terminal;
-pub mod thread;
 pub mod vector;
 pub mod window;
 #[cfg(all(any(have_pgtk, have_wayland_client), use_webrender))]

@@ -682,12 +682,13 @@ extern "C" fn otf_capability(_font: *mut font) -> LispObject {
 #[no_mangle]
 pub extern "C" fn shape(lgstring: LispObject, direction: LispObject) -> LispObject {
     use core::ops::Range;
+    use emacs_sys::bindings::current_thread;
     use emacs_sys::bindings::font_metrics as FontMetrics;
     use emacs_sys::bindings::CHECK_FONT_GET_OBJECT;
+    use emacs_sys::buffer::BufferRef;
     use emacs_sys::globals::QL2R;
     use emacs_sys::globals::QR2L;
     use emacs_sys::number::LNumber;
-    use emacs_sys::thread::ThreadState;
     use swash::shape::cluster::Glyph;
     use swash::shape::cluster::GlyphCluster;
     use swash::shape::Direction;
@@ -719,13 +720,15 @@ pub extern "C" fn shape(lgstring: LispObject, direction: LispObject) -> LispObje
     let mut context = SHAPE_CONTEXT.lock().expect("SHAPE_CONTEXT lock() failed");
     let mut shaper_builder = context.builder(&font);
 
+    let current_buffer: BufferRef = unsafe { (*current_thread).m_current_buffer.into() };
+
     /* If the caller didn't provide a meaningful DIRECTION, let Swash
     guess it. */
     if !direction.is_nil()
         /* If they bind bidi-display-reordering to nil, the DIRECTION
 	they provide is meaningless, and we should let Swash guess
 	the real direction.  */
-        && !ThreadState::current_buffer_unchecked().bidi_display_reordering_.is_nil()
+        && !current_buffer.bidi_display_reordering_.is_nil()
     {
         if direction.eq(QR2L) {
             shaper_builder = shaper_builder.direction(Direction::RightToLeft);

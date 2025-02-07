@@ -16,7 +16,6 @@ use crate::frame::FrameRef;
 use crate::lisp::ExternalPtr;
 use crate::lisp::LispObject;
 use crate::lisp::LispSubrRef;
-use crate::process::LispProcessRef;
 use crate::sys::Lisp_Vectorlike;
 use crate::sys::PSEUDOVECTOR_FLAG;
 use crate::terminal::TerminalRef;
@@ -84,14 +83,6 @@ impl LispVectorlikeRef {
     pub fn as_subr(self) -> Option<LispSubrRef> {
         if self.is_pseudovector(pvec_type::PVEC_SUBR) {
             Some(unsafe { mem::transmute(self) })
-        } else {
-            None
-        }
-    }
-
-    pub fn as_process(self) -> Option<LispProcessRef> {
-        if self.is_pseudovector(pvec_type::PVEC_PROCESS) {
-            Some(self.cast())
         } else {
             None
         }
