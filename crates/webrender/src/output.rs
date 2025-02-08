@@ -237,7 +237,7 @@ impl GlRenderer {
 
             txn.set_display_list(epoch, builder.end());
             txn.set_root_pipeline(self.pipeline_id);
-            txn.generate_frame(0, RenderReasons::NONE);
+            txn.generate_frame(0, true, RenderReasons::NONE);
 
             self.display_list_builder = None;
 
