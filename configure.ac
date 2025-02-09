@@ -4630,7 +4630,7 @@ if test "${HAVE_X11}" = "yes"; then
     fi
   fi
 else # "${HAVE_X11}" != "yes"
-  if test $window_system = pgtk && test "${with_webrender}" != "yes"; then
+  if test $window_system = pgtk || test $window_system = wlc ; then
     EMACS_CHECK_MODULES([FONTCONFIG], [fontconfig >= 2.2.0])
     EMACS_CHECK_MODULES([FREETYPE], [freetype2])
     if test "$HAVE_FONTCONFIG" != yes -o "$HAVE_FREETYPE" != yes; then
@@ -4668,11 +4668,11 @@ if test "${HAVE_W32}" = "yes"; then
 else
   harfbuzz_required_ver=0.9.42
 fi
-if (test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
+if test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
         || test "$window_system" = "pgtk" \
+        || test "$window_system" = "wlc" \
         || test "${HAVE_W32}" = "yes" \
-	|| test "$REALLY_ANDROID" = "yes") \
-        && test "${with_webrender}" != "yes"; then
+	|| test "$REALLY_ANDROID" = "yes" ; then
   if test "${with_harfbuzz}" != "no"; then
     EMACS_CHECK_MODULES([HARFBUZZ], [harfbuzz >= $harfbuzz_required_ver])
     AS_IF([test "$HAVE_HARFBUZZ" = "yes"],[
@@ -7181,9 +7181,13 @@ if test "${HAVE_X_WINDOWS}" = "yes" ; then
   fi
 fi
 
-if test "${window_system}" = "pgtk"; then
+if test "${window_system}" = "pgtk" || test "${window_system}" = "wlc"; then
   if test "$HAVE_FREETYPE" = "yes"; then
-    FONT_OBJ="ftfont.o ftcrfont.o"
+    FONT_OBJ="ftfont.o"
+  fi
+
+  if test "$HAVE_CAIRO" = "yes"; then
+    FONT_OBJ="$FONT_OBJ ftcrfont.o"
   fi
 fi
 
@@ -8048,8 +8052,7 @@ if test "${HAVE_XFT}" = yes; then
     relevant development headers are installed).])
 fi
 
-if test "${HAVE_CAIRO}" = "yes" && test "${HAVE_HARFBUZZ}" = no \
-   && test "${with_webrender}" != "yes"; then
+if test "${HAVE_CAIRO}" = "yes" && test "${HAVE_HARFBUZZ}" = no ; then
   AC_MSG_WARN([This configuration uses the Cairo graphics library,
     but not the HarfBuzz font shaping library (minimum version $harfbuzz_required_ver).
     We recommend the use of HarfBuzz when using Cairo, please install

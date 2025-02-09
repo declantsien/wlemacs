@@ -113,7 +113,7 @@ impl TextureResourceManager {
                 id: ExternalImageId(texture_id as u64),
                 channel_index: 0,
                 image_type: ExternalImageType::TextureHandle(ImageBufferKind::Texture2D),
-		normalized_uvs: false,
+                normalized_uvs: false,
             }),
             None,
         );

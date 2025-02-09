@@ -26,6 +26,7 @@ x11-dl = { version = "2.21", optional = true }
 gdkwayland-sys = { workspace = true, optional = true }
 gdkx11-sys = { workspace = true, optional = true }
 gdk = { workspace = true, optional = true }
+fontconfig = { version = "0.5", package = "servo-fontconfig", optional = true}
 gl_loader = { version = "0.1.2", optional = true }
 wayland-sys = {version = "0.31", features = ["client", "dlopen"]}
 x11 = { version = "2.21", features = ["xlib"], optional = true}
@@ -37,6 +38,7 @@ libc = "0.2.154"
 cfg_aliases.workspace = true
 
 [features]
+default=["window-system-wlc"]
 glutin=["dep:glutin"]
 surfman=["dep:surfman"]
 x11 = [
@@ -57,5 +59,9 @@ window-system-nextstep=[]
 window-system-w32=[]
 window-system-haiku=[]
 window-system-android=[]
-window-system-wlc=[]
-window-system-pgtk=["dep:gtk-sys", "dep:gtk", "dep:x11-dl", "dep:gdkwayland-sys", "dep:gdkx11-sys"]
+window-system-wlc=["surfman", "webrender", "dep:fontconfig"]
+window-system-pgtk=["dep:gtk-sys", "dep:gtk", "dep:x11-dl", "dep:gdkwayland-sys", "dep:gdkx11-sys", "dep:fontconfig"]
+wide-emacs-int=[]
+ns-impl-gnustep=[]
+# Treat warnings as a build error.
+strict = []

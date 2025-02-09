@@ -29,6 +29,8 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 struct glyph;
 
+typedef struct FontContext FontContext;
+
 INLINE_HEADER_BEGIN
 
 enum scroll_bar_part
@@ -528,6 +530,9 @@ struct terminal
   /* font cache in Rust */
   void *font_index_cache;
 #endif  /*USE_WEBRENDER*/
+
+  /* Font context in Rust. */
+  void *fcx;
 
   /* Device-type dependent data shared amongst all frames on this terminal.  */
   union display_info

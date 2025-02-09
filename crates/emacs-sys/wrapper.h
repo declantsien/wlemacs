@@ -21,6 +21,10 @@
 #include "emacs-module.h"
 #include "epaths.h"
 #include "font.h"
+#ifdef HAVE_FREETYPE
+#include <fontconfig/fontconfig.h>
+#include "ftfont.h"
+#endif
 #include "fontset.h"
 #include "frame.h"
 #include "getpagesize.h"

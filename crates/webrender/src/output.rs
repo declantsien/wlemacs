@@ -3,12 +3,11 @@ use emacs_sys::bindings::Emacs_Pixmap;
 use emacs_sys::gfx::context::GLContextTrait;
 use emacs_sys::lisp::ExternalPtr;
 pub use emacs_sys::output::OutputRef;
-use font::FontId;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use font::FontInfoRef;
+use crate::font::FontInfoRef;
 use gleam::gl;
 use webrender::FastHashMap;
 
@@ -24,7 +23,7 @@ use emacs_sys::frame::FrameRef;
 use super::texture::TextureResourceManager;
 
 pub struct GlRenderer {
-    fonts: FastHashMap<FontId, FontKey>,
+    fonts: FastHashMap<FontTemplate, FontKey>,
     font_instances:
         FastHashMap<(FontKey, FontSize, FontInstanceFlags, SyntheticItalics), FontInstanceKey>,
     images: FastHashMap<ImageHash, (ImageKey, ImageDescriptor)>,
@@ -339,27 +338,7 @@ impl GlRenderer {
     }
 
     pub fn get_or_create_font(&mut self, font: FontInfoRef) -> Option<FontKey> {
-        #[cfg(not(target_arch = "wasm32"))]
-        let now = std::time::Instant::now();
-        let font_id = font.id;
-        let wr_font_key = self.fonts.get(&font_id);
-
-        if let Some(key) = wr_font_key {
-            return Some(*key);
-        }
-
-        let wr_font_key =
-            { Some(self.wr_add_font(FontTemplate::Native(NativeFontHandle(font_id.0)))) };
-
-        if let Some(key) = wr_font_key {
-            self.fonts.insert(font_id, key);
-            return Some(key);
-        };
-
-        let elapsed = now.elapsed();
-        log::trace!("get_or_create_font in {:?}", elapsed);
-
-        None
+        todo!();
     }
 
     // Create font instance with scaled size

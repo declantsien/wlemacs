@@ -10,7 +10,6 @@ path = "src/lib.rs"
 
 [dependencies]
 emacs-sys = { path = "../emacs-sys", features = ["webrender"] }
-font = { path = "../font", default-features = false }
 lisp-macros.path = "../lisp-macros"
 lisp-util.path = "../lisp-util"
 log.workspace = true
@@ -21,7 +20,8 @@ bit-vec = "0.6.3"
 raw-window-handle.workspace = true
 euclid.workspace = true
 parking_lot.workspace = true
-webrender = { workspace = true, features = ["font_backend_swash"] }
+webrender = { workspace = true }
+skrifa = "0.27"
 
 [build-dependencies]
 codegen = { path = "../codegen" }
@@ -31,8 +31,8 @@ cfg_aliases.workspace = true
 core-foundation = "0.9"
 
 [features]
-window-system-pgtk=["emacs-sys/window-system-pgtk", "font/window-system-pgtk", "gtk3"]
-window-system-wlc=["emacs-sys/window-system-wlc", "font/window-system-wlc"]
+window-system-pgtk=["emacs-sys/window-system-pgtk", "gtk3"]
+window-system-wlc=["emacs-sys/window-system-wlc"]
 glutin=["emacs-sys/glutin"]
 surfman=["emacs-sys/surfman"]
 gtk3=["emacs-sys/gtk3"]

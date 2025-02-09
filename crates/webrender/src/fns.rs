@@ -40,6 +40,7 @@ use emacs_sys::display_traits::FaceRef;
 use emacs_sys::display_traits::GlyphRowArea;
 use emacs_sys::display_traits::GlyphRowRef;
 use emacs_sys::display_traits::GlyphStringRef;
+use emacs_sys::font::FontRef;
 use emacs_sys::font::LispFontRef;
 use emacs_sys::frame::Frame;
 use emacs_sys::frame::FrameRef;
@@ -50,8 +51,6 @@ use emacs_sys::multibyte::LispStringRef;
 use emacs_sys::terminal::TerminalRef;
 use emacs_sys::window::Window;
 use emacs_sys::window::WindowRef;
-use font::FontInfo;
-use font::FontInfoRef;
 
 use lisp_macros::lisp_fn;
 use std::cmp::max;
@@ -324,10 +323,10 @@ pub extern "C" fn wr_new_font(
     }
 
     frame.set_font(font.into());
-    let wr_font = FontInfoRef::new(font as *mut FontInfo);
+    let font = FontRef::new(font);
 
-    frame.line_height = wr_font.font.height;
-    frame.column_width = wr_font.font.average_width;
+    frame.line_height = font.height;
+    frame.column_width = font.average_width;
 
     let pixel_width = frame.text_cols * frame.column_width;
     let pixel_height = frame.text_lines * frame.line_height;

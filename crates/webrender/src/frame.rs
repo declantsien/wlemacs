@@ -1,6 +1,7 @@
 use super::util::HandyDandyRectBuilder;
 use crate::color::pixel_to_color;
 use crate::face::WrFace;
+use crate::font::FontInfoWrExt;
 use crate::fringe::FringeBitmap;
 use crate::glyph::GlyphStringExtWr;
 use crate::glyph::WrGlyph;
@@ -200,7 +201,7 @@ impl FrameExtWrCommon for FrameRef {
             //     s.background_width,
             //     s.height - 2 * box_line_width);
             s.set_background_filled_p(true);
-        } else if s.font_info().font.height < s.height - 2 * box_line_width
+        } else if s.font().height < s.height - 2 * box_line_width
 	    /* When xdisp.c ignores FONT_HEIGHT, we cannot trust
 	    font dimensions, since the actual glyphs might be
 	    much smaller.  So in that case we always clear the

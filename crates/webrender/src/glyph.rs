@@ -1,12 +1,15 @@
 use crate::color::pixel_to_color;
 use crate::display_info::DisplayInfoExtWr;
 use crate::face::WrFace;
+use crate::font::FontInfoRef;
+use crate::font::FontInfoWrExt;
 use crate::frame::FrameExtWrCommon;
 use crate::image::ImageRef;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
 use emacs_sys::bindings::face_box_type::{self};
 use emacs_sys::bindings::face_underline_type;
+use emacs_sys::bindings::font_info;
 use emacs_sys::bindings::globals;
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::bindings::Emacs_GC;
@@ -17,8 +20,6 @@ use emacs_sys::frame::FrameRef;
 use emacs_sys::lisp::LispObject;
 use emacs_sys::number::LNumber;
 use euclid::Scale;
-use font::FontInfo;
-use font::FontInfoRef;
 use std::cmp::max;
 use webrender::api::units::*;
 use webrender::api::*;
@@ -182,7 +183,7 @@ impl WrGlyph for GlyphStringRef {
     }
 
     fn font_info(&self) -> FontInfoRef {
-        FontInfoRef::new(self.font as *mut FontInfo)
+        FontInfoRef::new(self.font as *mut font_info)
     }
 
     fn image(&self) -> ImageRef {
@@ -270,7 +271,7 @@ impl WrGlyph for GlyphStringRef {
 
         let glyph_indices = self.glyph_indices();
 
-        let glyph_dimensions = font_info.get_glyph_advance_width(glyph_indices.clone());
+        let glyph_advances = font_info.get_glyph_advance_widths(glyph_indices.clone());
         let mut glyph_instances: Vec<GlyphInstance> = vec![];
         // println!("indices: {:?}, dimensions: {:?}", glyph_indices.clone(), glyph_dimensions);
 
@@ -278,7 +279,9 @@ impl WrGlyph for GlyphStringRef {
             let previous_char_width = if i == 0 {
                 0.0
             } else {
-                glyph_dimensions[i - 1] as f32
+                // wr get_glyph_dimensions return none for ‘empty’ textures (height or width = 0)
+                // spaces (’ ’) will mostly be None
+                glyph_advances[i - 1].unwrap_or(0.0)
             };
 
             let previous_char_start = if i == 0 {
