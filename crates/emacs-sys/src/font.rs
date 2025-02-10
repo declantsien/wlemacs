@@ -48,3 +48,9 @@ impl LispObject {
 }
 
 pub type FontRef = ExternalPtr<font>;
+
+impl FontRef {
+    pub fn too_high_p(&self) -> bool {
+        self.pixel_size > 0 && self.ascent + self.descent > 3 * self.pixel_size
+    }
+}

@@ -19,7 +19,7 @@ pub mod image;
 pub mod output;
 
 mod face;
-mod font;
+pub mod font;
 mod fringe;
 mod glyph;
 mod texture;

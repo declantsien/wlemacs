@@ -26,6 +26,8 @@ use webrender::api::*;
 use webrender::{self};
 // TODO: maybe configurable from lisp world
 const WAVY_LINE_THICKNESS: i32 = 1;
+use emacs_sys::bindings::font;
+use emacs_sys::font::FontRef;
 
 pub trait WrGlyph {
     fn bg_color_f(&self) -> ColorF;
@@ -37,8 +39,9 @@ pub trait WrGlyph {
     fn box_line_width(&self) -> i32;
     fn underline_area(&self) -> LayoutRect;
     fn underwave_area(&self) -> LayoutRect;
+    fn font(&self) -> FontRef;
     fn font_info(&self) -> FontInfoRef;
-    fn font_instance_key(&self) -> FontInstanceKey;
+    fn font_instance_key(&self, f: FrameRef) -> FontInstanceKey;
     fn image(&self) -> ImageRef;
     fn composite_p(&self) -> bool;
     fn automatic_composite_p(&self) -> bool;
@@ -182,6 +185,10 @@ impl WrGlyph for GlyphStringRef {
         self.frame().scale_factor() as f32
     }
 
+    fn font(&self) -> FontRef {
+        FontRef::new(self.font as *mut font)
+    }
+
     fn font_info(&self) -> FontInfoRef {
         FontInfoRef::new(self.font as *mut font_info)
     }
@@ -206,7 +213,7 @@ impl WrGlyph for GlyphStringRef {
         }
     }
 
-    fn font_instance_key(&self) -> FontInstanceKey {
+    fn font_instance_key(&self, f: FrameRef) -> FontInstanceKey {
         let font_info = self.font_info();
         let scale = self.frame().gl_renderer().scale();
         self.frame()
@@ -390,7 +397,7 @@ pub trait GlyphStringExtWr {
     fn clip_rect(&mut self) -> NativeRectangle;
     fn set_clipping(&mut self);
     fn set_clipping_exactly(&mut self, dist: Self);
-    fn draw(&mut self);
+    fn draw(&mut self, f: FrameRef);
     fn draw_stretch(&mut self);
     fn fill_rectangle(
         &mut self,
@@ -413,7 +420,7 @@ pub trait GlyphStringExtWr {
     fn draw_image(&mut self);
     fn draw_xwidget(&mut self);
     fn draw_background(&mut self, is_force: bool);
-    fn draw_foreground(&mut self);
+    fn draw_foreground(&mut self, f: FrameRef);
     fn draw_composite_foreground(&mut self);
     fn draw_glyphless_foreground(&mut self);
     fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
@@ -524,7 +531,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         log::error!("unimplemented set clipping ref: x_set_glyph_string_clipping");
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self, f: FrameRef) {
         let mut is_relief_drawn = false;
         // If S draws into the background of its successors, draw the
         // background of the successors first so that S can draw into it.
@@ -590,7 +597,7 @@ impl GlyphStringExtWr for GlyphStringRef {
                 } else {
                     self.draw_background(false);
                 }
-                self.draw_foreground();
+                self.draw_foreground(f);
             }
             glyph_type::COMPOSITE_GLYPH => {
                 if self.for_overlaps() != 0
@@ -822,7 +829,7 @@ impl GlyphStringExtWr for GlyphStringRef {
 	    font dimensions, since the actual glyphs might be
 	    much smaller.  So in that case we always clear the
 	    rectangle with background color.  */
-	    || self.font_info().too_high_p()
+	    || self.font().too_high_p()
             || self.font_not_found_p()
             || self.extends_to_end_of_line_p() || is_force
         {
@@ -840,7 +847,7 @@ impl GlyphStringExtWr for GlyphStringRef {
     }
 
     // Draw the foreground of glyph string S.
-    fn draw_foreground(&mut self) {
+    fn draw_foreground(&mut self, f: FrameRef) {
         let x = self.x;
         let y = self.y;
 
@@ -877,7 +884,7 @@ impl GlyphStringExtWr for GlyphStringRef {
                 let glyph_instances = self.scaled_glyph_instances(scale);
                 // draw foreground
                 if !glyph_instances.is_empty() {
-                    let font_instance_key = self.font_instance_key();
+                    let font_instance_key = self.font_instance_key(f);
                     let visible_rect = (x, y).by(self.width as i32, visible_height, scale);
 
                     builder.push_text(

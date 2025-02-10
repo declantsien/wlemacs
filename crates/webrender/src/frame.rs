@@ -206,7 +206,7 @@ impl FrameExtWrCommon for FrameRef {
 	    font dimensions, since the actual glyphs might be
 	    much smaller.  So in that case we always clear the
 	    rectangle with background color.  */
-	    || s.font_info().too_high_p()
+	    || s.font().too_high_p()
             || s.font_not_found_p()
             || s.extends_to_end_of_line_p() || force_p
         {
@@ -240,7 +240,7 @@ impl FrameExtWrCommon for FrameRef {
                 let glyph_instances = s.scaled_glyph_instances(scale);
                 // draw foreground
                 if !glyph_instances.is_empty() {
-                    let font_instance_key = s.font_instance_key();
+                    let font_instance_key = s.font_instance_key(self.clone());
                     let visible_rect = (x, y).by(s.width as i32, visible_height, scale);
 
                     builder.push_text(
@@ -367,7 +367,7 @@ impl FrameExtWrCommon for FrameRef {
                     let glyph_instances = s.scaled_glyph_instances(scale);
                     // draw foreground
                     if !glyph_instances.is_empty() {
-                        let font_instance_key = s.font_instance_key();
+                        let font_instance_key = s.font_instance_key(self.clone());
                         builder.push_text(
                             &CommonItemProperties::new(visible_rect, space_and_clip),
                             visible_rect,

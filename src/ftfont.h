@@ -89,10 +89,6 @@ struct font_info
   /* there are used to construct WR FontInstanceKey*/
   uint32_t id_namespace;
   uint32_t font_instance_key;
-  /* Need for the access resouce_cache in WR renderer */
-  /* webrender::render_api::RenderApi::get_glyph_indices */
-  /* webrender::render_api::RenderApi::get_glyph_dimensions */
-  struct frame *frame;
 #endif /*USE_WEBRENDER*/
 };
 

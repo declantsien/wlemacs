@@ -4,38 +4,6 @@ use webrender::api::FontInstanceKey;
 use webrender::api::GlyphDimensions;
 use webrender::api::GlyphIndex;
 
-pub type FontInfoRef = ExternalPtr<font_info>;
-
-pub trait FontInfoWrExt {
-    fn font_instance_key() -> FontInstanceKey;
-    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>>;
-    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>>;
-    fn too_high_p(&self) -> bool;
-}
-
-impl FontInfoWrExt for FontInfoRef {
-    fn font_instance_key() -> FontInstanceKey {
-        todo!()
-    }
-
-    // file:///home/declan/src/webrender/target/doc/webrender/render_api/struct.RenderApi.html#method.get_glyph_dimensions
-    // Note: Internally, the internal texture cache doesn’t store ‘empty’ textures (height or width = 0) This means that glyph dimensions e.g. for spaces (’ ’) will mostly be None.
-    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>> {
-        unimplemented!();
-    }
-
-    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
-        self.glyph_dimensions(glyph_indices)
-            .iter()
-            .map(|i| i.map(|d| d.advance))
-            .collect()
-    }
-
-    fn too_high_p(&self) -> bool {
-        todo!()
-    }
-}
-
 use emacs_sys::bindings::assq_no_quit;
 use emacs_sys::bindings::AREF;
 use emacs_sys::bindings::XCAR;
@@ -64,7 +32,32 @@ use emacs_sys::globals::Qnil;
 use emacs_sys::globals::Qswash;
 use emacs_sys::lisp::LispObject;
 
-pub type FontRef = ExternalPtr<font>;
+pub type FontInfoRef = ExternalPtr<font_info>;
+
+pub trait FontInfoWrExt {
+    fn font_instance_key() -> FontInstanceKey;
+    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>>;
+    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>>;
+}
+
+impl FontInfoWrExt for FontInfoRef {
+    fn font_instance_key() -> FontInstanceKey {
+        todo!()
+    }
+
+    // file:///home/declan/src/webrender/target/doc/webrender/render_api/struct.RenderApi.html#method.get_glyph_dimensions
+    // Note: Internally, the internal texture cache doesn’t store ‘empty’ textures (height or width = 0) This means that glyph dimensions e.g. for spaces (’ ’) will mostly be None.
+    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>> {
+        unimplemented!();
+    }
+
+    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
+        self.glyph_dimensions(glyph_indices)
+            .iter()
+            .map(|i| i.map(|d| d.advance))
+            .collect()
+    }
+}
 
 pub struct FontDriver(pub font_driver);
 unsafe impl Sync for FontDriver {}
@@ -253,11 +246,9 @@ extern "C" fn text_extents(
     nglyphs: i32,
     metrics: *mut font_metrics,
 ) {
-    unimplemented!();
+    unimplemented!()
 }
 
-#[allow(unused_variables)]
-#[no_mangle]
 extern "C" fn otf_capability(_font: *mut font) -> LispObject {
     todo!()
 }
