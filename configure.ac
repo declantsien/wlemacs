@@ -4474,7 +4474,7 @@ if test "$with_xwidgets" != "no"; then
 fi
 AC_SUBST([XWIDGETS_OBJ])
 
-if test "$window_system" = "pgtk"; then
+if test "$window_system" = "pgtk" && test "${with_cairo}" != "no"; then
   CAIRO_REQUIRED=1.12.0
   CAIRO_MODULE="cairo >= $CAIRO_REQUIRED"
   EMACS_CHECK_MODULES([CAIRO], [$CAIRO_MODULE])

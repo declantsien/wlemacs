@@ -1548,7 +1548,7 @@ This function is an internal primitive--use `make-frame' instead.  */)
       specbind (Qx_resource_name, name);
     }
 
-  register_swash_font_driver(f);
+  register_ftfont_driver(f);
 
 #ifdef GLYPH_DEBUG
   dpyinfo_refcount = dpyinfo->reference_count;

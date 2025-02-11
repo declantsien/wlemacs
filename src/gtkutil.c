@@ -5979,6 +5979,8 @@ update_frame_tool_bar (struct frame *f)
           if (img->load_failed_p
 #ifdef USE_CAIRO
 	      || img->cr_data == NULL
+#elif USE_WEBRENDER
+	      || true /* TODO */
 #else
 	      || img->pixmap == None
 #endif

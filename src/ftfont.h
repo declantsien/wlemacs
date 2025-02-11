@@ -86,9 +86,7 @@ struct font_info
 #endif
 
 #ifdef USE_WEBRENDER
-  /* there are used to construct WR FontInstanceKey*/
-  uint32_t id_namespace;
-  uint32_t font_instance_key;
+  Lisp_Object filename;
 #endif /*USE_WEBRENDER*/
 };
 

@@ -18,6 +18,7 @@ use emacs_sys::bindings::display_and_set_cursor;
 use emacs_sys::bindings::draw_fringe_bitmap_params;
 use emacs_sys::bindings::draw_window_fringes;
 use emacs_sys::bindings::face_id;
+use emacs_sys::bindings::font_info;
 use emacs_sys::bindings::fontset_from_font;
 use emacs_sys::bindings::globals;
 use emacs_sys::bindings::glyph_row;
@@ -34,6 +35,7 @@ use emacs_sys::bindings::unblock_input;
 use emacs_sys::bindings::Emacs_Color;
 use emacs_sys::bindings::Emacs_Pixmap;
 use emacs_sys::bindings::Fprovide;
+use emacs_sys::bindings::AREF;
 use emacs_sys::bindings::FACE_FROM_ID_OR_NULL;
 use emacs_sys::display_traits::FaceId;
 use emacs_sys::display_traits::FaceRef;
@@ -51,7 +53,13 @@ use emacs_sys::multibyte::LispStringRef;
 use emacs_sys::terminal::TerminalRef;
 use emacs_sys::window::Window;
 use emacs_sys::window::WindowRef;
+use webrender::api::FontInstanceOptions;
+use webrender::api::FontInstancePlatformOptions;
+use webrender::api::FontSize;
+use webrender::api::FontTemplate;
+use webrender::api::NativeFontHandle;
 
+use crate::font::FontInfoRef;
 use lisp_macros::lisp_fn;
 use std::cmp::max;
 use std::ffi::CString;
@@ -300,6 +308,7 @@ pub extern "C" fn wr_get_string_resource(
     ptr::null()
 }
 
+// FIXME this is not needed from wr
 #[no_mangle]
 pub extern "C" fn wr_new_font(
     frame: *mut Frame,
@@ -465,6 +474,38 @@ pub extern "C" fn wr_transform_image(
 ) {
     let image: ImageRef = img.into();
     image.transform(frame, width, height, rotation);
+}
+
+#[no_mangle]
+pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
+    let f = FrameRef::new(frame);
+    let filename = unsafe {
+        AREF(
+            font_object,
+            emacs_sys::bindings::font_property_index::FONT_FILE_INDEX
+                .try_into()
+                .unwrap(),
+        )
+    };
+    let path = std::path::PathBuf::from(String::from(filename));
+    let mut font = FontRef::new(unsafe { emacs_sys::bindings::XFONT_OBJECT(font_object) });
+    let mut font_info = FontInfoRef::new(font.as_mut() as *mut font_info);
+    let index = font_info.index as u32;
+
+    let wr_font_key = f
+        .gl_renderer()
+        .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
+
+    let scale = f.gl_renderer().scale();
+    let wr_font_instance_key = f.gl_renderer().wr_add_font_instance(
+        wr_font_key,
+        FontSize::from_f64_px(font.pixel_size as f64 * scale as f64),
+        Some(FontInstanceOptions::default()),
+        Some(FontInstancePlatformOptions::default()),
+        Vec::new(),
+    );
+    // font_info.font_key = wr_font_key;
+    // font_info.font_instance_key = wr_font_instance_key;
 }
 
 #[no_mangle]

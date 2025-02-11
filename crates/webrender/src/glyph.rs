@@ -2,7 +2,6 @@ use crate::color::pixel_to_color;
 use crate::display_info::DisplayInfoExtWr;
 use crate::face::WrFace;
 use crate::font::FontInfoRef;
-use crate::font::FontInfoWrExt;
 use crate::frame::FrameExtWrCommon;
 use crate::image::ImageRef;
 use crate::util::HandyDandyRectBuilder;
@@ -22,6 +21,13 @@ use emacs_sys::number::LNumber;
 use euclid::Scale;
 use std::cmp::max;
 use webrender::api::units::*;
+use webrender::api::FontInstanceKey;
+use webrender::api::FontInstanceOptions;
+use webrender::api::FontInstancePlatformOptions;
+use webrender::api::FontKey;
+use webrender::api::FontSize;
+use webrender::api::FontTemplate;
+use webrender::api::NativeFontHandle;
 use webrender::api::*;
 use webrender::{self};
 // TODO: maybe configurable from lisp world
@@ -41,7 +47,10 @@ pub trait WrGlyph {
     fn underwave_area(&self) -> LayoutRect;
     fn font(&self) -> FontRef;
     fn font_info(&self) -> FontInfoRef;
-    fn font_instance_key(&self, f: FrameRef) -> FontInstanceKey;
+    fn font_key(&self) -> FontKey;
+    fn font_instance_key(&self) -> FontInstanceKey;
+    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>>;
+    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>>;
     fn image(&self) -> ImageRef;
     fn composite_p(&self) -> bool;
     fn automatic_composite_p(&self) -> bool;
@@ -213,12 +222,43 @@ impl WrGlyph for GlyphStringRef {
         }
     }
 
-    fn font_instance_key(&self, f: FrameRef) -> FontInstanceKey {
+    fn font_key(&self) -> FontKey {
         let font_info = self.font_info();
-        let scale = self.frame().gl_renderer().scale();
-        self.frame()
-            .gl_renderer()
-            .get_or_create_font_instance(font_info, font_info.font.pixel_size as f32 * scale)
+        let cstr =
+            unsafe { std::ffi::CStr::from_ptr(emacs_sys::bindings::SSDATA(font_info.filename)) };
+        let path = std::path::PathBuf::from(&*cstr.to_string_lossy());
+        let index = font_info.index as u32;
+        let font_tpl = FontTemplate::Native(NativeFontHandle { path, index });
+        // println!("font tpl {:?}", font_tpl);
+        self.frame().gl_renderer().wr_add_font(font_tpl)
+    }
+
+    fn font_instance_key(&self) -> FontInstanceKey {
+        let font_key = self.font_key();
+        let f = self.frame();
+        let scale = f.gl_renderer().scale();
+        f.gl_renderer().wr_add_font_instance(
+            font_key,
+            FontSize::from_f64_px(self.font().pixel_size as f64 * scale as f64),
+            Some(FontInstanceOptions::default()),
+            Some(FontInstancePlatformOptions::default()),
+            Vec::new(),
+        )
+    }
+
+    // file:///home/declan/src/webrender/target/doc/webrender/render_api/struct.RenderApi.html#method.get_glyph_dimensions
+    // Note: Internally, the internal texture cache doesn’t store ‘empty’ textures (height or width = 0) This means that glyph dimensions e.g. for spaces (’ ’) will mostly be None.
+    fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>> {
+        let key = self.font_instance_key();
+        let f = self.frame();
+        f.gl_renderer().glyph_dimensions(key, glyph_indices)
+    }
+
+    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
+        self.glyph_dimensions(glyph_indices)
+            .iter()
+            .map(|i| i.map(|d| d.advance))
+            .collect()
     }
 
     fn glyph_indices(&self) -> Vec<u32> {
@@ -278,7 +318,7 @@ impl WrGlyph for GlyphStringRef {
 
         let glyph_indices = self.glyph_indices();
 
-        let glyph_advances = font_info.get_glyph_advance_widths(glyph_indices.clone());
+        let glyph_advances = self.get_glyph_advance_widths(glyph_indices.clone());
         let mut glyph_instances: Vec<GlyphInstance> = vec![];
         // println!("indices: {:?}, dimensions: {:?}", glyph_indices.clone(), glyph_dimensions);
 
@@ -397,7 +437,7 @@ pub trait GlyphStringExtWr {
     fn clip_rect(&mut self) -> NativeRectangle;
     fn set_clipping(&mut self);
     fn set_clipping_exactly(&mut self, dist: Self);
-    fn draw(&mut self, f: FrameRef);
+    fn draw(&mut self);
     fn draw_stretch(&mut self);
     fn fill_rectangle(
         &mut self,
@@ -420,7 +460,7 @@ pub trait GlyphStringExtWr {
     fn draw_image(&mut self);
     fn draw_xwidget(&mut self);
     fn draw_background(&mut self, is_force: bool);
-    fn draw_foreground(&mut self, f: FrameRef);
+    fn draw_foreground(&mut self);
     fn draw_composite_foreground(&mut self);
     fn draw_glyphless_foreground(&mut self);
     fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
@@ -531,7 +571,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         log::error!("unimplemented set clipping ref: x_set_glyph_string_clipping");
     }
 
-    fn draw(&mut self, f: FrameRef) {
+    fn draw(&mut self) {
         let mut is_relief_drawn = false;
         // If S draws into the background of its successors, draw the
         // background of the successors first so that S can draw into it.
@@ -597,7 +637,7 @@ impl GlyphStringExtWr for GlyphStringRef {
                 } else {
                     self.draw_background(false);
                 }
-                self.draw_foreground(f);
+                self.draw_foreground();
             }
             glyph_type::COMPOSITE_GLYPH => {
                 if self.for_overlaps() != 0
@@ -847,7 +887,7 @@ impl GlyphStringExtWr for GlyphStringRef {
     }
 
     // Draw the foreground of glyph string S.
-    fn draw_foreground(&mut self, f: FrameRef) {
+    fn draw_foreground(&mut self) {
         let x = self.x;
         let y = self.y;
 
@@ -884,7 +924,7 @@ impl GlyphStringExtWr for GlyphStringRef {
                 let glyph_instances = self.scaled_glyph_instances(scale);
                 // draw foreground
                 if !glyph_instances.is_empty() {
-                    let font_instance_key = self.font_instance_key(f);
+                    let font_instance_key = self.font_instance_key();
                     let visible_rect = (x, y).by(self.width as i32, visible_height, scale);
 
                     builder.push_text(

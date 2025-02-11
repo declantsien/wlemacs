@@ -941,8 +941,13 @@ unless TYPE is `png'.  */)
   else
 #endif
     error ("Unsupported export type");
-
+#ifdef USE_CAIRO
   return pgtk_cr_export_frames (frames, surface_type);
+#elif USE_WEBRENDER
+  return Qnil;
+#else
+  return Qnil
+#endif
 }
 
 extern frame_parm_handler pgtk_frame_parm_handlers[];
@@ -1124,11 +1129,12 @@ update_watched_scale_factor (struct atimer *timer)
   if (scale_factor != FRAME_X_OUTPUT (f)->watched_scale_factor)
     {
       FRAME_X_OUTPUT (f)->watched_scale_factor = scale_factor;
+#ifdef USE_CAIRO
       pgtk_cr_update_surface_desired_size (f,
 					   FRAME_CR_SURFACE_DESIRED_WIDTH (f),
 					   FRAME_CR_SURFACE_DESIRED_HEIGHT (f),
 					   true);
-#ifdef USE_WEBRENDER
+#elif defined USE_WEBRENDER
       gl_renderer_fit_context (f);
 #endif
     }
@@ -1376,13 +1382,13 @@ This function is an internal primitive--use `make-frame' instead.  */ )
       specbind (Qx_resource_name, name);
     }
 
-#ifndef USE_WEBRENDER
+#ifdef USE_CAIRO
   register_font_driver (&ftcrfont_driver, f);
 #ifdef HAVE_HARFBUZZ
   register_font_driver (&ftcrhbfont_driver, f);
 #endif	/* HAVE_HARFBUZZ */
 #else
-register_swash_font_driver(f);
+  register_ftfont_driver(f);
 #endif  /* USE_WEBRENDER */
 
   gui_default_parameter (f, parms, Qfont_backend, Qnil,
@@ -1729,7 +1735,9 @@ register_swash_font_driver(f);
 
   FRAME_X_OUTPUT (f)->border_color_css_provider = NULL;
 
+#if defined USE_CAIRO
   FRAME_X_OUTPUT (f)->cr_surface_visible_bell = NULL;
+#endif
   FRAME_X_OUTPUT (f)->atimer_visible_bell = NULL;
   FRAME_X_OUTPUT (f)->watched_scale_factor = 1.0;
   struct timespec ts = make_timespec (1, 0);
@@ -2736,13 +2744,13 @@ x_create_tip_frame (struct pgtk_display_info *dpyinfo, Lisp_Object parms, struct
       specbind (Qx_resource_name, name);
     }
 
-#ifndef USE_WEBRENDER
+#ifdef USE_CAIRO
   register_font_driver (&ftcrfont_driver, f);
 #ifdef HAVE_HARFBUZZ
   register_font_driver (&ftcrhbfont_driver, f);
 #endif	/* HAVE_HARFBUZZ */
-#else
-register_swash_font_driver(f);
+#else 
+  register_ftfont_driver(f);
 #endif  /* USE_WEBRENDER */
 
   gui_default_parameter (f, parms, Qfont_backend, Qnil,
@@ -3377,7 +3385,9 @@ Text larger than the specified size is clipped.  */)
 
   unblock_input ();
 
+#ifdef USE_CAIRO
   pgtk_cr_update_surface_desired_size (tip_f, width, height, false);
+#endif
 
   w->must_be_updated_p = true;
   update_single_window (w);
@@ -3618,7 +3628,9 @@ The current page setup can be obtained using `x-get-page-setup'.  */)
   (void)
 {
   block_input ();
+#ifdef USE_CAIRO
   xg_page_setup_dialog ();
+#endif
   unblock_input ();
 
   return Qnil;
@@ -3648,7 +3660,9 @@ height, left-margin, and right-margin values.  */)
   Lisp_Object result;
 
   block_input ();
+#ifdef USE_CAIRO
   result = xg_get_page_setup ();
+#endif
   unblock_input ();
 
   return result;
@@ -3683,7 +3697,9 @@ visible.  */)
   redisplay_preserve_echo_area (32);
 
   block_input ();
+#ifdef USE_CAIRO
   xg_print_frames_dialog (frames);
+#endif
   unblock_input ();
 
   return Qnil;

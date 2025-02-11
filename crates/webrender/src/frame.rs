@@ -1,7 +1,6 @@
 use super::util::HandyDandyRectBuilder;
 use crate::color::pixel_to_color;
 use crate::face::WrFace;
-use crate::font::FontInfoWrExt;
 use crate::fringe::FringeBitmap;
 use crate::glyph::GlyphStringExtWr;
 use crate::glyph::WrGlyph;
@@ -240,7 +239,7 @@ impl FrameExtWrCommon for FrameRef {
                 let glyph_instances = s.scaled_glyph_instances(scale);
                 // draw foreground
                 if !glyph_instances.is_empty() {
-                    let font_instance_key = s.font_instance_key(self.clone());
+                    let font_instance_key = s.font_instance_key();
                     let visible_rect = (x, y).by(s.width as i32, visible_height, scale);
 
                     builder.push_text(
@@ -367,7 +366,7 @@ impl FrameExtWrCommon for FrameRef {
                     let glyph_instances = s.scaled_glyph_instances(scale);
                     // draw foreground
                     if !glyph_instances.is_empty() {
-                        let font_instance_key = s.font_instance_key(self.clone());
+                        let font_instance_key = s.font_instance_key();
                         builder.push_text(
                             &CommonItemProperties::new(visible_rect, space_and_clip),
                             visible_rect,

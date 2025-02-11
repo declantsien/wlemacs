@@ -1514,6 +1514,10 @@ ftfont_open (struct frame *f, Lisp_Object entity, int pixel_size)
       font->underline_thickness = 0;
     }
 
+#ifdef USE_WEBRENDER
+  ftfont_info->filename = filename;
+#endif
+
   return font_object;
 }
 
@@ -3181,6 +3185,14 @@ static struct font_driver const ftfont_driver =
   };
 
 #endif /* !USE_CAIRO */
+
+void
+register_ftfont_driver(struct frame *f) {
+  register_font_driver (&ftfont_driver, f);
+#ifdef HAVE_HARFBUZZ
+  register_font_driver (&fthbfont_driver, f);
+#endif	/* HAVE_HARFBUZZ */
+}
 
 void
 syms_of_ftfont (void)

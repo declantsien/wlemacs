@@ -537,10 +537,12 @@ enum
   (! (FRAME_HAS_VERTICAL_SCROLL_BARS_ON_LEFT (f)) ? 0	\
    : FRAME_SCROLL_BAR_COLS (f))
 
+#ifdef USE_CAIRO
 #define FRAME_CR_SURFACE_DESIRED_WIDTH(f)		\
   ((f)->output_data.pgtk->cr_surface_desired_width)
 #define FRAME_CR_SURFACE_DESIRED_HEIGHT(f) \
   ((f)->output_data.pgtk->cr_surface_desired_height)
+#endif
 
 
 /* If a struct input_event has a kind which is SELECTION_REQUEST_EVENT

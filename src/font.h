@@ -994,6 +994,7 @@ extern struct font_driver ftcrhbfont_driver;
 extern void syms_of_ftcrfont (void);
 #endif
 #ifdef USE_WEBRENDER
+extern void register_ftfont_driver(struct frame *);
 extern void register_swash_font_driver(struct frame *);
 extern void syms_of_swash_font(void);
 #endif

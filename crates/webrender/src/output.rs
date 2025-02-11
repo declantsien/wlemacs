@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use crate::font::FontInfoRef;
 use gleam::gl;
 use webrender::FastHashMap;
 
@@ -24,10 +23,17 @@ use super::texture::TextureResourceManager;
 
 pub struct GlRenderer {
     fonts: FastHashMap<FontTemplate, FontKey>,
-    font_instances:
-        FastHashMap<(FontKey, FontSize, FontInstanceFlags, SyntheticItalics), FontInstanceKey>,
+    font_instances: FastHashMap<
+        (
+            FontKey,
+            FontSize,
+            Option<FontInstanceOptions>,
+            Option<FontInstancePlatformOptions>,
+            Vec<FontVariation>,
+        ),
+        FontInstanceKey,
+    >,
     images: FastHashMap<ImageHash, (ImageKey, ImageDescriptor)>,
-    font_render_mode: Option<FontRenderMode>,
     allow_mipmaps: bool,
     pub render_api: RenderApi,
     pub document_id: DocumentId,
@@ -91,7 +97,6 @@ impl GlRenderer {
             fonts: FastHashMap::default(),
             font_instances: FastHashMap::default(),
             images: FastHashMap::default(),
-            font_render_mode: None,
             allow_mipmaps: false,
             render_api: api,
             document_id,
@@ -271,27 +276,37 @@ impl GlRenderer {
     pub fn clear_display_list_builder(&mut self) {
         let _ = std::mem::replace(&mut self.display_list_builder, None);
     }
-
     pub fn wr_add_font_instance(
         &mut self,
         font_key: FontKey,
-        size: f32,
-        flags: FontInstanceFlags,
-        render_mode: Option<FontRenderMode>,
-        synthetic_italics: SyntheticItalics,
+        size: FontSize,
+        options: Option<FontInstanceOptions>,
+        platform_options: Option<FontInstancePlatformOptions>,
+        variations: Vec<FontVariation>,
     ) -> FontInstanceKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
+        let hash_map_key = (
+            font_key,
+            size,
+            options,
+            platform_options,
+            variations.clone(),
+        );
+        if let Some(font_instance_key) = self.font_instances.get(&hash_map_key) {
+            return *font_instance_key;
+        };
 
         let key = self.render_api.generate_font_instance_key();
         let mut txn = Transaction::new();
-        let mut options: FontInstanceOptions = Default::default();
-        options.flags |= flags;
-        if let Some(render_mode) = render_mode {
-            options.render_mode = render_mode;
-        }
-        options.synthetic_italics = synthetic_italics;
-        txn.add_font_instance(key, font_key, size, Some(options), None, Vec::new());
+        txn.add_font_instance(
+            key,
+            font_key,
+            size.to_f32_px(),
+            options,
+            platform_options,
+            variations,
+        );
         self.render_api.send_transaction(self.document_id, txn);
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -301,7 +316,6 @@ impl GlRenderer {
         key
     }
 
-    #[allow(dead_code)]
     pub fn wr_delete_font_instance(&mut self, key: FontInstanceKey) {
         let mut txn = Transaction::new();
         txn.delete_font_instance(key);
@@ -311,16 +325,26 @@ impl GlRenderer {
     pub fn wr_add_font(&mut self, data: FontTemplate) -> FontKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
+
+        if let Some(key) = self.fonts.get(&data) {
+            return *key;
+        }
+
         let font_key = self.render_api.generate_font_key();
         let mut txn = Transaction::new();
         match data {
             FontTemplate::Raw(ref bytes, index) => {
                 txn.add_raw_font(font_key, bytes.to_vec(), index)
             }
-            FontTemplate::Native(native_font) => txn.add_native_font(font_key, native_font),
+            FontTemplate::Native(ref native_font) => {
+                txn.add_native_font(font_key, native_font.clone())
+            }
         }
 
         self.render_api.send_transaction(self.document_id, txn);
+
+        self.fonts.insert(data, font_key);
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             let elapsed = now.elapsed();
@@ -329,50 +353,29 @@ impl GlRenderer {
         font_key
     }
 
+    pub fn wr_delete_font(&mut self, key: FontKey) {
+        todo!()
+    }
+
+    pub fn glyph_indices(&self, key: FontKey, text: &str) -> Vec<Option<GlyphIndex>> {
+        self.render_api.get_glyph_indices(key, text)
+    }
+
+    /// Gets the dimensions for the supplied glyph keys
+    ///
+    /// Note: Internally, the internal texture cache doesn't store
+    /// 'empty' textures (height or width = 0)
+    /// This means that glyph dimensions e.g. for spaces (' ') will mostly be None.
+    pub fn glyph_dimensions(
+        &self,
+        key: FontInstanceKey,
+        glyph_indices: Vec<GlyphIndex>,
+    ) -> Vec<Option<GlyphDimensions>> {
+        self.render_api.get_glyph_dimensions(key, glyph_indices)
+    }
+
     pub fn allow_mipmaps(&mut self, allow_mipmaps: bool) {
         self.allow_mipmaps = allow_mipmaps;
-    }
-
-    pub fn set_font_render_mode(&mut self, render_mode: Option<FontRenderMode>) {
-        self.font_render_mode = render_mode;
-    }
-
-    pub fn get_or_create_font(&mut self, font: FontInfoRef) -> Option<FontKey> {
-        todo!();
-    }
-
-    // Create font instance with scaled size
-    pub fn get_or_create_font_instance(&mut self, font: FontInfoRef, size: f32) -> FontInstanceKey {
-        #[cfg(not(target_arch = "wasm32"))]
-        let now = std::time::Instant::now();
-        let font_key = self
-            .get_or_create_font(font)
-            .expect("Failed to obtain wr fontkey");
-        let flags = FontInstanceFlags::empty();
-        let synthetic_italics = SyntheticItalics::disabled();
-        let font_render_mode = self.font_render_mode;
-        let hash_map_key = (font_key, size.into(), flags, synthetic_italics);
-        let font_instance_key = self.font_instances.get(&hash_map_key);
-        let key = match font_instance_key {
-            Some(instance_key) => *instance_key,
-            None => {
-                let instance_key = self.wr_add_font_instance(
-                    font_key,
-                    size,
-                    flags,
-                    font_render_mode,
-                    synthetic_italics,
-                );
-                self.font_instances.insert(hash_map_key, instance_key);
-                instance_key
-            }
-        };
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let elapsed = now.elapsed();
-            log::trace!("get_or_create_font_instance in {:?}", elapsed);
-        }
-        key
     }
 
     pub fn add_image(&mut self, descriptor: ImageDescriptor, data: ImageData) -> ImageKey {

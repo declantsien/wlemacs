@@ -71,9 +71,11 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <gdk/gdkwayland.h>
 #endif
 
+#ifndef USE_WEBRENDER
 #define FRAME_CR_CONTEXT(f)		((f)->output_data.pgtk->cr_context)
 #define FRAME_CR_ACTIVE_CONTEXT(f)	((f)->output_data.pgtk->cr_active)
 #define FRAME_CR_SURFACE(f)		(cairo_get_target (FRAME_CR_CONTEXT (f)))
+#endif
 
 /* Non-zero means that a HELP_EVENT has been generated since Emacs
    start.  */
@@ -246,6 +248,8 @@ pgtk_get_device_for_event (struct pgtk_display_info *dpyinfo,
   return Qt;
 }
 
+#ifndef USE_WEBRENDER
+
 /* This is not a flip context in the same sense as gpu rendering
    scenes, it only occurs when a new context was required due to a
    resize or other fundamental change.  This is called when that
@@ -266,6 +270,7 @@ flip_cr_context (struct frame *f)
     }
   unblock_input ();
 }
+#endif
 
 
 static void
@@ -509,11 +514,13 @@ pgtk_free_frame_resources (struct frame *f)
 
   gtk_widget_destroy (FRAME_WIDGET (f));
 
+#ifdef USE_CAIRO
   if (FRAME_X_OUTPUT (f)->cr_surface_visible_bell != NULL)
     {
       cairo_surface_destroy (FRAME_X_OUTPUT (f)->cr_surface_visible_bell);
       FRAME_X_OUTPUT (f)->cr_surface_visible_bell = NULL;
     }
+#endif
 
   if (FRAME_X_OUTPUT (f)->atimer_visible_bell != NULL)
     {
@@ -3407,7 +3414,11 @@ pgtk_frame_up_to_date (struct frame *f)
   FRAME_MOUSE_UPDATE (f);
   if (!buffer_flipping_blocked_p ())
     {
+#ifdef USE_CAIRO
       flip_cr_context (f);
+#else
+      //TODO webrender
+#endif
       gtk_widget_queue_draw (FRAME_GTK_WIDGET (f));
     }
   unblock_input ();
@@ -3786,11 +3797,13 @@ recover_from_visible_bell (struct atimer *timer)
 {
   struct frame *f = timer->client_data;
 
+#ifdef USE_CAIRO
   if (FRAME_X_OUTPUT (f)->cr_surface_visible_bell != NULL)
     {
       cairo_surface_destroy (FRAME_X_OUTPUT (f)->cr_surface_visible_bell);
       FRAME_X_OUTPUT (f)->cr_surface_visible_bell = NULL;
     }
+#endif
 
   if (FRAME_X_OUTPUT (f)->atimer_visible_bell != NULL)
     FRAME_X_OUTPUT (f)->atimer_visible_bell = NULL;
@@ -3801,6 +3814,7 @@ recover_from_visible_bell (struct atimer *timer)
 static void
 pgtk_flash (struct frame *f)
 {
+#ifndef USE_WEBRENDER
   cairo_surface_t *surface_orig, *surface;
   cairo_t *cr;
   int width, height, flash_height, flash_left, flash_right;
@@ -3881,6 +3895,7 @@ pgtk_flash (struct frame *f)
 
   cairo_destroy (cr);
   unblock_input ();
+#endif
 }
 
 /* Make audible bell.  */
@@ -4845,7 +4860,11 @@ static void
 pgtk_buffer_flipping_unblocked_hook (struct frame *f)
 {
   block_input ();
+#ifdef USE_CAIRO
   flip_cr_context (f);
+#else
+  /* TODO */
+#endif
   gtk_widget_queue_draw (FRAME_GTK_WIDGET (f));
   unblock_input ();
 }
@@ -5146,7 +5165,9 @@ size_allocate (GtkWidget *widget, GtkAllocation *alloc,
   if (f)
     {
       xg_frame_resized (f, alloc->width, alloc->height);
+#ifdef USE_CAIRO
       pgtk_cr_update_surface_desired_size (f, alloc->width, alloc->height, false);
+#endif
     }
 }
 
@@ -7474,6 +7495,7 @@ pgtk_query_color (struct frame *f, Emacs_Color * color)
 void
 pgtk_clear_area (struct frame *f, int x, int y, int width, int height)
 {
+#ifdef USE_CAIRO
   cairo_t *cr;
 
   eassert (width > 0 && height > 0);
@@ -7484,6 +7506,9 @@ pgtk_clear_area (struct frame *f, int x, int y, int width, int height)
   cairo_rectangle (cr, x, y, width, height);
   cairo_fill (cr);
   pgtk_end_cr_clip (f);
+#else
+  //TODO wr_clear_area
+#endif
 }
 
 
@@ -7579,6 +7604,7 @@ If set to a non-float value, there will be no wait at all.  */);
   Fprovide (Qpgtk, Qnil);
 }
 
+#ifndef USE_WEBRENDER
 /* Cairo does not allow resizing a surface/context after it is
    created, so we need to trash the old context, create a new context
    on the next cr_clip_begin with the new dimensions and request a
@@ -7797,3 +7823,4 @@ pgtk_cr_export_frames (Lisp_Object frames, cairo_surface_type_t surface_type)
 
   return CALLN (Fapply, Qconcat, Fnreverse (acc));
 }
+#endif

@@ -245,6 +245,12 @@ fn generate_bindings() {
         builder = builder.blocklist_item("GtkWidget");
     }
 
+    #[cfg(feature = "webrender")]
+    {
+        builder = builder.blocklist_item("FontKey");
+        builder = builder.blocklist_item("FontInstanceKey");
+    }
+
     #[cfg(any(feature = "window-system-pgtk", feature = "window-system-wlc"))]
     {
         builder = builder.blocklist_item("FcPattern");
@@ -334,7 +340,11 @@ fn generate_bindings() {
     );
     let munged = re.unwrap().replace_all(&source, "");
     let mut file = File::create(out_path).unwrap();
-    write!(file, "use crate::{{\n    globals::emacs_globals,\n    sys::Lisp_Object,\n}};\n\nuse libc::{{timespec, fd_set, sigset_t}};\n\n#[cfg(feature = \"window-system-pgtk\")]\nuse gtk_sys::GtkWidget;\nuse fontconfig::fontconfig::FcPattern;\n").expect("Write error!");
+    let text: String = std::fs::read_to_string(
+        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("bindings.rs"),
+    )
+    .unwrap();
+    write!(file, "{}", text).expect("Write error!");
     file.write_all(munged.into_owned().as_bytes()).unwrap();
 }
 

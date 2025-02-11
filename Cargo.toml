@@ -41,7 +41,7 @@ path = "./src/emacs.rs"
 # # Compile with C xml2 library support.
 use-xml2 = []
 window-system-pgtk=["dep:pgtk"]
-wr_pgtk=["window-system-pgtk", "pgtk/webrender"]
+wr_pgtk=["window-system-pgtk", "pgtk/webrender", "emacs-sys/webrender"]
 window-system-wlc=["dep:wayland-client"]
 # Treat warnings as a build error on Travis.
 strict = []
