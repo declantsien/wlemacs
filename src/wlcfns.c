@@ -1548,7 +1548,10 @@ This function is an internal primitive--use `make-frame' instead.  */)
       specbind (Qx_resource_name, name);
     }
 
-  register_ftfont_driver(f);
+  register_font_driver (&ftwrfont_driver, f);
+#ifdef HAVE_HARFBUZZ
+  register_font_driver (&ftwrhbfont_driver, f);
+#endif	/* HAVE_HARFBUZZ */
 
 #ifdef GLYPH_DEBUG
   dpyinfo_refcount = dpyinfo->reference_count;

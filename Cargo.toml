@@ -95,6 +95,12 @@ default-features = false
 path = "/home/declan/src/webrender/webrender_api"
 default-features = false
 
+[workspace.dependencies.wr_glyph_rasterizer]
+# git = "https://github.com/declantsien/webrender.git"
+# rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
+path = "/home/declan/src/webrender/wr_glyph_rasterizer"
+default-features = false
+
 # Allow unwinding in functions called from C. See
 # https://www.reddit.com/r/rust/comments/565q1f/wrote_a_blogpost_from_my_experiences_the_arduous/d8h053m/
 [profile.dev]

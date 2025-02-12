@@ -21,7 +21,9 @@ raw-window-handle.workspace = true
 euclid.workspace = true
 parking_lot.workspace = true
 webrender = { workspace = true }
+wr_glyph_rasterizer.workspace = true
 skrifa = "0.27"
+rayon = "1"
 
 [build-dependencies]
 codegen = { path = "../codegen" }

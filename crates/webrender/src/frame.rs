@@ -20,6 +20,8 @@ use webrender::api::units::*;
 use webrender::api::*;
 
 pub trait FrameExtWrCommon {
+    fn is_wr_initialized(&self) -> bool;
+    fn webrender(&self) -> GlRendererRef;    
     fn gl_renderer(&self) -> GlRendererRef;
     fn free_gl_renderer_resources(&mut self);
     fn fg_color_f(&self) -> ColorF;
@@ -91,8 +93,16 @@ pub trait FrameExtWrCommon {
 }
 
 impl FrameExtWrCommon for FrameRef {
+    fn is_wr_initialized(&self) -> bool {
+        !self.output().gl_renderer.is_null()
+    }
+
+    fn webrender(&self) -> GlRendererRef {
+        self.gl_renderer()
+    }
+    
     fn gl_renderer(&self) -> GlRendererRef {
-        if self.output().gl_renderer.is_null() {
+        if !self.is_wr_initialized() {
             log::debug!("gl renderer data empty");
             let data = Box::new(GlRenderer::build(self.clone()));
             self.output().gl_renderer = Box::into_raw(data) as *mut libc::c_void;

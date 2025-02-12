@@ -51,6 +51,7 @@ gl_renderer_parse_color (struct frame *f, const char *color_name,
 #endif
 
 extern bool wr_add_font (struct frame *f, Lisp_Object font_object);
+extern void wr_prepara_font (struct frame *f, struct font *font);
 
 extern void
 gl_clear_under_internal_border (struct frame *f);

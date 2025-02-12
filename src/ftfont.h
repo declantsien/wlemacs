@@ -46,6 +46,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #endif	/* HAVE_M17N_FLT */
 #endif	/* HAVE_LIBOTF */
 
+#ifdef USE_WEBRENDER
+#include <fontconfig/fontconfig.h>
+#endif  /* HAVE_HARFBUZZ */
+
 extern void ftfont_fix_match (FcPattern *, FcPattern *);
 extern void ftfont_add_rendering_parameters (FcPattern *, Lisp_Object);
 extern FcPattern *ftfont_entity_pattern (Lisp_Object, int);
@@ -69,6 +73,8 @@ struct font_info
 
 #if defined (USE_CAIRO) || defined (USE_BE_CAIRO)
   cairo_scaled_font_t *cr_scaled_font;
+#endif /*USE_CAIRO*/
+#if defined (USE_CAIRO) || defined (USE_BE_CAIRO) || defined (USE_WEBRENDER)
   /* Scale factor from the bitmap strike metrics in 1/64 pixels, used
      as the hb_position_t value in HarfBuzz, to those in (scaled)
      pixels.  The value is 0 for scalable fonts.  */

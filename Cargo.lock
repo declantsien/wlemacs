@@ -2592,8 +2592,10 @@ dependencies = [
  "log",
  "parking_lot",
  "raw-window-handle",
+ "rayon",
  "skrifa",
  "webrender 0.62.0",
+ "wr_glyph_rasterizer",
 ]
 
 [[package]]

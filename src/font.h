@@ -997,6 +997,12 @@ extern void syms_of_ftcrfont (void);
 extern void register_ftfont_driver(struct frame *);
 extern void register_swash_font_driver(struct frame *);
 extern void syms_of_swash_font(void);
+
+extern struct font_driver const ftwrfont_driver;
+#ifdef HAVE_HARFBUZZ
+extern struct font_driver ftwrhbfont_driver;
+#endif	/* HAVE_HARFBUZZ */
+extern void syms_of_ftwrfont (void);
 #endif
 
 #ifndef FONT_DEBUG
