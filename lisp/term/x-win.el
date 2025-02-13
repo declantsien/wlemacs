@@ -74,9 +74,7 @@
 (require 'term/common-win)
 (require 'frame)
 (require 'mouse)
-(if (not (featurep 'wlc))
-    (require 'scroll-bar)
-  )
+(require 'scroll-bar)
 (require 'select)
 (require 'menu-bar)
 (require 'fontset)
@@ -1241,8 +1239,8 @@ This returns an error if any Emacs frames are X frames."
 	  (aset x-resource-name i ?-))))
 
   (x-open-connection (or display
-			 (setq x-display-name (or (getenv "WAYLAND_DISPLAY" (selected-frame))
-						  (getenv "WAYLAND_DISPLAY"))))
+			 (setq x-display-name (or (getenv "DISPLAY" (selected-frame))
+						  (getenv "DISPLAY"))))
 		     x-command-line-resources
 		     ;; Exit Emacs with fatal error if this fails and we
 		     ;; are the initial display.
