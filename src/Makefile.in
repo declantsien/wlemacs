@@ -413,28 +413,7 @@ WAYLAND_CLIENT_OBJ = @WAYLAND_CLIENT_OBJ@
 ## invalidates the signature, we must re-sign to fix it.
 DO_CODESIGN=$(patsubst aarch64-apple-darwin%,yes,@configuration@)
 
-# 'make' verbosity.
-AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
-
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 =
-
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 =
-
-AM_V_GEN = $(am__v_GEN_@AM_V@)
-am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
-am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 =
-
-AM_V_at = $(am__v_at_@AM_V@)
-am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
-am__v_at_0 = @
-am__v_at_1 =
+-include ${top_builddir}/src/verbose.mk
 
 CARGO_BUILD=@CARGO_BUILD@
 CARGO_CLEAN=@CARGO_CLEAN@
@@ -453,11 +432,6 @@ CARGO_BUILD_DIR=release
 else
 CARGO_BUILD_DIR=debug
 endif
-
-AM_V_NO_PD = $(am__v_NO_PD_@AM_V@)
-am__v_NO_PD_ = $(am__v_NO_PD_@AM_DEFAULT_V@)
-am__v_NO_PD_0 = --no-print-directory
-am__v_NO_PD_1 =
 
 bootstrap_exe = ../src/bootstrap-emacs$(EXEEXT)
 ifeq ($(DUMPING),pdumper)
