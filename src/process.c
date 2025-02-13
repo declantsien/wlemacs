@@ -5296,7 +5296,6 @@ wait_reading_process_output (intmax_t time_limit, int nsecs, int read_kbd,
 			     Lisp_Object wait_for_cell,
 			     struct Lisp_Process *wait_proc, int just_wait_proc)
 {
-  /* fprintf(stderr, "wait_reading_process_output\n"); */
   static int last_read_channel = -1;
   int channel, nfds;
   fd_set Available;
@@ -6147,7 +6146,6 @@ wait_reading_process_output (intmax_t time_limit, int nsecs, int read_kbd,
     got_some_output = min (INT_MAX, (wait_proc->nbytes_read
                                      - prev_wait_proc_nbytes_read));
 
-  /* fprintf(stderr, "wait_reading_process_output end\n"); */
   return got_some_output;
 }
 
