@@ -1032,8 +1032,6 @@ struct x_output
 #define NS_FACE_FOREGROUND(f) ((f)->foreground)
 #define NS_FACE_BACKGROUND(f) ((f)->background)
 
-#define FRAME_DEFAULT_FACE(f) FACE_FROM_ID_OR_NULL (f, DEFAULT_FACE_ID)
-
 #define FRAME_NS_VIEW(f) ((f)->output_data.ns->view)
 #define FRAME_CURSOR_COLOR(f) ((f)->output_data.ns->cursor_color)
 #define FRAME_POINTER_TYPE(f) ((f)->output_data.ns->current_pointer)

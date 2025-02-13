@@ -1384,6 +1384,8 @@ FRAME_PARENT_FRAME (struct frame *f)
 #define FRAME_FOREGROUND_PIXEL(f) ((f)->foreground_pixel)
 #define FRAME_BACKGROUND_PIXEL(f) ((f)->background_pixel)
 
+#define FRAME_DEFAULT_FACE(f) FACE_FROM_ID_OR_NULL (f, DEFAULT_FACE_ID)
+
 /* Return a pointer to the face cache of frame F.  */
 #define FRAME_FACE_CACHE(F)	(F)->face_cache
 

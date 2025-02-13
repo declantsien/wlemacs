@@ -23,6 +23,65 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <config.h>
 
 #include "lisp.h"
+#include "blockinput.h"
+#include "frame.h"
+
+void
+wr_after_update_window_line (struct window *w,
+			       struct glyph_row *desired_row)
+{
+  struct frame *f;
+  int width, height;
+
+  /* begin copy from other terms */
+  eassert (w);
+
+  if (!desired_row->mode_line_p && !w->pseudo_window_p)
+    desired_row->redraw_fringe_bitmaps_p = 1;
+
+  /* When a window has disappeared, make sure that no rest of
+     full-width rows stays visible in the internal border.  */
+  if (windows_or_buffers_changed
+      && desired_row->full_width_p
+      && (f = XFRAME (w->frame),
+	  width = FRAME_INTERNAL_BORDER_WIDTH (f),
+	  width != 0) && (height = desired_row->visible_height, height > 0))
+    {
+      int y = WINDOW_TO_FRAME_PIXEL_Y (w, max (0, desired_row->y));
+
+      block_input ();
+      wr_clear_frame_area (f, 0, y, width, height);
+      wr_clear_frame_area (f,
+			     FRAME_PIXEL_WIDTH (f) - width, y, width, height);
+      unblock_input ();
+    }
+}
+
+void
+wr_clear_frame_area (struct frame *f, int x, int y, int width, int height)
+{
+  wr_clear_area (f, x, y, width, height);
+}
+
+void
+wr_clear_frame (struct frame *f)
+{
+  if (!FRAME_DEFAULT_FACE (f))
+    return;
+
+  mark_window_cursors_off (XWINDOW (FRAME_ROOT_WINDOW (f)));
+
+  block_input ();
+  wr_clear_area (f, 0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+  unblock_input ();
+}
+
+void
+wr_update_begin (struct frame *f)
+{
+  wr_clear_under_internal_border (f);
+}
+
 
 void
 syms_of_webrender (void)

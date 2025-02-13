@@ -67,10 +67,6 @@ use webrender::api::units::LayoutPoint;
 use webrender::api::units::LayoutRect;
 use webrender::api::ColorF;
 
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern "C" fn wr_update_window_begin(w: *mut Window) {}
-
 #[no_mangle]
 pub extern "C" fn wr_update_window_end(
     window: *mut Window,
@@ -116,16 +112,6 @@ pub extern "C" fn wr_flush_display(f: *mut Frame) {
     let frame: FrameRef = f.into();
 
     frame.gl_renderer().flush();
-}
-
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern "C" fn wr_after_update_window_line(w: *mut Window, desired_row: *mut glyph_row) {
-    let window: WindowRef = w.into();
-
-    if !unsafe { (*desired_row).mode_line_p() } && !window.pseudo_window_p() {
-        unsafe { (*desired_row).set_redraw_fringe_bitmaps_p(true) };
-    }
 }
 
 #[allow(unused_variables)]
@@ -240,13 +226,8 @@ pub extern "C" fn wr_draw_vertical_window_border(window: *mut Window, x: i32, y0
     frame.draw_vertical_window_border(face, x, y0, y1);
 }
 
-#[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn wr_clear_frame_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
-    wr_clear_area(f, x, y, width, height);
-}
-
-fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
+pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
     let mut frame: FrameRef = f.into();
 
     let color = pixel_to_color(frame.background_pixel);
@@ -376,19 +357,6 @@ pub extern "C" fn wr_defined_color(
         }
         _ => false,
     }
-}
-
-#[no_mangle]
-pub extern "C" fn wr_clear_frame(f: *mut Frame) {
-    let frame: FrameRef = f.into();
-    let mut output = frame.gl_renderer();
-
-    output.clear_display_list_builder();
-
-    let size = frame.gl_renderer().device_size();
-    println!("size: {:?}", size);
-
-    wr_clear_frame_area(f, 0, 0, size.width, size.height);
 }
 
 #[no_mangle]
@@ -526,7 +494,7 @@ pub extern "C" fn image_sync_to_pixmaps(_frame: FrameRef, _img: *mut image) {
 }
 
 #[no_mangle]
-pub extern "C" fn gl_clear_under_internal_border(f: *mut Frame) {
+pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     let mut f = FrameRef::new(f);
     let border = f.internal_border_width();
     let width = f.pixel_width;

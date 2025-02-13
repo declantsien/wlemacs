@@ -491,8 +491,8 @@ static struct redisplay_interface wlc_redisplay_interface = {
   gui_clear_end_of_line,
   wr_scroll_run,
   wr_after_update_window_line,
-  wr_update_window_begin,
-  wr_update_window_end,
+  NULL, /* update_window_begin */
+  NULL, /* update_window_end   */
   wr_flush_display,
   gui_clear_window_mouse_face,
   gui_get_glyph_overhangs,
@@ -504,7 +504,7 @@ static struct redisplay_interface wlc_redisplay_interface = {
   wr_draw_glyph_string,
   0, /* wl_define_frame_cursor, */
   wr_clear_frame_area,
-  0, /* wlc_clear_under_internal_border, */
+  wr_clear_under_internal_border,
   wr_draw_window_cursor,
   wr_draw_vertical_window_border,
   wr_draw_window_divider,
@@ -684,7 +684,7 @@ wlc_create_terminal (struct wlc_display_info *dpyinfo)
 /*   terminal->delete_glyphs_hook = x_delete_glyphs; */
 /*   terminal->ring_bell_hook = XTring_bell; */
 /*   terminal->toggle_invisible_pointer_hook = XTtoggle_invisible_pointer; */
-  /* terminal->update_begin_hook = x_update_begin; */
+  terminal->update_begin_hook = wr_update_begin;
   terminal->update_end_hook = wr_update_end;
   terminal->read_socket_hook = wlc_read_socket;
 /*   terminal->frame_up_to_date_hook = XTframe_up_to_date; */

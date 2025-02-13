@@ -3724,8 +3724,8 @@ static struct redisplay_interface pgtk_redisplay_interface = {
   gui_clear_end_of_line,
   wr_scroll_run,
   wr_after_update_window_line,
-  wr_update_window_begin,
-  wr_update_window_end,
+  NULL, /* update_window_begin */
+  NULL, /* update_window_end   */
   wr_flush_display,
   gui_clear_window_mouse_face,
   gui_get_glyph_overhangs,
@@ -3737,7 +3737,7 @@ static struct redisplay_interface pgtk_redisplay_interface = {
   wr_draw_glyph_string,
   pgtk_define_frame_cursor,
   wr_clear_frame_area,
-  pgtk_clear_under_internal_border,
+  wr_clear_under_internal_border,
   wr_draw_window_cursor,
   wr_draw_vertical_window_border,
   wr_draw_window_divider,
@@ -4886,6 +4886,7 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->update_begin_hook = pgtk_update_begin;
   terminal->update_end_hook = pgtk_update_end;
 #else
+  terminal->update_begin_hook = wr_update_begin;
   terminal->update_end_hook = wr_update_end;
 #endif  /* USE_WEBRENDER */
   terminal->read_socket_hook = pgtk_read_socket;

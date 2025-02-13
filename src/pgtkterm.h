@@ -511,7 +511,6 @@ enum
 /* Turning a lisp vector value into a pointer to a struct scroll_bar.  */
 #define XSCROLL_BAR(vec) ((struct scroll_bar *) XVECTOR (vec))
 
-#define FRAME_DEFAULT_FACE(f) FACE_FROM_ID_OR_NULL (f, DEFAULT_FACE_ID)
 #define FRAME_MENUBAR_HEIGHT(f) (FRAME_X_OUTPUT (f)->menubar_height)
 #define FRAME_TOOLBAR_TOP_HEIGHT(f) ((f)->output_data.pgtk->toolbar_top_height)
 #define FRAME_TOOLBAR_BOTTOM_HEIGHT(f) \

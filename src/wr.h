@@ -4,6 +4,9 @@ typedef struct pgtk_output output;
 typedef struct wlc_output output;
 #endif
 
+extern void wr_after_update_window_line (struct window *w,
+					 struct glyph_row *desired_row);
+
 extern int wr_get_fontset(output* output);
 extern struct font *wr_get_font(output* output);
 extern int wr_get_baseline_offset(output* output);
@@ -18,14 +21,14 @@ extern void wr_scroll_run (struct window *w, struct run *run);
 
 extern void wr_update_window_begin (struct window *);
 extern void wr_update_window_end (struct window *, bool, bool);
-extern void wr_after_update_window_line (struct window *w,
-					 struct glyph_row *desired_row);
+
 extern void wr_flush_display (struct frame *f);
 extern void
 wr_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 		       struct draw_fringe_bitmap_params *p);
 extern void
 wr_draw_glyph_string (struct glyph_string *s);
+extern void wr_clear_area (struct frame *, int, int, int, int);
 extern void wr_clear_frame_area (struct frame *, int, int, int, int);
 extern void
 wr_draw_window_cursor (struct window *w, struct glyph_row *glyph_row, int x,
@@ -37,6 +40,8 @@ extern void
 wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1);
 extern void
 wr_free_pixmap (struct frame *f, Emacs_Pixmap pixmap);
+extern void
+wr_update_begin (struct frame *f);
 extern void
 wr_update_end (struct frame *f);
 extern Lisp_Object wr_new_font (struct frame *f, Lisp_Object font_object, int fontset);
@@ -54,7 +59,7 @@ extern bool wr_add_font (struct frame *f, Lisp_Object font_object);
 extern void wr_prepara_font (struct frame *f, struct font *font);
 
 extern void
-gl_clear_under_internal_border (struct frame *f);
+wr_clear_under_internal_border (struct frame *f);
 extern void
 gl_renderer_free_frame_resources (struct frame *f);
 extern void
