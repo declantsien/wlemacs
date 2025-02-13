@@ -120,7 +120,7 @@ typedef XImage *Emacs_Pix_Context;
 #define NativeRectangle XRectangle
 #endif
 
-#if defined USE_CAIRO && !defined USE_WEBRENDER
+#ifdef USE_CAIRO
 /* Minimal version of XImage.  */
 typedef struct
 {
