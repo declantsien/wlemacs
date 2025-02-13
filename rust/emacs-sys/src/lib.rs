@@ -9,10 +9,7 @@
 // we have a bunch of unused code during testing at the moment, somehow
 #![cfg_attr(test, allow(unused))]
 #![cfg_attr(feature = "strict", deny(warnings))]
-#![feature(concat_idents)]
-#![feature(never_type)]
 #![feature(stmt_expr_attributes)]
-#![feature(async_closure)]
 
 #[cfg(all(glutin, surfman, have_wayland_client))]
 compile_error!("You cannot specify both `glutin` and `surfman` features for winit window system");
