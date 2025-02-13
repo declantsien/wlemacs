@@ -753,9 +753,9 @@ endif
 ## existence when setting Vinstallation_directory (FIXME?).
 ## This goes on to affect various things, and the emacs binary fails
 ## to start if Vinstallation_directory has the wrong value.
-temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBWR_ARCHIVE) \
-  $(LIBEGNU_ARCHIVE) $(EMACSRES) $(charsets) $(charscript) ${emoji-zwj} \
-  $(MAKE_PDUMPER_FINGERPRINT) $(LIBWAYLAND_PROTOCOL)
+temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBEGNU_ARCHIVE) $(EMACSRES) \
+  $(charsets) $(charscript) ${emoji-zwj} $(MAKE_PDUMPER_FINGERPRINT) \
+  $(LIBWAYLAND_PROTOCOL) $(LIBWR_ARCHIVE)
 ifeq ($(HAVE_BE_APP),yes)
 	$(AM_V_CXXLD)$(CXX) -o $@.tmp \
 	  $(ALL_CFLAGS) $(TEMACS_LDFLAGS) $(LDFLAGS) \
