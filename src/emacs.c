@@ -1250,7 +1250,7 @@ maybe_load_seccomp (int argc, char **argv)
 
 #if !defined HAVE_ANDROID || defined ANDROID_STUBIFY
 int
-main1 (int argc, char **argv)
+main (int argc, char **argv)
 #else
 int
 android_emacs_init (int argc, char **argv, char *dump_file)

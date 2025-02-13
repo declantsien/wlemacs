@@ -7189,10 +7189,6 @@ if test "${window_system}" = "pgtk" || test "${window_system}" = "wlc"; then
   if test "$HAVE_CAIRO" = "yes"; then
     FONT_OBJ="$FONT_OBJ ftcrfont.o"
   fi
-
-  if test "${with_webrender}" = "yes" ; then
-    FONT_OBJ="$FONT_OBJ ftwrfont.o"
-  fi
 fi
 
 if test "${HAVE_BE_APP}" = "yes" ; then

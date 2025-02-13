@@ -6044,9 +6044,6 @@ match.  */);
 #ifdef HAVE_WINDOW_SYSTEM
 #ifdef HAVE_FREETYPE
   syms_of_ftfont ();
-#ifdef USE_WEBRENDER
-  syms_of_ftwrfont ();
-#endif /* USE_WEBRENDER */
 #ifdef HAVE_X_WINDOWS
   syms_of_xfont ();
 #ifdef USE_CAIRO

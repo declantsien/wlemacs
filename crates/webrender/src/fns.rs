@@ -687,6 +687,20 @@ pub fn wr_api_stop_capture_sequence() {
 #[no_mangle]
 #[allow(unused_doc_comments)]
 pub extern "C" fn syms_of_webrender() {
+    // #[cfg(debug_assertions)]
+    use tracing_subscriber::fmt;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::EnvFilter;
+
+    // install global collector configured based on EMACSNG_LOG env var.
+    // #[cfg(debug_assertions)]
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_env("WR_LOG"))
+        .init();
+
+    log::trace!("Emacs WR");
+
     def_lisp_sym!(Qwr, "wr");
     unsafe {
         Fprovide(Qwr, Qnil);

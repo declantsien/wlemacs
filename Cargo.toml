@@ -14,8 +14,6 @@ emacs-sys.path = "./crates/emacs-sys"
 pgtk = { path = "./crates/pgtk", optional = true, default-features = false }
 wayland-client = { path = "./crates/wayland-client", optional = true, default-features = false }
 clippy = { version = "*", optional = true }
-log.workspace = true
-tracing = "0.1"
 
 [dependencies.tracing-subscriber]
 version = "0.3"

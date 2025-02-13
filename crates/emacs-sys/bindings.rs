@@ -10,10 +10,3 @@ use gtk_sys::GtkWidget;
 
 #[cfg(feature = "fontconfig")]
 use fontconfig::fontconfig::FcPattern;
-
-#[cfg(feature = "webrender")]
-use webrender_api::FontKey;
-use webrender_api::FontInstanceKey;
-
-
-

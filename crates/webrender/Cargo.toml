@@ -22,8 +22,20 @@ euclid.workspace = true
 parking_lot.workspace = true
 webrender = { workspace = true }
 wr_glyph_rasterizer.workspace = true
-skrifa = "0.27"
 rayon = "1"
+tracing = "0.1"
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+features = [
+  "matchers",
+  "regex",
+  "once_cell",
+  "tracing",
+  "std",
+  "thread_local",
+  "env-filter"
+]
 
 [build-dependencies]
 codegen = { path = "../codegen" }
