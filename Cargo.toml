@@ -1,6 +1,6 @@
 ### Workspace configurations
 [workspace]
-members = ["crates/*"]
+members = ["rust/*"]
 exclude = [
 ]
 resolver = "2"
@@ -61,11 +61,6 @@ lto = true
 opt-level = 'z' # Optimize for size
 
 ### Patches
-
-# # surfman raw-window-handle 0.6
-# [patch.crates-io.surfman]
-# git = "https://github.com/declantsien/surfman.git"
-# rev = "51ac8db9f4584bcad9d8223103386bd05c5f2048"
 
 # glutin raw-window-handle 0.6
 [patch.crates-io.glutin]
