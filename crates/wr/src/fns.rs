@@ -700,4 +700,3 @@ pub extern "C" fn wr_log_init() {
 
     log::trace!("Emacs WR");
 }
-

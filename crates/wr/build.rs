@@ -1,12 +1,12 @@
 use cfg_aliases::cfg_aliases;
 
+use anyhow::Context;
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
-use anyhow::Context;
 
 const RGB_TXT_PATH: &str = "../../etc/rgb.txt";
 
@@ -76,7 +76,8 @@ fn generate_color_map() -> anyhow::Result<()> {
     );
 
     let mut file = File::create(out_path).context("file create error")?;
-    file.write_all(color_fun_source.as_bytes()).context("write all error")?;
+    file.write_all(color_fun_source.as_bytes())
+        .context("write all error")?;
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed={}", RGB_TXT_PATH);
