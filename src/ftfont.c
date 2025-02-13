@@ -1515,7 +1515,7 @@ ftfont_open (struct frame *f, Lisp_Object entity, int pixel_size)
     }
 
 #ifdef USE_WEBRENDER
-  /* wr_prepara_font(f, font);   */
+  wr_prepara_font(f, font);
 #endif
 
   return font_object;
