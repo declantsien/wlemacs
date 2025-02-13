@@ -7899,10 +7899,6 @@ AC_SUBST([SUBDIR_MAKEFILES_IN])
 SMALL_JA_DIC=$with_small_ja_dic
 AC_SUBST([SMALL_JA_DIC])
 
-if test "$HAVE_JAVASCRIPT" = "yes"; then
-  AC_DEFINE(USE_JAVASCRIPT, 1, [Define to 1 if you want to use deno/javascript.])
-fi
-
 dnl AC_CONFIG_FILES([$srcdir/.cargo/config:$srcdir/.cargo/config.in])
 AC_CONFIG_FILES([$srcdir/crates/emacs-sys/build.rs])
 
