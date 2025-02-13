@@ -24,6 +24,3 @@ mod fringe;
 mod glyph;
 mod texture;
 mod util;
-
-#[cfg(not(test))]
-include!(concat!(env!("OUT_DIR"), "/c_exports.rs"));

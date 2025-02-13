@@ -3980,10 +3980,6 @@ syms_of_data (void)
 {
   Lisp_Object error_tail, arith_tail, recursion_tail;
 
-#ifdef USE_WEBRENDER	  
-  wr_init_syms();
-#endif 
-
   DEFSYM (Qquote, "quote");
   DEFSYM (Qlambda, "lambda");
   DEFSYM (Qerror_conditions, "error-conditions");
