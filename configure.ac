@@ -7205,8 +7205,11 @@ AC_SUBST([XMENU_OBJ])
 AC_SUBST([XOBJ])
 AC_SUBST([FONT_OBJ])
 
-WEBRENDER_LIBS=
+WR_OBJ=
+WR_LIBS=
 if test "${with_webrender}" = "yes" ; then
+
+  WR_OBJ="wr.o"
 
   if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc"; then
      AC_MSG_ERROR(Webrender currently only supports wlc and pgtk window system.
@@ -7216,11 +7219,14 @@ if test "${with_webrender}" = "yes" ; then
 
   AC_DEFINE(USE_WEBRENDER, 1,
 	    [Define to 1 if you want to use the webrender.])
+  AC_DEFINE(USE_WR, 1,
+	    [Define to 1 if you want to use the webrender.])
 
   AC_DEFINE(HAVE_NATIVE_IMAGE_API, 1, [Define to use native OS APIs for images.])
             NATIVE_IMAGE_API="yes (webrender)"
 fi
-AC_SUBST(WEBRENDER_LIBS)
+AC_SUBST(WR_LIBS)
+AC_SUBST(WR_OBJ)
 
 WIDGET_OBJ=
 MOTIF_LIBW=

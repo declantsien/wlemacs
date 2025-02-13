@@ -4,9 +4,6 @@
 
 #[macro_use]
 extern crate emacs_sys;
-extern crate lisp_macros;
-#[macro_use]
-extern crate lisp_util;
 
 pub mod display_info;
 pub mod frame;

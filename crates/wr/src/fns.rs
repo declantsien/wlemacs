@@ -60,7 +60,6 @@ use webrender::api::FontTemplate;
 use webrender::api::NativeFontHandle;
 
 use crate::font::FontInfoRef;
-use lisp_macros::lisp_fn;
 use std::cmp::max;
 use std::ffi::CString;
 use std::ptr;
@@ -607,86 +606,86 @@ pub extern "C" fn gl_renderer_fit_context(f: *mut Frame) {
     frame.gl_renderer().update();
 }
 
-/// Capture the contents of the current WebRender frame and
-/// save them to a folder relative to the current working directory.
-///
-/// If START-SEQUENCE is not nil, start capturing each WebRender frame to disk.
-/// If there is already a sequence capture in progress, stop it and start a new
-/// one, with the new path and flags.
-#[allow(unused_variables)]
-#[lisp_fn(min = "2")]
-pub fn wr_api_capture(path: LispStringRef, bits_raw: LispObject, start_sequence: LispObject) {
-    #[cfg(not(feature = "capture"))]
-    error!("Webrender capture not avaiable");
-    #[cfg(feature = "capture")]
-    {
-        use emacs_sys::frame::window_frame_live_or_selected;
-        use std::fs::create_dir_all;
-        use std::fs::File;
-        use std::io::Write;
+// /// Capture the contents of the current WebRender frame and
+// /// save them to a folder relative to the current working directory.
+// ///
+// /// If START-SEQUENCE is not nil, start capturing each WebRender frame to disk.
+// /// If there is already a sequence capture in progress, stop it and start a new
+// /// one, with the new path and flags.
+// #[allow(unused_variables)]
+// #[lisp_fn(min = "2")]
+// pub fn wr_api_capture(path: LispStringRef, bits_raw: LispObject, start_sequence: LispObject) {
+//     #[cfg(not(feature = "capture"))]
+//     error!("Webrender capture not avaiable");
+//     #[cfg(feature = "capture")]
+//     {
+//         use emacs_sys::frame::window_frame_live_or_selected;
+//         use std::fs::create_dir_all;
+//         use std::fs::File;
+//         use std::io::Write;
 
-        let path = std::path::PathBuf::from(path.to_utf8());
-        match create_dir_all(&path) {
-            Ok(_) => {}
-            Err(err) => {
-                error!("Unable to create path '{:?}' for capture: {:?}", &path, err);
-            }
-        };
-        let bits_raw = unsafe {
-            emacs_sys::bindings::check_integer_range(
-                bits_raw,
-                webrender::CaptureBits::SCENE.bits() as i64,
-                webrender::CaptureBits::all().bits() as i64,
-            )
-        };
+//         let path = std::path::PathBuf::from(path.to_utf8());
+//         match create_dir_all(&path) {
+//             Ok(_) => {}
+//             Err(err) => {
+//                 error!("Unable to create path '{:?}' for capture: {:?}", &path, err);
+//             }
+//         };
+//         let bits_raw = unsafe {
+//             emacs_sys::bindings::check_integer_range(
+//                 bits_raw,
+//                 webrender::CaptureBits::SCENE.bits() as i64,
+//                 webrender::CaptureBits::all().bits() as i64,
+//             )
+//         };
 
-        let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
-        let canvas = frame.gl_renderer();
-        let bits = webrender::CaptureBits::from_bits(bits_raw as _).unwrap();
-        let revision_file_path = path.join("wr.txt");
-        message!("Trying to save webrender capture under {:?}", &path);
+//         let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
+//         let canvas = frame.gl_renderer();
+//         let bits = webrender::CaptureBits::from_bits(bits_raw as _).unwrap();
+//         let revision_file_path = path.join("wr.txt");
+//         message!("Trying to save webrender capture under {:?}", &path);
 
-        // api call here can possibly make Emacs panic. For example there isn't
-        // enough disk space left. `panic::catch_unwind` isn't support here.
-        if start_sequence.is_nil() {
-            canvas.render_api.save_capture(path, bits);
-        } else {
-            canvas.render_api.start_capture_sequence(path, bits);
-        }
+//         // api call here can possibly make Emacs panic. For example there isn't
+//         // enough disk space left. `panic::catch_unwind` isn't support here.
+//         if start_sequence.is_nil() {
+//             canvas.render_api.save_capture(path, bits);
+//         } else {
+//             canvas.render_api.start_capture_sequence(path, bits);
+//         }
 
-        match File::create(revision_file_path) {
-            Ok(mut file) => {
-                if let Err(err) = write!(&mut file, "{}", "") {
-                    error!("Unable to write webrender revision: {:?}", err)
-                }
-            }
-            Err(err) => error!(
-                "Capture triggered, creating webrender revision info skipped: {:?}",
-                err
-            ),
-        }
-    }
-}
+//         match File::create(revision_file_path) {
+//             Ok(mut file) => {
+//                 if let Err(err) = write!(&mut file, "{}", "") {
+//                     error!("Unable to write webrender revision: {:?}", err)
+//                 }
+//             }
+//             Err(err) => error!(
+//                 "Capture triggered, creating webrender revision info skipped: {:?}",
+//                 err
+//             ),
+//         }
+//     }
+// }
 
-/// Stop a capture begun with `wr--capture'.
-#[lisp_fn(min = "0")]
-pub fn wr_api_stop_capture_sequence() {
-    #[cfg(not(feature = "capture"))]
-    error!("Webrender capture not avaiable");
-    #[cfg(feature = "capture")]
-    {
-        use emacs_sys::frame::window_frame_live_or_selected;
+// /// Stop a capture begun with `wr--capture'.
+// #[lisp_fn(min = "0")]
+// pub fn wr_api_stop_capture_sequence() {
+//     #[cfg(not(feature = "capture"))]
+//     error!("Webrender capture not avaiable");
+//     #[cfg(feature = "capture")]
+//     {
+//         use emacs_sys::frame::window_frame_live_or_selected;
 
-        message!("Stop capturing WR state");
-        let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
-        let canvas = frame.gl_renderer();
-        canvas.render_api.stop_capture_sequence();
-    }
-}
+//         message!("Stop capturing WR state");
+//         let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
+//         let canvas = frame.gl_renderer();
+//         canvas.render_api.stop_capture_sequence();
+//     }
+// }
 
 #[no_mangle]
 #[allow(unused_doc_comments)]
-pub extern "C" fn syms_of_webrender() {
+pub extern "C" fn wr_log_init() {
     // #[cfg(debug_assertions)]
     use tracing_subscriber::fmt;
     use tracing_subscriber::prelude::*;
@@ -700,23 +699,5 @@ pub extern "C" fn syms_of_webrender() {
         .init();
 
     log::trace!("Emacs WR");
-
-    def_lisp_sym!(Qwr, "wr");
-    unsafe {
-        Fprovide(Qwr, Qnil);
-    }
-
-    #[cfg(feature = "capture")]
-    {
-        let wr_capture_sym =
-            CString::new("wr-capture").expect("Failed to create string for intern function call");
-        def_lisp_sym!(Qwr_capture, "wr-capture");
-        unsafe {
-            Fprovide(
-                emacs_sys::bindings::intern_c_string(wr_capture_sym.as_ptr()),
-                Qnil,
-            );
-        }
-    }
 }
 
