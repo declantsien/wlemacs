@@ -4672,7 +4672,7 @@ if test "${HAVE_X11}" = "yes" && test "${HAVE_FREETYPE}" = "yes" \
         || test "$window_system" = "pgtk" \
         || test "$window_system" = "wlc" \
         || test "${HAVE_W32}" = "yes" \
-	|| test "$REALLY_ANDROID" = "yes" ; then
+	|| test "$REALLY_ANDROID" = "yes"; then
   if test "${with_harfbuzz}" != "no"; then
     EMACS_CHECK_MODULES([HARFBUZZ], [harfbuzz >= $harfbuzz_required_ver])
     AS_IF([test "$HAVE_HARFBUZZ" = "yes"],[
