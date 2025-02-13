@@ -68,11 +68,8 @@ AWK = @AWK@
 LIBOBJS = @LIBOBJS@
 
 RUST_ARCHIVE_EXTENSION=@RUST_ARCHIVE_EXTENSION@
-LIBEMACS_RUST_ARCHIVE=libemacs_rust$(RUST_ARCHIVE_EXTENSION)
+LIBWR_ARCHIVE=libwr$(RUST_ARCHIVE_EXTENSION)
 
-crates_dir=$(top_srcdir)/crates
-# Crates that contain globals
-RUST_CRATES_SOURCES=@RUST_CRATES_SOURCES@
 lispsource = $(top_srcdir)/lisp
 lib = ../lib
 hostlib = $(top_builddir)/lib
@@ -361,8 +358,7 @@ LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
 LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
 
 RUST_CFLAGS = @RUST_CFLAGS@
-RUST_LIBS = $(LIBEMACS_RUST_ARCHIVE) @RUST_DEPS@
-WEBRENDER_LIBS = @WEBRENDER_LIBS@
+WEBRENDER_LIBS = $(LIBWR_ARCHIVE) @WEBRENDER_LIBS@
 
 LIBSYSTEMD_LIBS = @LIBSYSTEMD_LIBS@
 LIBSYSTEMD_CFLAGS = @LIBSYSTEMD_CFLAGS@
@@ -649,8 +645,7 @@ LIBES = $(LIBS) $(W32_LIBS) $(LIBS_GNUSTEP) $(PGTK_LIBS) $(LIBX_BASE) $(LIBIMAGE
    $(NOTIFY_LIBS) $(LIB_MATH) $(LIBZ) $(LIBMODULES) $(LIBSYSTEMD_LIBS) \
    $(LIBGMP) $(LIBGCCJIT_LIBS) $(XINPUT_LIBS) $(HAIKU_LIBS) \
    $(TREE_SITTER_LIBS) $(SQLITE3_LIBS) $(XCOMPOSITE_LIBS) $(XSHAPE_LIBS) \
-   $(ANDROID_LIBS) $(RUST_LIBS) $(WEBRENDER_LIBS) \
-   $(WAYLAND_CLIENT_LIBS)
+   $(ANDROID_LIBS) $(WEBRENDER_LIBS) $(WAYLAND_CLIENT_LIBS)
 
 ## FORCE it so that admin/unidata can decide whether this file is
 ## up-to-date.  Although since charprop depends on bootstrap-emacs,
@@ -726,11 +721,11 @@ endif
 ## for the first time, this prevents any variation between configurations
 ## in the contents of the DOC file.
 ##
-$(etc)/DOC: $(libsrc)/make-docfile$(EXEEXT) $(doc_obj) $(RUST_CRATES_SOURCES)
+$(etc)/DOC: $(libsrc)/make-docfile$(EXEEXT) $(doc_obj)
 	$(AM_V_GEN)$(MKDIR_P) $(etc)
 	$(AM_V_at)rm -f $(etc)/DOC
 	$(AM_V_at)$(libsrc)/make-docfile -d $(srcdir) \
-	  $(SOME_MACHINE_OBJECTS) $(doc_obj) $(RUST_CRATES_SOURCES) > $(etc)/DOC
+	  $(SOME_MACHINE_OBJECTS) $(doc_obj) > $(etc)/DOC
 
 $(libsrc)/make-docfile$(EXEEXT) $(libsrc)/make-fingerprint$(EXEEXT): \
   $(hostlib)/libgnu.a
@@ -738,17 +733,15 @@ $(libsrc)/make-docfile$(EXEEXT) $(libsrc)/make-fingerprint$(EXEEXT): \
 
 buildobj.h: Makefile
 	$(AM_V_GEN)for i in $(ALLOBJS); do \
-	  echo "$$i" | sed 's,.*/,,; s/\.obj$$/\.o/; s/^/"/; s/$$/",/'\
+	  echo "$$i" | sed 's,.*/,,; s/\.obj$$/\.o/; s/^/"/; s/$$/",/' \
 	    || exit; \
 	done >$@.tmp
-	$(AM_V_GEN)for i in $(RUST_CRATES_SOURCES); do \
-	  echo "\"$$i\"," >> $@.tmp;done; \
 	$(AM_V_at)mv $@.tmp $@
 
-GLOBAL_SOURCES = $(base_obj:.o=.c) $(NS_OBJC_OBJ:.o=.m) $(RUST_CRATES_SOURCES)
+GLOBAL_SOURCES = $(base_obj:.o=.c) $(NS_OBJC_OBJ:.o=.m)
 
 gl-stamp: $(libsrc)/make-docfile$(EXEEXT) $(GLOBAL_SOURCES)
-	$(AM_V_GLOBALS)$(libsrc)/make-docfile -d $(srcdir) -g $(doc_obj) $(RUST_CRATES_SOURCES) > globals.tmp
+	$(AM_V_GLOBALS)$(libsrc)/make-docfile -d $(srcdir) -g $(doc_obj) > globals.tmp
 	$(AM_V_at)$(top_srcdir)/build-aux/move-if-change globals.tmp globals.h
 	$(AM_V_at)echo timestamp > $@
 
@@ -756,25 +749,11 @@ globals.h: gl-stamp; @true
 
 HEADERS=$(wildcard $(srcdir)/*.h)
 
-$(LIBEMACS_RUST_ARCHIVE) : FORCE
+$(LIBWR_ARCHIVE) : FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p emacs-rust \
+	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p wr \
 	--features "$(CARGO_FEATURES)" --out-dir ./
-
-clippy:
-	RUSTFLAGS="$(RUSTFLAGS)" \
-	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_CLIPPY) $(CARGO_FLAGS) -p emacs-rust
-
-.PHONY: clippy
-
-rustdoc:
-	RUSTFLAGS="$(RUSTFLAGS)" \
-	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_DOC) $(CARGO_FLAGS) -p emacs-rust
-
-.PHONY: rustdoc
 
 check check-maybe check-expensive:
 	RUSTFLAGS="$(RUSTFLAGS)" \
@@ -783,7 +762,7 @@ check check-maybe check-expensive:
 
 .PHONY: check check-maybe check-expensive
 
-$(ALLOBJS) $(LIBEMACS_RUST_ARCHIVE): globals.h
+$(ALLOBJS) $(LIBWR_ARCHIVE): globals.h
 
 LIBEGNU_ARCHIVE = $(lib)/libgnu.a
 
@@ -800,7 +779,7 @@ endif
 ## existence when setting Vinstallation_directory (FIXME?).
 ## This goes on to affect various things, and the emacs binary fails
 ## to start if Vinstallation_directory has the wrong value.
-temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBEMACS_RUST_ARCHIVE) \
+temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBWR_ARCHIVE) \
   $(LIBEGNU_ARCHIVE) $(EMACSRES) $(charsets) $(charscript) ${emoji-zwj} \
   $(MAKE_PDUMPER_FINGERPRINT) $(LIBWAYLAND_PROTOCOL)
 ifeq ($(HAVE_BE_APP),yes)
@@ -903,8 +882,8 @@ mostlyclean:
 	rm -f buildobj.h
 	rm -f globals.h gl-stamp
 	rm -f ./*.res ./*.tmp
-	$(CARGO_CLEAN) -p emacs-rust
-	rm -f ./$(LIBEMACS_RUST_ARCHIVE)
+	$(CARGO_CLEAN)
+	rm -f ./$(LIBWR_ARCHIVE)
 versionclean:
 	rm -f emacs$(EXEEXT) emacs-*.*.*[0-9]$(EXEEXT) emacs-*.*.*[0-9].pdmp
 	rm -f ../etc/DOC*

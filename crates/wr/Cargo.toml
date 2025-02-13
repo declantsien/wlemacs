@@ -1,11 +1,12 @@
 [package]
-name = "webrender"
+name = "wr"
 description = "Emacs draw api using Rust crate webrender"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [lib]
+crate-type = ["staticlib"]
 path = "src/lib.rs"
 
 [dependencies]

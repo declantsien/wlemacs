@@ -7710,13 +7710,12 @@ optsep=
 if test $window_system = pgtk && test "${with_webrender}" = "yes"; then
     pgtk_use_wr=yes
 fi
-for opt in use-xml2 pgtk glyph-debug profiling wr_pgtk wlc; do
+for opt in pgtk glyph-debug profiling wr_pgtk wlc; do
     tmp=no
     if test "${window_system}" = "$opt"; then
 	tmp=yes
     fi
     case $opt in
-      use-xml2) val=${HAVE_LIBXML2} ;;
       glyph-debug) val=${ac_enable_glyphs_debug} ;;
       profiling) val=${ac_enable_profiling} ;;
       wr_pgtk) val=${pgtk_use_wr} ;;
@@ -7735,12 +7734,6 @@ for opt in use-xml2 pgtk glyph-debug profiling wr_pgtk wlc; do
     optsep=' '
 done
 AC_SUBST(CARGO_FEATURES)
-
-dnl Rust sources which has Lisp symbols definitions
-AS_ECHO(["Collecting Rust sources..."])
-RUST_CRATES_SOURCES=`(ABS_TOP_SRCDIR=$(pwd) cargo run -p codegen --bin print-source ${CARGO_FEATURES})`
-AS_ECHO(["Collecting Rust sources...done"])
-AC_SUBST(RUST_CRATES_SOURCES)
 
 # This is just a printable representation of the shared user ID.
 android_shared_user=

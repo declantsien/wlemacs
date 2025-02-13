@@ -62,6 +62,7 @@ gl_renderer_free_terminal_resources (struct terminal *f);
 extern void
 gl_renderer_fit_context (struct frame *f);
 
+extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
 
 #define BLACK_PIX_DEFAULT(f) 0
