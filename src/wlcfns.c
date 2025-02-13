@@ -994,8 +994,6 @@ xdg_toplevel_configure_handler(void *data,
   fprintf(stderr, "new size %d, %d ", width, height);
   fprintf(stderr, "emacs size %d, %d ", FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
 
-
-
   if (width > 0 && height > 0) {
     FRAME_PIXEL_WIDTH (f) = width;
     FRAME_PIXEL_HEIGHT (f) = height;
@@ -1548,10 +1546,7 @@ This function is an internal primitive--use `make-frame' instead.  */)
       specbind (Qx_resource_name, name);
     }
 
-  register_font_driver (&ftwrfont_driver, f);
-#ifdef HAVE_HARFBUZZ
-  register_font_driver (&ftwrhbfont_driver, f);
-#endif	/* HAVE_HARFBUZZ */
+  register_ftfont_driver(f);
 
 #ifdef GLYPH_DEBUG
   dpyinfo_refcount = dpyinfo->reference_count;

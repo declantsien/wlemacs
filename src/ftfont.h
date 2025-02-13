@@ -91,9 +91,7 @@ struct font_info
   unsigned x_display_id;
 #endif
 
-#ifdef USE_WEBRENDER
-  Lisp_Object filename;
-#endif /*USE_WEBRENDER*/
+
 };
 
 #if defined USE_CAIRO && defined HAVE_X_WINDOWS

@@ -21,7 +21,7 @@ use webrender::api::*;
 
 pub trait FrameExtWrCommon {
     fn is_wr_initialized(&self) -> bool;
-    fn webrender(&self) -> GlRendererRef;    
+    fn webrender(&self) -> GlRendererRef;
     fn gl_renderer(&self) -> GlRendererRef;
     fn free_gl_renderer_resources(&mut self);
     fn fg_color_f(&self) -> ColorF;
@@ -100,7 +100,7 @@ impl FrameExtWrCommon for FrameRef {
     fn webrender(&self) -> GlRendererRef {
         self.gl_renderer()
     }
-    
+
     fn gl_renderer(&self) -> GlRendererRef {
         if !self.is_wr_initialized() {
             log::debug!("gl renderer data empty");

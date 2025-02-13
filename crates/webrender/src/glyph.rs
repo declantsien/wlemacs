@@ -223,12 +223,7 @@ impl WrGlyph for GlyphStringRef {
     }
 
     fn font_key(&self) -> FontKey {
-        let font_info = self.font_info();
-        let cstr =
-            unsafe { std::ffi::CStr::from_ptr(emacs_sys::bindings::SSDATA(font_info.filename)) };
-        let path = std::path::PathBuf::from(&*cstr.to_string_lossy());
-        let index = font_info.index as u32;
-        let font_tpl = FontTemplate::Native(NativeFontHandle { path, index });
+        let font_tpl = crate::font::wr_font_tpl(self.font().as_mut());
         // println!("font tpl {:?}", font_tpl);
         self.frame().gl_renderer().wr_add_font(font_tpl)
     }
