@@ -68,7 +68,7 @@ AWK = @AWK@
 LIBOBJS = @LIBOBJS@
 
 RUST_ARCHIVE_EXTENSION=@RUST_ARCHIVE_EXTENSION@
-LIBEMACSNG_ARCHIVE=libemacsng$(RUST_ARCHIVE_EXTENSION)
+LIBEMACS_RUST_ARCHIVE=libemacs_rust$(RUST_ARCHIVE_EXTENSION)
 
 crates_dir=$(top_srcdir)/crates
 # Crates that contain globals
@@ -361,7 +361,7 @@ LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
 LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
 
 RUST_CFLAGS = @RUST_CFLAGS@
-RUST_LIBS = $(LIBEMACSNG_ARCHIVE) @RUST_DEPS@
+RUST_LIBS = $(LIBEMACS_RUST_ARCHIVE) @RUST_DEPS@
 WEBRENDER_LIBS = @WEBRENDER_LIBS@
 
 LIBSYSTEMD_LIBS = @LIBSYSTEMD_LIBS@
@@ -756,23 +756,23 @@ globals.h: gl-stamp; @true
 
 HEADERS=$(wildcard $(srcdir)/*.h)
 
-$(LIBEMACSNG_ARCHIVE) : FORCE
+$(LIBEMACS_RUST_ARCHIVE) : FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p emacsng \
+	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p emacs-rust \
 	--features "$(CARGO_FEATURES)" --out-dir ./
 
 clippy:
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_CLIPPY) $(CARGO_FLAGS) -p emacsng
+	$(CARGO_CLIPPY) $(CARGO_FLAGS) -p emacs-rust
 
 .PHONY: clippy
 
 rustdoc:
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_DOC) $(CARGO_FLAGS) -p emacsng
+	$(CARGO_DOC) $(CARGO_FLAGS) -p emacs-rust
 
 .PHONY: rustdoc
 
@@ -783,7 +783,7 @@ check check-maybe check-expensive:
 
 .PHONY: check check-maybe check-expensive
 
-$(ALLOBJS) $(LIBEMACSNG_ARCHIVE): globals.h
+$(ALLOBJS) $(LIBEMACS_RUST_ARCHIVE): globals.h
 
 LIBEGNU_ARCHIVE = $(lib)/libgnu.a
 
@@ -800,7 +800,7 @@ endif
 ## existence when setting Vinstallation_directory (FIXME?).
 ## This goes on to affect various things, and the emacs binary fails
 ## to start if Vinstallation_directory has the wrong value.
-temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBEMACSNG_ARCHIVE) \
+temacs$(EXEEXT): $(LIBXMENU) $(ALLOBJS) $(LIBEMACS_RUST_ARCHIVE) \
   $(LIBEGNU_ARCHIVE) $(EMACSRES) $(charsets) $(charscript) ${emoji-zwj} \
   $(MAKE_PDUMPER_FINGERPRINT) $(LIBWAYLAND_PROTOCOL)
 ifeq ($(HAVE_BE_APP),yes)
@@ -903,8 +903,8 @@ mostlyclean:
 	rm -f buildobj.h
 	rm -f globals.h gl-stamp
 	rm -f ./*.res ./*.tmp
-	$(CARGO_CLEAN) -p emacsng
-	rm -f ./libemacsng.*
+	$(CARGO_CLEAN) -p emacs-rust
+	rm -f ./$(LIBEMACS_RUST_ARCHIVE)
 versionclean:
 	rm -f emacs$(EXEEXT) emacs-*.*.*[0-9]$(EXEEXT) emacs-*.*.*[0-9].pdmp
 	rm -f ../etc/DOC*

@@ -1,8 +1,8 @@
 ### Root package
 [package]
-authors = ["emacs-ng members"]
-name = "emacsng"
-description = "Experimental emacs fork"
+authors = []
+name = "emacs-rust"
+description = "Emacs rust code glue"
 license = "GPL-3.0"
 version = "0.1.0"
 edition = "2021"

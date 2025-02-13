@@ -692,7 +692,7 @@ pub extern "C" fn syms_of_webrender() {
     use tracing_subscriber::prelude::*;
     use tracing_subscriber::EnvFilter;
 
-    // install global collector configured based on EMACSNG_LOG env var.
+    // install global collector configured based on WR_LOG env var.
     // #[cfg(debug_assertions)]
     tracing_subscriber::registry()
         .with(fmt::layer())
