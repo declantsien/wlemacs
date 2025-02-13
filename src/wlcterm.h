@@ -404,7 +404,7 @@ extern int wlc_decode_color (struct frame *f, Lisp_Object color_name,
 extern int wlc_parse_color (struct frame *, const char *, Emacs_Color *);
 
 
-#include "webrender_ffi.h"
+#include "wr.h"
 INLINE_HEADER_END
 
 #endif /* WLCTERM_H */

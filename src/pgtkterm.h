@@ -695,7 +695,7 @@ extern int pgtk_emacs_to_gtk_modifiers (struct pgtk_display_info *, int);
 
 #ifdef USE_WEBRENDER
 extern struct frame *pgtk_fixed_to_frame (GtkWidget *);
-#include "webrender_ffi.h"
+#include "wr.h"
 #endif  /* USE_WEBRENDER */
 
 #endif /* HAVE_PGTK */
