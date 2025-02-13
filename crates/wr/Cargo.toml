@@ -39,7 +39,7 @@ features = [
 ]
 
 [build-dependencies]
-codegen = { path = "../codegen" }
+anyhow = "1"
 cfg_aliases.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]

@@ -1,8 +1,4 @@
-extern crate codegen;
 use cfg_aliases::cfg_aliases;
-
-use codegen::generate_crate_exports;
-use codegen::BuildError;
 
 use std::env;
 use std::fs::File;
@@ -10,11 +6,11 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
+use anyhow::Context;
 
 const RGB_TXT_PATH: &str = "../../etc/rgb.txt";
 
-fn main() -> Result<(), BuildError> {
-    generate_crate_exports()?;
+fn main() -> anyhow::Result<()> {
     generate_color_map()?;
     // Setup cfg aliases
     cfg_aliases! {
@@ -32,7 +28,7 @@ fn main() -> Result<(), BuildError> {
     Ok(())
 }
 
-fn generate_color_map() -> Result<(), BuildError> {
+fn generate_color_map() -> anyhow::Result<()> {
     let file = BufReader::new(File::open(RGB_TXT_PATH)?);
     let color = file
         .lines()
@@ -60,10 +56,7 @@ fn generate_color_map() -> Result<(), BuildError> {
             (name, (red, green, blue))
         });
 
-    let out_dir = env::var_os("OUT_DIR").ok_or(BuildError::VarError {
-        var: "OUT_DIR".to_string(),
-        error: env::VarError::NotPresent,
-    })?;
+    let out_dir = env::var_os("OUT_DIR").context("OUT_DIR var error")?;
     let out_path = Path::new(&out_dir).join("colors.rs");
 
     let color_function_body = format!(
@@ -82,8 +75,8 @@ fn generate_color_map() -> Result<(), BuildError> {
         color_function_body
     );
 
-    let mut file = File::create(out_path)?;
-    file.write_all(color_fun_source.as_bytes())?;
+    let mut file = File::create(out_path).context("file create error")?;
+    file.write_all(color_fun_source.as_bytes()).context("write all error")?;
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed={}", RGB_TXT_PATH);

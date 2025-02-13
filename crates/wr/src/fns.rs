@@ -720,4 +720,3 @@ pub extern "C" fn syms_of_webrender() {
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/fns_exports.rs"));
