@@ -26,8 +26,6 @@ extern void wr_transform_image(struct frame *f, struct image *img, int width, in
 
 extern void wr_scroll_run (struct window *w, struct run *run);
 
-extern void wr_update_window_begin (struct window *);
-extern void wr_update_window_end (struct window *, bool, bool);
 extern void wr_flush_display (struct frame *f);
 extern void
 wr_draw_fringe_bitmap (struct window *w, struct glyph_row *row,

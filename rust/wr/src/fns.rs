@@ -59,46 +59,6 @@ use webrender::api::units::LayoutPoint;
 use webrender::api::units::LayoutRect;
 
 #[no_mangle]
-pub extern "C" fn wr_update_window_end(
-    window: *mut Window,
-    cursor_no_p: bool,
-    _mouse_face_overwritten_p: bool,
-) {
-    let mut window: WindowRef = window.into();
-
-    if window.pseudo_window_p() {
-        return;
-    }
-
-    unsafe { block_input() };
-    if cursor_no_p {
-        unsafe {
-            display_and_set_cursor(
-                window.as_mut(),
-                true,
-                window.output_cursor.hpos,
-                window.output_cursor.vpos,
-                window.output_cursor.x,
-                window.output_cursor.y,
-            )
-        };
-    }
-
-    if unsafe { draw_window_fringes(window.as_mut(), true) } {
-        if window.right_divider_width() > 0 {
-            unsafe { gui_draw_right_divider(window.as_mut()) }
-        } else {
-            unsafe { gui_draw_vertical_border(window.as_mut()) }
-        }
-    }
-
-    unsafe { unblock_input() };
-
-    let frame: FrameRef = window.get_frame();
-    frame.wr().flush();
-}
-
-#[no_mangle]
 pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
     let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
     wr.flush();
