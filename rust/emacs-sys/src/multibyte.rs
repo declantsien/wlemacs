@@ -32,21 +32,13 @@
 //! `&str`, and this module regrettably contains adapted copies of
 //! stretches of `std::str` functions.
 
-use libc::c_char;
-use libc::c_uchar;
-use libc::ptrdiff_t;
+use libc::{c_char, c_uchar, ptrdiff_t};
 
-use std::fmt;
-use std::slice;
+use std::{fmt, slice};
 
-use crate::bindings::encode_string_utf_8;
-use crate::bindings::Lisp_String;
-use crate::bindings::Lisp_Type;
-use crate::globals::Qnil;
-use crate::globals::Qstringp;
-use crate::globals::Qt;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::bindings::{encode_string_utf_8, Lisp_String, Lisp_Type};
+use crate::globals::{Qnil, Qstringp, Qt};
+use crate::lisp::{ExternalPtr, LispObject};
 use crate::obarray::LispObarrayRef;
 use crate::symbol::LispSymbolRef;
 

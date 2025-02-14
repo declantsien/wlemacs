@@ -5,19 +5,10 @@ use std::mem;
 
 use crate::bindings::VECTORP;
 
-use crate::bindings::pvec_type;
-use crate::bindings::Lisp_Type;
-use crate::bindings::Lisp_Vector;
-use crate::bindings::More_Lisp_Bits;
-use crate::bindings::AREF;
-use crate::bindings::ASET;
-use crate::bindings::ASIZE;
+use crate::bindings::{pvec_type, Lisp_Type, Lisp_Vector, More_Lisp_Bits, AREF, ASET, ASIZE};
 use crate::frame::FrameRef;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
-use crate::lisp::LispSubrRef;
-use crate::sys::Lisp_Vectorlike;
-use crate::sys::PSEUDOVECTOR_FLAG;
+use crate::lisp::{ExternalPtr, LispObject, LispSubrRef};
+use crate::sys::{Lisp_Vectorlike, PSEUDOVECTOR_FLAG};
 use crate::terminal::TerminalRef;
 use crate::window::WindowRef;
 use std::sync::LazyLock;

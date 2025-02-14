@@ -1,11 +1,8 @@
 use crate::frame::FrameRef;
-use raw_window_handle::DisplayHandle;
-use raw_window_handle::HandleError;
-use raw_window_handle::HasDisplayHandle;
-use raw_window_handle::HasWindowHandle;
-use raw_window_handle::WaylandDisplayHandle;
-use raw_window_handle::WaylandWindowHandle;
-use raw_window_handle::WindowHandle;
+use raw_window_handle::{
+    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, WaylandDisplayHandle,
+    WaylandWindowHandle, WindowHandle,
+};
 
 impl FrameRef {
     pub fn cursor_color(&self) -> ::libc::c_ulong {

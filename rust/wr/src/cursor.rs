@@ -1,8 +1,7 @@
 use crate::frame::FrameExtWrCommon;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::glyph_type;
-use emacs_sys::display_traits::GlyphRowArea;
-use emacs_sys::display_traits::GlyphRowRef;
+use emacs_sys::display_traits::{GlyphRowArea, GlyphRowRef};
 use emacs_sys::window::WindowRef;
 
 pub fn draw_filled_cursor(window: WindowRef, row: GlyphRowRef) {

@@ -1,21 +1,12 @@
 use crate::frame::FrameRef;
 use core::ptr::NonNull;
 use gtk::glib::translate::FromGlibPtrNone;
-use gtk::prelude::Cast;
-use gtk::prelude::DisplayExtManual;
-use gtk::prelude::ObjectType;
-use gtk::prelude::WidgetExt;
-use raw_window_handle::DisplayHandle;
-use raw_window_handle::HandleError;
-use raw_window_handle::HasDisplayHandle;
-use raw_window_handle::HasWindowHandle;
-use raw_window_handle::RawDisplayHandle;
-use raw_window_handle::RawWindowHandle;
-use raw_window_handle::WaylandDisplayHandle;
-use raw_window_handle::WaylandWindowHandle;
-use raw_window_handle::WindowHandle;
-use raw_window_handle::XlibDisplayHandle;
-use raw_window_handle::XlibWindowHandle;
+use gtk::prelude::{Cast, DisplayExtManual, ObjectType, WidgetExt};
+use raw_window_handle::{
+    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
+    RawWindowHandle, WaylandDisplayHandle, WaylandWindowHandle, WindowHandle, XlibDisplayHandle,
+    XlibWindowHandle,
+};
 use std::ptr;
 
 impl FrameRef {

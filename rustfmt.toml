@@ -43,4 +43,5 @@ use_try_shorthand = false
 where_single_line = false
 wrap_comments = false
 emit_mode = "ModifiedLines"
-imports_granularity = "Item"
+# imports_granularity = "Item"
+imports_granularity = "Module"

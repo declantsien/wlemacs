@@ -1,13 +1,9 @@
 use crate::bindings::wr_fit_context;
-use crate::frame::Frame;
-use crate::frame::FrameRef;
+use crate::frame::{Frame, FrameRef};
 use crate::gfx::context::GLContextTrait;
 use crate::window_system::FrameExtPgtk;
 use crate::DeviceIntSize;
-use gleam::gl::ErrorCheckingGl;
-use gleam::gl::Gl;
-use gleam::gl::GlFns;
-use gleam::gl::GlesFns;
+use gleam::gl::{ErrorCheckingGl, Gl, GlFns, GlesFns};
 use gtk::glib::translate::ToGlibPtr;
 use gtk::prelude::*;
 use gtk::GLArea;

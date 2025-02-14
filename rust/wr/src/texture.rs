@@ -2,13 +2,14 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gleam::gl::Gl;
-use gleam::gl::{self};
+use gleam::gl::{
+    Gl, {self},
+};
 use webrender::api::units::*;
 use webrender::api::*;
-use webrender::RenderApi;
-use webrender::Transaction;
-use webrender::{self};
+use webrender::{
+    RenderApi, Transaction, {self},
+};
 
 type TextureTable = HashMap<gl::GLuint, (FramebufferIntSize, bool)>;
 

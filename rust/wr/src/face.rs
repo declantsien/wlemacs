@@ -1,8 +1,7 @@
 use crate::color::pixel_to_color;
 use emacs_sys::bindings::face_underline_type;
 use emacs_sys::display_traits::FaceRef;
-use webrender::api::ColorF;
-use webrender::api::LineStyle;
+use webrender::api::{ColorF, LineStyle};
 
 pub trait WrFace {
     fn bg_color_f(&self) -> ColorF;

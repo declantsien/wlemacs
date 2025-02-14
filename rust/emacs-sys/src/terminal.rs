@@ -4,14 +4,9 @@ use std::ptr;
 
 use libc::c_void;
 
-use crate::bindings::build_string;
-use crate::bindings::pvec_type;
-use crate::bindings::terminal;
-use crate::bindings::Fselected_frame;
-use crate::globals::Qnil;
-use crate::globals::Qterminal_live_p;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::bindings::{build_string, pvec_type, terminal, Fselected_frame};
+use crate::globals::{Qnil, Qterminal_live_p};
+use crate::lisp::{ExternalPtr, LispObject};
 use crate::vector::LispVectorlikeRef;
 
 pub type TerminalRef = ExternalPtr<terminal>;

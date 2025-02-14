@@ -3,27 +3,22 @@ use crate::face::WrFace;
 use crate::font::FontInfoRef;
 use crate::frame::FrameExtWrCommon;
 use crate::util::HandyDandyRectBuilder;
-use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
-use emacs_sys::bindings::face_box_type::{self};
-use emacs_sys::bindings::face_underline_type;
-use emacs_sys::bindings::font_info;
-use emacs_sys::bindings::globals;
-use emacs_sys::bindings::glyph_type;
-use emacs_sys::bindings::Emacs_GC;
-use emacs_sys::bindings::Emacs_Rectangle as NativeRectangle;
-use emacs_sys::display_traits::DrawGlyphsFace;
-use emacs_sys::display_traits::GlyphStringRef;
+use emacs_sys::bindings::face_box_type::{
+    FACE_NO_BOX, {self},
+};
+use emacs_sys::bindings::{
+    face_underline_type, font_info, globals, glyph_type, Emacs_GC,
+    Emacs_Rectangle as NativeRectangle,
+};
+use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::number::LNumber;
 use euclid::Scale;
 use std::cmp::max;
 use webrender::api::units::*;
-use webrender::api::FontInstanceKey;
-use webrender::api::FontInstanceOptions;
-use webrender::api::FontInstancePlatformOptions;
-use webrender::api::FontKey;
-use webrender::api::FontSize;
-use webrender::api::*;
+use webrender::api::{
+    FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontSize, *,
+};
 use webrender::{self};
 // TODO: maybe configurable from lisp world
 const WAVY_LINE_THICKNESS: i32 = 1;

@@ -1,5 +1,4 @@
-use crate::bindings::face as Face;
-use crate::bindings::face_underline_type;
+use crate::bindings::{face as Face, face_underline_type};
 use crate::font::FontRef;
 use crate::lisp::ExternalPtr;
 

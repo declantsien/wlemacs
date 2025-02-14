@@ -1,5 +1,4 @@
-use crate::bindings::glyph;
-use crate::bindings::glyph_type;
+use crate::bindings::{glyph, glyph_type};
 use crate::display_traits::FaceId;
 use crate::lisp::ExternalPtr;
 

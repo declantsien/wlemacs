@@ -1,11 +1,8 @@
 use crate::number::LNumber;
 
-use crate::bindings::lglyph_indices;
-use crate::bindings::make_nil_vector;
-use crate::bindings::make_vector;
-use crate::bindings::pvec_type;
-use crate::bindings::Fcopy_sequence;
-use crate::bindings::ASET;
+use crate::bindings::{
+    lglyph_indices, make_nil_vector, make_vector, pvec_type, Fcopy_sequence, ASET,
+};
 use crate::definitions::EmacsInt;
 use crate::globals::Qnil;
 use crate::lisp::LispObject;

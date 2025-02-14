@@ -1,77 +1,25 @@
 // Interface definitions for display code.
-use crate::bindings::draw_glyphs_face;
-use crate::bindings::face_id;
-use crate::bindings::glyph_row_area;
-use crate::bindings::image_cache as ImageCache;
-use crate::bindings::resource_types;
-use crate::bindings::text_cursor_kinds;
-use crate::bindings::Emacs_GC as EmacsGC;
+use crate::bindings::{
+    draw_glyphs_face, face_id, glyph_row_area, image_cache as ImageCache, resource_types,
+    text_cursor_kinds, Emacs_GC as EmacsGC,
+};
 
 use crate::bindings::glyph_row as GlyphRow;
-use crate::globals::Qalpha;
-use crate::globals::Qalpha_background;
-use crate::globals::Qauto_lower;
-use crate::globals::Qauto_raise;
-use crate::globals::Qbackground_color;
-use crate::globals::Qborder_color;
-use crate::globals::Qborder_width;
-use crate::globals::Qbottom_divider_width;
-use crate::globals::Qbuffer_predicate;
-use crate::globals::Qchild_frame_border_width;
-use crate::globals::Qcursor_color;
-use crate::globals::Qcursor_type;
-use crate::globals::Qdisplay;
-use crate::globals::Qfont;
-use crate::globals::Qfont_backend;
-use crate::globals::Qforeground_color;
-use crate::globals::Qfullscreen;
-use crate::globals::Qheight;
-use crate::globals::Qhorizontal_scroll_bars;
-use crate::globals::Qicon_name;
-use crate::globals::Qicon_type;
-use crate::globals::Qinhibit_double_buffering;
-use crate::globals::Qinternal_border_width;
-use crate::globals::Qleft_fringe;
-use crate::globals::Qline_spacing;
-use crate::globals::Qmenu_bar_lines;
-use crate::globals::Qmin_height;
-use crate::globals::Qmin_width;
-use crate::globals::Qminibuffer;
-use crate::globals::Qmouse_color;
-use crate::globals::Qname;
-use crate::globals::Qno_accept_focus;
-use crate::globals::Qno_focus_on_map;
-use crate::globals::Qno_special_glyphs;
-use crate::globals::Qns_appearance;
-use crate::globals::Qns_transparent_titlebar;
-use crate::globals::Qoverride_redirect;
-use crate::globals::Qparent_frame;
-use crate::globals::Qparent_id;
-use crate::globals::Qright_divider_width;
-use crate::globals::Qright_fringe;
-use crate::globals::Qscreen_gamma;
-use crate::globals::Qscroll_bar_background;
-use crate::globals::Qscroll_bar_foreground;
-use crate::globals::Qscroll_bar_height;
-use crate::globals::Qscroll_bar_width;
-use crate::globals::Qshaded;
-use crate::globals::Qskip_taskbar;
-use crate::globals::Qsticky;
-use crate::globals::Qtab_bar_lines;
-use crate::globals::Qterminal;
-use crate::globals::Qtitle;
-use crate::globals::Qtool_bar_lines;
-use crate::globals::Qtool_bar_position;
-use crate::globals::Qundecorated;
-use crate::globals::Qunsplittable;
-use crate::globals::Quse_frame_synchronization;
-use crate::globals::Qvertical_scroll_bars;
-use crate::globals::Qvisibility;
-use crate::globals::Qwait_for_wm;
-use crate::globals::Qwidth;
-use crate::globals::Qz_group;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::globals::{
+    Qalpha, Qalpha_background, Qauto_lower, Qauto_raise, Qbackground_color, Qborder_color,
+    Qborder_width, Qbottom_divider_width, Qbuffer_predicate, Qchild_frame_border_width,
+    Qcursor_color, Qcursor_type, Qdisplay, Qfont, Qfont_backend, Qforeground_color, Qfullscreen,
+    Qheight, Qhorizontal_scroll_bars, Qicon_name, Qicon_type, Qinhibit_double_buffering,
+    Qinternal_border_width, Qleft_fringe, Qline_spacing, Qmenu_bar_lines, Qmin_height, Qmin_width,
+    Qminibuffer, Qmouse_color, Qname, Qno_accept_focus, Qno_focus_on_map, Qno_special_glyphs,
+    Qns_appearance, Qns_transparent_titlebar, Qoverride_redirect, Qparent_frame, Qparent_id,
+    Qright_divider_width, Qright_fringe, Qscreen_gamma, Qscroll_bar_background,
+    Qscroll_bar_foreground, Qscroll_bar_height, Qscroll_bar_width, Qshaded, Qskip_taskbar, Qsticky,
+    Qtab_bar_lines, Qterminal, Qtitle, Qtool_bar_lines, Qtool_bar_position, Qundecorated,
+    Qunsplittable, Quse_frame_synchronization, Qvertical_scroll_bars, Qvisibility, Qwait_for_wm,
+    Qwidth, Qz_group,
+};
+use crate::lisp::{ExternalPtr, LispObject};
 use std::ffi::CString;
 
 mod glyph;

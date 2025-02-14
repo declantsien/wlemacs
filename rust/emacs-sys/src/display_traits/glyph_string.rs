@@ -1,27 +1,18 @@
 use std::cmp::min;
 use std::slice;
 
-use super::DrawGlyphsFace;
-use super::EmacsGCRef;
-use super::FaceRef;
-use super::GlyphRowRef;
-use crate::bindings::composition_gstring_from_id;
-use crate::bindings::composition_hash_table;
-use crate::bindings::composition_method;
-use crate::bindings::font_for_underline_metrics;
-use crate::bindings::glyph_string;
-use crate::bindings::glyph_type;
-use crate::bindings::hash_hash_t;
-use crate::bindings::hash_lookup_get_hash;
-use crate::bindings::prepare_face_for_display;
-use crate::bindings::XHASH_TABLE;
+use super::{DrawGlyphsFace, EmacsGCRef, FaceRef, GlyphRowRef};
+use crate::bindings::{
+    composition_gstring_from_id, composition_hash_table, composition_method,
+    font_for_underline_metrics, glyph_string, glyph_type, hash_hash_t, hash_lookup_get_hash,
+    prepare_face_for_display, XHASH_TABLE,
+};
 use crate::definitions::EmacsInt;
 use crate::display_traits::GlyphRef;
 use crate::font::FontRef;
 use crate::frame::FrameRef;
 use crate::globals::Qnil;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::lisp::{ExternalPtr, LispObject};
 
 pub type XChar2b = u32;
 

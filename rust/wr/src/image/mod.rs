@@ -1,29 +1,21 @@
 pub mod cache;
-use cache::ImageCache;
-use cache::ImageHash;
-use cache::ImageSource;
+use cache::{ImageCache, ImageHash, ImageSource};
 use emacs_sys::bindings::EMACS_UINT;
 use std::time::Duration;
 use webrender::api::ImageKey;
 
-use emacs_sys::bindings::image;
-use emacs_sys::bindings::make_float;
-use emacs_sys::bindings::plist_get;
+use emacs_sys::bindings::{image, make_float, plist_get};
 use emacs_sys::definitions::EmacsInt;
 use emacs_sys::frame::FrameRef;
 use emacs_sys::globals::*;
-use emacs_sys::lisp::ExternalPtr;
-use emacs_sys::lisp::LispObject;
+use emacs_sys::lisp::{ExternalPtr, LispObject};
 use libc::c_void;
 use webrender::api::units::DeviceIntSize;
-use webrender::api::ColorF;
-use webrender::api::ImageData;
-use webrender::api::ImageDescriptor;
+use webrender::api::{ColorF, ImageData, ImageDescriptor};
 
 use crate::frame::FrameExtWrCommon;
 
-use crate::color::lookup_color_by_name_or_hex;
-use crate::color::pixel_to_color;
+use crate::color::{lookup_color_by_name_or_hex, pixel_to_color};
 
 pub type ImageRef = ExternalPtr<image>;
 

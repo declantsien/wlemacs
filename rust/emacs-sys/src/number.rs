@@ -1,15 +1,7 @@
 //! Functions operating on numbers.
-use crate::bindings::Lisp_Bits;
-use crate::bindings::Lisp_Type;
-use crate::bindings::EMACS_INT;
-use crate::bindings::INTTYPEBITS;
-use crate::bindings::XFIXNUM;
-use crate::definitions::EmacsInt;
-use crate::definitions::EmacsUint;
-use crate::definitions::EMACS_INT_MAX;
-use crate::definitions::USE_LSB_TAG;
-use crate::globals::Qintegerp;
-use crate::globals::Qwholenump;
+use crate::bindings::{Lisp_Bits, Lisp_Type, EMACS_INT, INTTYPEBITS, XFIXNUM};
+use crate::definitions::{EmacsInt, EmacsUint, EMACS_INT_MAX, USE_LSB_TAG};
+use crate::globals::{Qintegerp, Qwholenump};
 use crate::lisp::LispObject;
 
 // Largest and smallest numbers that can be represented as fixnums in

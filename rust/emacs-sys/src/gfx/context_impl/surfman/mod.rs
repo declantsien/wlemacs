@@ -5,20 +5,14 @@ use crate::gfx::context::GLContextTrait;
 
 use crate::DeviceIntSize;
 
-use raw_window_handle::HasDisplayHandle;
-use raw_window_handle::HasWindowHandle;
-use surfman::Connection;
-use surfman::GLApi;
-use surfman::SurfaceType;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use surfman::{Connection, GLApi, SurfaceType};
 
 use euclid::Size2D;
 
 use std::rc::Rc;
 
-use gleam::gl::ErrorCheckingGl;
-use gleam::gl::Gl;
-use gleam::gl::GlFns;
-use gleam::gl::GlesFns;
+use gleam::gl::{ErrorCheckingGl, Gl, GlFns, GlesFns};
 
 use rendering_context::RenderingContext;
 

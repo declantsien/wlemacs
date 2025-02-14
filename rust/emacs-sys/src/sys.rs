@@ -15,27 +15,19 @@
 //! - `USE_LSB_TAG`
 //! - `BoolBF`
 
-use libc::c_char;
-use libc::c_int;
-use libc::c_void;
-use libc::ptrdiff_t;
-use libc::{self};
+use libc::{
+    c_char, c_int, c_void, ptrdiff_t, {self},
+};
 use std::mem;
 
 pub type Lisp_Object = LispObject;
 
-use crate::bindings::hash_table_test;
-use crate::bindings::vectorlike_header;
-use crate::bindings::Aligned_Lisp_Subr;
-use crate::bindings::Lisp_Subr;
-use crate::bindings::Lisp_Type;
-use crate::bindings::__IncompleteArrayField;
-use crate::bindings::GCTYPEBITS;
-use crate::definitions::EmacsInt;
-use crate::definitions::EMACS_INT_MAX;
-use crate::definitions::USE_LSB_TAG;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::bindings::{
+    hash_table_test, vectorlike_header, Aligned_Lisp_Subr, Lisp_Subr, Lisp_Type,
+    __IncompleteArrayField, GCTYPEBITS,
+};
+use crate::definitions::{EmacsInt, EMACS_INT_MAX, USE_LSB_TAG};
+use crate::lisp::{ExternalPtr, LispObject};
 
 pub const VAL_MAX: EmacsInt = (EMACS_INT_MAX >> (GCTYPEBITS - 1));
 pub const VALMASK: EmacsInt = [VAL_MAX, -(1 << GCTYPEBITS)][USE_LSB_TAG as usize];

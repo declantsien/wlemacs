@@ -1,25 +1,16 @@
 //! Generic frame functions.
-use crate::bindings::adjust_frame_size;
-use crate::bindings::change_frame_size;
-use crate::bindings::face;
-use crate::bindings::face_id;
-use crate::bindings::frame;
-use crate::bindings::frame_dimension;
-use crate::bindings::init_frame_faces;
-use crate::bindings::pvec_type;
-use crate::bindings::store_frame_param;
-use crate::bindings::update_face_from_frame_parameter;
-use crate::bindings::Fassq;
-use crate::bindings::Fselected_frame;
-use crate::bindings::Lisp_Type;
+use crate::bindings::{
+    adjust_frame_size, change_frame_size, face, face_id, frame, frame_dimension, init_frame_faces,
+    pvec_type, store_frame_param, update_face_from_frame_parameter, Fassq, Fselected_frame,
+    Lisp_Type,
+};
 use crate::display_traits::FaceRef;
 #[cfg(have_window_system)]
 use crate::display_traits::FrameParam;
 #[cfg(have_window_system)]
 use crate::display_traits::ImageCacheRef;
 use crate::globals::*;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::lisp::{ExternalPtr, LispObject};
 use crate::vector::LispVectorlikeRef;
 use crate::window::WindowRef;
 

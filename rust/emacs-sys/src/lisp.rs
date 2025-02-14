@@ -2,34 +2,17 @@
 //! lisp.h.
 
 use std::ffi::CString;
-use std::fmt;
-use std::mem;
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::ptr;
+use std::ops::{Deref, DerefMut};
+use std::{fmt, mem, ptr};
 
-use libc::c_void;
-use libc::intptr_t;
-use libc::uintptr_t;
+use libc::{c_void, intptr_t, uintptr_t};
 
-use crate::bindings::build_string;
-use crate::bindings::make_string_from_utf8;
-use crate::bindings::pI;
-use crate::bindings::valid_lisp_object_p;
-use crate::bindings::Aligned_Lisp_Subr;
-use crate::bindings::Fprin1_to_string;
-use crate::bindings::Lisp_Bits;
-use crate::bindings::Lisp_Type;
-use crate::bindings::USER_PTRP;
-use crate::bindings::XLI;
-use crate::bindings::XUSER_PTR;
-use crate::definitions::EmacsInt;
-use crate::definitions::EmacsUint;
-use crate::definitions::USE_LSB_TAG;
-use crate::globals::Qexternal_debugging_output;
-use crate::globals::Qnil;
-use crate::globals::Qt;
-use crate::globals::Quser_ptrp;
+use crate::bindings::{
+    build_string, make_string_from_utf8, pI, valid_lisp_object_p, Aligned_Lisp_Subr,
+    Fprin1_to_string, Lisp_Bits, Lisp_Type, USER_PTRP, XLI, XUSER_PTR,
+};
+use crate::definitions::{EmacsInt, EmacsUint, USE_LSB_TAG};
+use crate::globals::{Qexternal_debugging_output, Qnil, Qt, Quser_ptrp};
 use crate::multibyte::LispStringRef;
 use crate::sys::VALMASK;
 

@@ -1,57 +1,30 @@
-use crate::color::color_to_xcolor;
-use crate::color::lookup_color_by_name_or_hex;
-use crate::cursor::draw_bar_cursor;
-use crate::cursor::draw_filled_cursor;
-use crate::cursor::draw_hollow_box_cursor;
+use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
+use crate::cursor::{draw_bar_cursor, draw_filled_cursor, draw_hollow_box_cursor};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::fringe::get_or_create_fringe_bitmap;
-use crate::image::ImageExt;
-use crate::image::ImageRef;
-use crate::image::WrPixmap;
-use crate::output::OutputRef;
-use crate::output::WrDataRef;
+use crate::image::{ImageExt, ImageRef, WrPixmap};
+use crate::output::{OutputRef, WrDataRef};
 use crate::util::HandyDandyRectBuilder;
-use emacs_sys::bindings::block_input;
-use emacs_sys::bindings::draw_fringe_bitmap_params;
-use emacs_sys::bindings::face_id;
-use emacs_sys::bindings::font_info;
-use emacs_sys::bindings::globals;
-use emacs_sys::bindings::glyph_row;
-use emacs_sys::bindings::glyph_string;
-use emacs_sys::bindings::gui_clear_cursor;
-use emacs_sys::bindings::image;
-use emacs_sys::bindings::lookup_basic_face;
-use emacs_sys::bindings::run;
-use emacs_sys::bindings::text_cursor_kinds;
-use emacs_sys::bindings::unblock_input;
-use emacs_sys::bindings::Emacs_Color;
-use emacs_sys::bindings::Emacs_Pixmap;
-use emacs_sys::bindings::AREF;
-use emacs_sys::bindings::FACE_FROM_ID_OR_NULL;
-use emacs_sys::display_traits::FaceRef;
-use emacs_sys::display_traits::GlyphRowArea;
-use emacs_sys::display_traits::GlyphRowRef;
-use emacs_sys::display_traits::GlyphStringRef;
-use emacs_sys::font::FontRef;
-use emacs_sys::font::LispFontRef;
-use emacs_sys::frame::Frame;
-use emacs_sys::frame::FrameRef;
+use emacs_sys::bindings::{
+    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_row, glyph_string,
+    gui_clear_cursor, image, lookup_basic_face, run, text_cursor_kinds, unblock_input, Emacs_Color,
+    Emacs_Pixmap, AREF, FACE_FROM_ID_OR_NULL,
+};
+use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphRowRef, GlyphStringRef};
+use emacs_sys::font::{FontRef, LispFontRef};
+use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
-use emacs_sys::window::Window;
-use emacs_sys::window::WindowRef;
-use webrender::api::FontInstanceOptions;
-use webrender::api::FontInstancePlatformOptions;
-use webrender::api::FontSize;
-use webrender::api::FontTemplate;
-use webrender::api::NativeFontHandle;
+use emacs_sys::window::{Window, WindowRef};
+use webrender::api::{
+    FontInstanceOptions, FontInstancePlatformOptions, FontSize, FontTemplate, NativeFontHandle,
+};
 
 use crate::font::FontInfoRef;
 use std::cmp::max;
 use std::ffi::CString;
 use std::ptr;
-use webrender::api::units::LayoutPoint;
-use webrender::api::units::LayoutRect;
+use webrender::api::units::{LayoutPoint, LayoutRect};
 
 #[no_mangle]
 pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
@@ -507,9 +480,8 @@ pub extern "C" fn wr_fit_context(f: *mut Frame) {
 #[allow(unused_doc_comments)]
 pub extern "C" fn wr_log_init() {
     // #[cfg(debug_assertions)]
-    use tracing_subscriber::fmt;
     use tracing_subscriber::prelude::*;
-    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::{fmt, EnvFilter};
 
     // install global collector configured based on WR_LOG env var.
     // #[cfg(debug_assertions)]

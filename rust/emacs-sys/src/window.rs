@@ -1,20 +1,14 @@
-use crate::bindings::draw_phys_cursor_glyph;
-use crate::bindings::get_phys_cursor_geometry;
-use crate::bindings::get_phys_cursor_glyph;
-use crate::bindings::glyph_row_area::TEXT_AREA;
-use crate::bindings::glyph_row_area::{self};
-use crate::bindings::pvec_type;
-use crate::bindings::window;
-use crate::bindings::window_box;
-use crate::bindings::window_box_left;
-use crate::bindings::Lisp_Type;
-use crate::display_traits::DrawGlyphsFace;
-use crate::display_traits::GlyphRef;
-use crate::display_traits::GlyphRowRef;
+use crate::bindings::glyph_row_area::{
+    TEXT_AREA, {self},
+};
+use crate::bindings::{
+    draw_phys_cursor_glyph, get_phys_cursor_geometry, get_phys_cursor_glyph, pvec_type, window,
+    window_box, window_box_left, Lisp_Type,
+};
+use crate::display_traits::{DrawGlyphsFace, GlyphRef, GlyphRowRef};
 use crate::frame::FrameRef;
 use crate::globals::Qwindowp;
-use crate::lisp::ExternalPtr;
-use crate::lisp::LispObject;
+use crate::lisp::{ExternalPtr, LispObject};
 use crate::vector::LispVectorlikeRef;
 
 pub type Window = window;

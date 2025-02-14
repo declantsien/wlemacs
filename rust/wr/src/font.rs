@@ -35,16 +35,12 @@ use emacs_sys::frame::FrameRef;
 
 pub type FontInfoRef = ExternalPtr<font_info>;
 
-use emacs_sys::bindings::font;
-use emacs_sys::bindings::font_property_index;
-use emacs_sys::bindings::frame;
+use emacs_sys::bindings::{font, font_property_index, frame};
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use webrender::api::*;
-use wr_glyph_rasterizer::BaseFontInstance;
-use wr_glyph_rasterizer::FontInstance;
-use wr_glyph_rasterizer::GlyphRasterizer;
+use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
 
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()

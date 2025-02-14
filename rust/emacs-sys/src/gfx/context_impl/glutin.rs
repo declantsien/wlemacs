@@ -1,25 +1,15 @@
 use crate::frame::FrameRef;
 use crate::gfx::context::GLContextTrait;
 use gleam::gl::ErrorCheckingGl;
-use glutin::config::Api;
-use glutin::config::ConfigTemplateBuilder;
-use glutin::config::GlConfig;
-use glutin::context::ContextApi;
-use glutin::context::ContextAttributesBuilder;
-use glutin::context::NotCurrentGlContext;
-use glutin::context::PossiblyCurrentContext;
-use glutin::context::PossiblyCurrentGlContext;
-use glutin::context::Version;
-use glutin::display::Display;
-use glutin::display::DisplayApiPreference;
-use glutin::display::GetGlDisplay;
-use glutin::display::GlDisplay;
+use glutin::config::{Api, ConfigTemplateBuilder, GlConfig};
+use glutin::context::{
+    ContextApi, ContextAttributesBuilder, NotCurrentGlContext, PossiblyCurrentContext,
+    PossiblyCurrentGlContext, Version,
+};
+use glutin::display::{Display, DisplayApiPreference, GetGlDisplay, GlDisplay};
 use glutin::prelude::GlSurface;
-use glutin::surface::Surface;
-use glutin::surface::SurfaceAttributesBuilder;
-use glutin::surface::WindowSurface;
-use raw_window_handle::HasDisplayHandle;
-use raw_window_handle::HasWindowHandle;
+use glutin::surface::{Surface, SurfaceAttributesBuilder, WindowSurface};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::DeviceIntSize;
 
@@ -28,9 +18,7 @@ use std::num::NonZeroU32;
 
 use std::rc::Rc;
 
-use gleam::gl::Gl;
-use gleam::gl::GlFns;
-use gleam::gl::GlesFns;
+use gleam::gl::{Gl, GlFns, GlesFns};
 
 pub struct ContextImpl {
     context: PossiblyCurrentContext,

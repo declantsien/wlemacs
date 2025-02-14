@@ -11,8 +11,7 @@ pub use crate::bindings::x_display_info as DisplayInfo;
 pub use crate::bindings::Display_Info as DisplayInfo;
 use crate::display_traits::FrameParam;
 use crate::frame::FrameRef;
-use crate::globals::Qnil;
-use crate::globals::Qunbound;
+use crate::globals::{Qnil, Qunbound};
 use crate::lisp::LispObject;
 
 use crate::lisp::ExternalPtr;

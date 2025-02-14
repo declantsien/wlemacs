@@ -15,10 +15,9 @@ use webrender::FastHashMap;
 
 use webrender::api::units::*;
 use webrender::api::*;
-use webrender::RenderApi;
-use webrender::Renderer;
-use webrender::Transaction;
-use webrender::{self};
+use webrender::{
+    RenderApi, Renderer, Transaction, {self},
+};
 
 use emacs_sys::frame::FrameRef;
 

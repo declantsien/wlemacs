@@ -1,9 +1,6 @@
 //! Operations on lists.
-use crate::bindings::Fcons;
-use crate::bindings::Lisp_Cons;
-use crate::bindings::Lisp_Type;
-use crate::globals::Qconsp;
-use crate::globals::Qlistp;
+use crate::bindings::{Fcons, Lisp_Cons, Lisp_Type};
+use crate::globals::{Qconsp, Qlistp};
 use crate::lisp::LispObject;
 use crate::number::MOST_POSITIVE_FIXNUM;
 use crate::sys::circular_list;

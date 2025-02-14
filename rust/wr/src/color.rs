@@ -7,8 +7,7 @@ pub static COLOR_MAP: LazyLock<HashMap<&'static str, (u8, u8, u8)>> =
     LazyLock::new(|| init_color());
 
 use image::Rgba;
-use webrender::api::ColorF;
-use webrender::api::ColorU;
+use webrender::api::{ColorF, ColorU};
 
 use emacs_sys::bindings::Emacs_Color;
 

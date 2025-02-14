@@ -1,21 +1,13 @@
 use crate::frame::FrameExtWrCommon;
 use bit_vec::BitVec;
 use emacs_sys::frame::FrameRef;
-use image::DynamicImage;
-use image::GenericImageView;
-use image::Rgba;
-use image::RgbaImage;
+use image::{DynamicImage, GenericImageView, Rgba, RgbaImage};
 use parking_lot::Mutex;
-use std::sync::Arc;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use webrender::FastHashMap;
 
 use emacs_sys::bindings::draw_fringe_bitmap_params;
-use webrender::api::ImageData;
-use webrender::api::ImageDescriptor;
-use webrender::api::ImageDescriptorFlags;
-use webrender::api::ImageFormat;
-use webrender::api::ImageKey;
+use webrender::api::{ImageData, ImageDescriptor, ImageDescriptorFlags, ImageFormat, ImageKey};
 
 use crate::output::WrDataRef;
 
