@@ -264,12 +264,6 @@ pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
 
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn wr_get_baseline_offset(output: OutputRef) -> i32 {
-    0
-}
-
-#[allow(unused_variables)]
-#[no_mangle]
 pub extern "C" fn wr_get_pixel(ximg: *mut image, x: i32, y: i32) -> i32 {
     unimplemented!();
 }

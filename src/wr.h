@@ -16,7 +16,6 @@ extern void wr_after_update_window_line (struct window *w,
 
 extern int wr_get_fontset(output* output);
 extern struct font *wr_get_font(output* output);
-extern int wr_get_baseline_offset(output* output);
 extern int wr_get_pixel(WRImage *ximg, int x, int y);
 extern int wr_put_pixel(WRImage *ximg, int x, int y, unsigned long pixel);
 extern bool wr_load_image (struct frame *f, struct image *img,
