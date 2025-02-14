@@ -1,4 +1,3 @@
-use crate::display_info::DisplayInfoExtWr;
 use crate::frame::FrameExtWrCommon;
 use bit_vec::BitVec;
 use emacs_sys::frame::FrameRef;
@@ -6,7 +5,10 @@ use image::DynamicImage;
 use image::GenericImageView;
 use image::Rgba;
 use image::RgbaImage;
+use parking_lot::Mutex;
 use std::sync::Arc;
+use std::sync::LazyLock;
+use webrender::FastHashMap;
 
 use emacs_sys::bindings::draw_fringe_bitmap_params;
 use webrender::api::ImageData;
@@ -16,6 +18,9 @@ use webrender::api::ImageFormat;
 use webrender::api::ImageKey;
 
 use crate::output::GlRendererRef;
+
+static FRINGE_BITMAP_CACHE: LazyLock<Mutex<FastHashMap<i32, FringeBitmap>>> =
+    LazyLock::new(Default::default);
 
 #[derive(Clone)]
 pub struct FringeBitmap {
@@ -34,18 +39,16 @@ pub fn get_or_create_fringe_bitmap(
         return None;
     }
 
-    let mut display_info = frame.display_info().gl_renderer_data();
+    let mut cache = FRINGE_BITMAP_CACHE.lock();
 
-    if let Some(bitmap) = display_info.fringe_bitmap_caches.get(&which) {
+    if let Some(bitmap) = cache.get(&which) {
         return Some(bitmap.clone());
     }
 
     let bitmap = create_fringe_bitmap(frame.gl_renderer(), p);
 
     // add bitmap to cache
-    display_info
-        .fringe_bitmap_caches
-        .insert(which, bitmap.clone());
+    cache.insert(which, bitmap.clone());
 
     return Some(bitmap);
 }

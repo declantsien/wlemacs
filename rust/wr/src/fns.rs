@@ -4,7 +4,6 @@ use crate::color::pixel_to_color;
 use crate::cursor::draw_bar_cursor;
 use crate::cursor::draw_filled_cursor;
 use crate::cursor::draw_hollow_box_cursor;
-use crate::display_info::DisplayInfoExtWr;
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::fringe::get_or_create_fringe_bitmap;
@@ -225,6 +224,13 @@ pub extern "C" fn wr_draw_vertical_window_border(window: *mut Window, x: i32, y0
 
     frame.draw_vertical_window_border(face, x, y0, y1);
 }
+
+// pub extern "C" fn wr_draw_rectangle(f: *mut Frame, color_pixel:::libc::c_ulong, x: i32, y: i32, width: i32, height: i32) {
+//     let color = pixel_to_color(color_pixel);
+//     let scale = self.gl_renderer().scale();
+//     let rect = (x, y).by(width, height, scale);
+//     self.draw_rectangle(color, rect);
+// }
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
@@ -559,9 +565,7 @@ pub extern "C" fn gl_renderer_free_frame_resources(f: *mut Frame) {
 
 #[no_mangle]
 pub extern "C" fn gl_renderer_free_terminal_resources(terminal: *mut terminal) {
-    let terminal: TerminalRef = terminal.into();
-    let mut display_info = terminal.display_info();
-    display_info.free_gl_renderer_data();
+    // nothing to here anymore
 }
 
 /// Fit GL context to frame, reflecting frame/scale factor changes

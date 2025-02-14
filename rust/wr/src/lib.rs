@@ -5,7 +5,6 @@
 #[macro_use]
 extern crate emacs_sys;
 
-pub mod display_info;
 pub mod frame;
 
 mod cursor;

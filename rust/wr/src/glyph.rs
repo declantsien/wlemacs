@@ -1,5 +1,4 @@
 use crate::color::pixel_to_color;
-use crate::display_info::DisplayInfoExtWr;
 use crate::face::WrFace;
 use crate::font::FontInfoRef;
 use crate::frame::FrameExtWrCommon;
@@ -524,10 +523,10 @@ impl GlyphStringExtWr for GlyphStringRef {
                 background = face.foreground;
             }
 
-            let gc = &mut dpyinfo.gl_renderer_data().scratch_cursor_gc;
-            gc.foreground = foreground;
-            gc.background = background;
-            self.gc = gc.as_mut();
+            self.gc = &mut Emacs_GC {
+                foreground,
+                background,
+            };
 
             self.set_stippled_p(false);
         }
