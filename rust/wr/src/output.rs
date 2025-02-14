@@ -1,11 +1,13 @@
 use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
+use emacs_sys::gfx::context::GLContext;
 
 use super::image::cache::ImageHash;
 use emacs_sys::bindings::Emacs_Pixmap;
 use emacs_sys::gfx::context::GLContextTrait;
 use emacs_sys::lisp::ExternalPtr;
 pub use emacs_sys::output::OutputRef;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
@@ -58,7 +60,17 @@ impl fmt::Debug for WrData {
 
 impl WrData {
     pub fn build(frame: FrameRef) -> Self {
-        let mut gl_context = frame.create_gl_context();
+        let display_handle = frame
+            .display_handle()
+            .expect("None raw display handle")
+            .as_raw();
+        let window_handle = frame
+            .window_handle()
+            .expect("None raw window handle")
+            .as_raw();
+        let size = frame.physical_size();
+
+        let mut gl_context = GLContext::build(display_handle, window_handle, size);
         let gl = gl_context.load_gl();
         gl_context.ensure_is_current();
 

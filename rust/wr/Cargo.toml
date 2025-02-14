@@ -44,7 +44,7 @@ cfg_aliases.workspace = true
 core-foundation = "0.9"
 
 [features]
-default=["window-system-wlc", "surfman"]
+default=["window-system-wlc", "glutin"]
 window-system-pgtk=["emacs-sys/window-system-pgtk", "gtk3", "emacs-sys/webrender"]
 window-system-wlc=["emacs-sys/window-system-wlc", "emacs-sys/webrender"]
 glutin=["emacs-sys/glutin"]

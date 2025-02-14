@@ -1,4 +1,3 @@
-use crate::frame::FrameRef;
 use crate::gfx::context::GLContextTrait;
 use gleam::gl::ErrorCheckingGl;
 use glutin::config::{Api, ConfigTemplateBuilder, GlConfig};
@@ -9,7 +8,8 @@ use glutin::context::{
 use glutin::display::{Display, DisplayApiPreference, GetGlDisplay, GlDisplay};
 use glutin::prelude::GlSurface;
 use glutin::surface::{Surface, SurfaceAttributesBuilder, WindowSurface};
-use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+
+use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 
 use crate::DeviceIntSize;
 
@@ -27,18 +27,12 @@ pub struct ContextImpl {
 }
 
 impl GLContextTrait for ContextImpl {
-    fn build(frame: &FrameRef) -> Self {
+    fn build(
+        display_handle: RawDisplayHandle,
+        window_handle: RawWindowHandle,
+        size: DeviceIntSize,
+    ) -> Self {
         log::trace!("Initialize OpenGL context using Glutin");
-
-        let display_handle = frame
-            .display_handle()
-            .expect("None raw display handle")
-            .as_raw();
-        let window_handle = frame
-            .window_handle()
-            .expect("None raw window handle")
-            .as_raw();
-        let size = frame.physical_size();
 
         let width = NonZeroU32::new(size.width as u32).unwrap();
         let height = NonZeroU32::new(size.height as u32).unwrap();

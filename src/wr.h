@@ -10,6 +10,7 @@ typedef void wr_data;
 
 // defined in rust
 extern void wr_flush (wr_data *);
+extern wr_data *wr_init (void);
 extern void wr_destroy (wr_data *);
 
 extern void wr_after_update_window_line (struct window *w,

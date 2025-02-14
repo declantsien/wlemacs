@@ -372,6 +372,12 @@ pub extern "C" fn wr_parse_color(
     }
 }
 
+// #[no_mangle]
+// pub extern "C" fn wr_init() -> *mut libc::c_void {
+//     let data = Box::new(WrData::build(self.clone()));
+//     Box::into_raw(data) as *mut libc::c_void
+// }
+
 #[no_mangle]
 pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
     let _ = unsafe { Box::from_raw(wr_data as *mut WrData) };

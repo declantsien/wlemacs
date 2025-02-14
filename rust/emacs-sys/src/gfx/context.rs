@@ -1,13 +1,17 @@
-use crate::frame::FrameRef;
 use crate::gfx::context_impl::ContextImpl;
 use crate::DeviceIntSize;
 use gleam::gl::Gl;
+use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 use std::rc::Rc;
 
 pub type GLContext = ContextImpl;
 
 pub trait GLContextTrait {
-    fn build(frame: &FrameRef) -> Self;
+    fn build(
+        display_handle: RawDisplayHandle,
+        window_handle: RawWindowHandle,
+        size: DeviceIntSize,
+    ) -> Self;
 
     fn bind_framebuffer(&mut self, gl: &mut Rc<dyn Gl>);
 
@@ -18,10 +22,4 @@ pub trait GLContextTrait {
     fn resize(&self, size: &DeviceIntSize);
 
     fn ensure_is_current(&mut self);
-}
-
-impl FrameRef {
-    pub fn create_gl_context(&self) -> GLContext {
-        GLContext::build(self)
-    }
 }
