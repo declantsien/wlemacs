@@ -1,3 +1,6 @@
+use crate::color::pixel_to_color;
+use crate::util::HandyDandyRectBuilder;
+
 use super::image::cache::ImageHash;
 use emacs_sys::bindings::Emacs_Pixmap;
 use emacs_sys::gfx::context::GLContextTrait;
@@ -449,6 +452,25 @@ impl WrData {
     }
 
     pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
+        self.display(|builder, space_and_clip, _| {
+            builder.push_rect(
+                &CommonItemProperties::new(rect, space_and_clip),
+                rect,
+                clear_color,
+            );
+        });
+    }
+    pub fn push_rect(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+        let clear_color = pixel_to_color(color_pixel);
+        let scale = self.scale();
+        let rect = (x, y).by(width, height, scale);
         self.display(|builder, space_and_clip, _| {
             builder.push_rect(
                 &CommonItemProperties::new(rect, space_and_clip),

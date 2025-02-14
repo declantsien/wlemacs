@@ -73,8 +73,6 @@ pub trait FrameExtWrCommon {
         y1: i32,
     );
 
-    fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
-
     fn scroll(
         &mut self,
         x: i32,
@@ -212,8 +210,8 @@ impl FrameExtWrCommon for FrameRef {
             || s.font_not_found_p()
             || s.extends_to_end_of_line_p() || force_p
         {
-            let background_color = s.bg_color_f();
-            self.clear_area(
+            let background_color = s.bg_color();
+            self.wr().push_rect(
                 background_color,
                 s.x,
                 s.y + box_line_width,
@@ -232,8 +230,9 @@ impl FrameExtWrCommon for FrameRef {
         let visible_height = s.visible_height();
 
         // draw background
-        let background_color = s.bg_color_f();
-        self.clear_area(background_color, x, y, s.background_width, visible_height);
+        let background_color = s.bg_color();
+        self.wr()
+            .push_rect(background_color, x, y, s.background_width, visible_height);
 
         self.wr().display(|builder, space_and_clip, scale| {
             let foreground_color = s.fg_color_f();
@@ -270,8 +269,9 @@ impl FrameExtWrCommon for FrameRef {
             s.background_width
         };
 
-        let background_color = s.bg_color_f();
-        self.clear_area(background_color, s.x, s.y, background_width, visible_height);
+        let background_color = s.bg_color();
+        self.wr()
+            .push_rect(background_color, s.x, s.y, background_width, visible_height);
 
         s.set_background_filled_p(true);
     }
@@ -281,8 +281,9 @@ impl FrameExtWrCommon for FrameRef {
         let x = s.x;
         let y = s.y;
         let visible_height = s.visible_height();
-        let background_color = s.bg_color_f();
-        self.clear_area(background_color, x, y, s.background_width, visible_height);
+        let background_color = s.bg_color();
+        self.wr()
+            .push_rect(background_color, x, y, s.background_width, visible_height);
         let clip_rect = s.clip_rect();
 
         let background_color = s.face().bg_color_f();
@@ -347,15 +348,17 @@ impl FrameExtWrCommon for FrameRef {
         // first character of the composition could not be loaded.
         if s.font_not_found_p() {
             if s.cmp_from == 0 {
-                self.clear_area(self.cursor_color_f(), s.x, s.y, s.width, s.height);
+                self.wr()
+                    .push_rect(self.cursor_color(), s.x, s.y, s.width, s.height);
             }
         } else {
             let visible_height = s.visible_height();
 
             let x = s.x;
             let y = s.y;
-            let background_color = s.bg_color_f();
-            self.clear_area(background_color, x, y, s.background_width, visible_height);
+            let background_color = s.bg_color();
+            self.wr()
+                .push_rect(background_color, x, y, s.background_width, visible_height);
             self.wr().display(|builder, space_and_clip, scale| {
                 let s = s.clone();
 
@@ -465,12 +468,6 @@ impl FrameExtWrCommon for FrameRef {
         if let Some(last) = last {
             self.wr().draw_rectangle(color_last, last);
         }
-    }
-
-    fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32) {
-        let scale = self.wr().scale();
-        let rect = (x, y).by(width, height, scale);
-        self.wr().draw_rectangle(clear_color, rect);
     }
 
     fn scroll(

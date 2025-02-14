@@ -227,25 +227,16 @@ pub extern "C" fn wr_push_rect(
     height: i32,
 ) {
     let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    let clear_color = pixel_to_color(color_pixel);
-    let scale = wr.scale();
-    let rect = (x, y).by(width, height, scale);
-    wr.display(|builder, space_and_clip, _| {
-        builder.push_rect(
-            &CommonItemProperties::new(rect, space_and_clip),
-            rect,
-            clear_color,
-        );
-    });
+    wr.push_rect(color_pixel, x, y, width, height);
 }
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
     let mut frame: FrameRef = f.into();
 
-    let color = pixel_to_color(frame.background_pixel);
+    let color = frame.background_pixel;
 
-    frame.clear_area(color, x, y, width, height);
+    frame.wr().push_rect(color, x, y, width, height);
 }
 
 #[no_mangle]
