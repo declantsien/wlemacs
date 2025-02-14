@@ -6,10 +6,10 @@ typedef struct wlc_output output;
 
 #include TERM_HEADER
 
-typedef void *WrDataPtr;
+typedef void wr_data;
 
 // defined in rust
-extern void wr_flush (WrDataPtr);
+extern void wr_flush (wr_data *);
 
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
@@ -71,7 +71,7 @@ wr_free_terminal_resources (struct terminal *f);
 extern void
 wr_fit_context (struct frame *f);
 extern void
-wr_push_rect(WrDataPtr, unsigned long, int, int, int, int);
+wr_push_rect(wr_data *, unsigned long, int, int, int, int);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
