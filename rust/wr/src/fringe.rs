@@ -45,7 +45,7 @@ pub fn get_or_create_fringe_bitmap(
         return Some(bitmap.clone());
     }
 
-    let bitmap = create_fringe_bitmap(frame.wr_data(), p);
+    let bitmap = create_fringe_bitmap(frame.wr(), p);
 
     // add bitmap to cache
     cache.insert(which, bitmap.clone());

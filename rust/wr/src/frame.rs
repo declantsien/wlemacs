@@ -23,7 +23,7 @@ use webrender::api::*;
 
 pub trait FrameExtWrCommon {
     fn is_wr_data_initialized(&self) -> bool;
-    fn wr_data(&self) -> WrDataRef;
+    fn wr(&self) -> WrDataRef;
     fn free_wr_data(&mut self);
     fn fg_color_f(&self) -> ColorF;
     fn cursor_color_f(&self) -> ColorF;
@@ -73,8 +73,6 @@ pub trait FrameExtWrCommon {
         y1: i32,
     );
 
-    fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect);
-
     fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
 
     fn scroll(
@@ -96,7 +94,7 @@ impl FrameExtWrCommon for FrameRef {
         !self.output().wr_data.is_null()
     }
 
-    fn wr_data(&self) -> WrDataRef {
+    fn wr(&self) -> WrDataRef {
         if !self.is_wr_data_initialized() {
             log::debug!("gl renderer data empty");
             let data = Box::new(WrData::build(self.clone()));
@@ -237,7 +235,7 @@ impl FrameExtWrCommon for FrameRef {
         let background_color = s.bg_color_f();
         self.clear_area(background_color, x, y, s.background_width, visible_height);
 
-        self.wr_data().display(|builder, space_and_clip, scale| {
+        self.wr().display(|builder, space_and_clip, scale| {
             let foreground_color = s.fg_color_f();
 
             let glyph_instances = s.scaled_glyph_instances(scale);
@@ -288,7 +286,7 @@ impl FrameExtWrCommon for FrameRef {
         let clip_rect = s.clip_rect();
 
         let background_color = s.face().bg_color_f();
-        let scale = s.frame().wr_data().scale();
+        let scale = s.frame().wr().scale();
         let clip_bounds =
             (clip_rect.x, clip_rect.y).by(clip_rect.width as i32, clip_rect.height as i32, scale);
         let bounds = (s.x, s.y).by(s.slice.width() as i32, s.slice.height() as i32, scale);
@@ -296,7 +294,7 @@ impl FrameExtWrCommon for FrameRef {
         // render background
         let background_rect = bounds.intersection(&clip_bounds);
         if let Some(background_rect) = background_rect {
-            self.draw_rectangle(background_color, background_rect);
+            self.wr().draw_rectangle(background_color, background_rect);
         }
 
         let image: ImageRef = s.img.into();
@@ -326,7 +324,7 @@ impl FrameExtWrCommon for FrameRef {
         clip_bounds: Option<LayoutRect>,
     ) {
         let clip_bounds = clip_bounds.unwrap_or(bounds);
-        self.wr_data().display(|builder, space_and_clip, _scale| {
+        self.wr().display(|builder, space_and_clip, _scale| {
             // render image
             builder.push_image(
                 &CommonItemProperties::new(clip_bounds, space_and_clip),
@@ -358,7 +356,7 @@ impl FrameExtWrCommon for FrameRef {
             let y = s.y;
             let background_color = s.bg_color_f();
             self.clear_area(background_color, x, y, s.background_width, visible_height);
-            self.wr_data().display(|builder, space_and_clip, scale| {
+            self.wr().display(|builder, space_and_clip, scale| {
                 let s = s.clone();
 
                 let foreground_color = s.fg_color_f();
@@ -404,9 +402,9 @@ impl FrameExtWrCommon for FrameRef {
             .unwrap_or_else(|| LayoutRect::zero());
 
         // clear area
-        self.draw_rectangle(background_color, clear_rect);
+        self.wr().draw_rectangle(background_color, clear_rect);
 
-        self.wr_data().display(|builder, space_and_clip, scale| {
+        self.wr().display(|builder, space_and_clip, scale| {
             if let Some(image) = &image {
                 let image_display_rect = LayoutRect::new(
                     pos,
@@ -435,7 +433,7 @@ impl FrameExtWrCommon for FrameRef {
         y0: i32,
         y1: i32,
     ) {
-        let scale = self.wr_data().scale();
+        let scale = self.wr().scale();
         let (first, middle, last) = if (y1 - y0 > x1 - x0) && (x1 - x0 >= 3) {
             // A vertical divider, at least three pixels wide: Draw first and
             // last pixels differently.
@@ -459,30 +457,20 @@ impl FrameExtWrCommon for FrameRef {
             (None, Some(visible_rect), None)
         };
         if let Some(first) = first {
-            self.draw_rectangle(color_first, first);
+            self.wr().draw_rectangle(color_first, first);
         }
         if let Some(middle) = middle {
-            self.draw_rectangle(color, middle);
+            self.wr().draw_rectangle(color, middle);
         }
         if let Some(last) = last {
-            self.draw_rectangle(color_last, last);
+            self.wr().draw_rectangle(color_last, last);
         }
-    }
-
-    fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
-        self.wr_data().display(|builder, space_and_clip, _| {
-            builder.push_rect(
-                &CommonItemProperties::new(rect, space_and_clip),
-                rect,
-                clear_color,
-            );
-        });
     }
 
     fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32) {
-        let scale = self.wr_data().scale();
+        let scale = self.wr().scale();
         let rect = (x, y).by(width, height, scale);
-        self.draw_rectangle(clear_color, rect);
+        self.wr().draw_rectangle(clear_color, rect);
     }
 
     fn scroll(
@@ -516,13 +504,13 @@ impl FrameExtWrCommon for FrameRef {
         };
 
         // flush all content to screen before coping screen pixels
-        self.wr_data().flush();
+        self.wr().flush();
 
         let diff_y = to_y - from_y;
         let frame_size = self.logical_size();
 
-        if let Some(image_key) = self.wr_data().get_previous_frame() {
-            self.wr_data().display(|builder, space_and_clip, scale| {
+        if let Some(image_key) = self.wr().get_previous_frame() {
+            self.wr().display(|builder, space_and_clip, scale| {
                 let viewport = (x, to_y).by(width, height, scale);
                 let new_frame_position =
                     (0, 0 + diff_y).by(frame_size.width as i32, frame_size.height as i32, scale);
@@ -557,7 +545,7 @@ impl FrameExtWrCommon for FrameRef {
             do_aa: true,
         });
 
-        self.wr_data().display(|builder, space_and_clip, _scale| {
+        self.wr().display(|builder, space_and_clip, _scale| {
             builder.push_border(
                 &CommonItemProperties::new(clip_rect, space_and_clip),
                 cursor_rect,
@@ -573,9 +561,9 @@ impl FrameExtWrCommon for FrameRef {
             _ => self.cursor_color_f(),
         };
 
-        let scale = self.wr_data().scale();
+        let scale = self.wr().scale();
         let bounds = (x, y).by(width, height, scale);
 
-        self.draw_rectangle(cursor_color, bounds);
+        self.wr().draw_rectangle(cursor_color, bounds);
     }
 }

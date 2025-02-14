@@ -448,6 +448,16 @@ impl WrData {
             .resize(&size.cast_unit::<emacs_sys::DevicePixel>());
     }
 
+    pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
+        self.display(|builder, space_and_clip, _| {
+            builder.push_rect(
+                &CommonItemProperties::new(rect, space_and_clip),
+                rect,
+                clear_color,
+            );
+        });
+    }
+
     pub fn deinit(mut self) {
         self.ensure_context_is_current();
         self.renderer.deinit();

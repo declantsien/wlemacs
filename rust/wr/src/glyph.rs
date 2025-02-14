@@ -224,14 +224,14 @@ impl WrGlyph for GlyphStringRef {
     fn font_key(&self) -> FontKey {
         let font_tpl = crate::font::wr_font_tpl(self.font().as_mut());
         // println!("font tpl {:?}", font_tpl);
-        self.frame().wr_data().wr_add_font(font_tpl)
+        self.frame().wr().wr_add_font(font_tpl)
     }
 
     fn font_instance_key(&self) -> FontInstanceKey {
         let font_key = self.font_key();
         let f = self.frame();
-        let scale = f.wr_data().scale();
-        f.wr_data().wr_add_font_instance(
+        let scale = f.wr().scale();
+        f.wr().wr_add_font_instance(
             font_key,
             FontSize::from_f64_px(self.font().pixel_size as f64 * scale as f64),
             Some(FontInstanceOptions::default()),
@@ -245,7 +245,7 @@ impl WrGlyph for GlyphStringRef {
     fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>> {
         let key = self.font_instance_key();
         let f = self.frame();
-        f.wr_data().glyph_dimensions(key, glyph_indices)
+        f.wr().glyph_dimensions(key, glyph_indices)
     }
 
     fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
@@ -766,23 +766,21 @@ impl GlyphStringExtWr for GlyphStringRef {
         let y = self.y;
 
         let visible_height = self.visible_height();
-        self.frame()
-            .wr_data()
-            .display(|builder, space_and_clip, scale| {
-                let common = CommonItemProperties::new(
-                    (x, y).by(self.width as i32, visible_height, scale),
-                    space_and_clip,
-                );
+        self.frame().wr().display(|builder, space_and_clip, scale| {
+            let common = CommonItemProperties::new(
+                (x, y).by(self.width as i32, visible_height, scale),
+                space_and_clip,
+            );
 
-                builder.push_line(
-                    &common,
-                    &area,
-                    WAVY_LINE_THICKNESS as f32,
-                    orientation,
-                    &color,
-                    style,
-                );
-            });
+            builder.push_line(
+                &common,
+                &area,
+                WAVY_LINE_THICKNESS as f32,
+                orientation,
+                &color,
+                style,
+            );
+        });
     }
 
     fn draw_underline(&self) {
@@ -897,40 +895,38 @@ impl GlyphStringExtWr for GlyphStringRef {
             visible_height,
         );
 
-        self.frame()
-            .wr_data()
-            .display(|builder, space_and_clip, scale| {
-                let foreground_color = self.fg_color_f();
+        self.frame().wr().display(|builder, space_and_clip, scale| {
+            let foreground_color = self.fg_color_f();
 
-                // // draw underline
-                // if face.underline_type() != face_underline_type::FACE_NO_UNDERLINE {
-                //     self.draw_underline(
-                //         builder,
-                //         s,
-                //         font_info,
-                //         foreground_color,
-                //         face,
-                //         space_and_clip,
-                //         scale,
-                //     );
-                // }
+            // // draw underline
+            // if face.underline_type() != face_underline_type::FACE_NO_UNDERLINE {
+            //     self.draw_underline(
+            //         builder,
+            //         s,
+            //         font_info,
+            //         foreground_color,
+            //         face,
+            //         space_and_clip,
+            //         scale,
+            //     );
+            // }
 
-                let glyph_instances = self.scaled_glyph_instances(scale);
-                // draw foreground
-                if !glyph_instances.is_empty() {
-                    let font_instance_key = self.font_instance_key();
-                    let visible_rect = (x, y).by(self.width as i32, visible_height, scale);
+            let glyph_instances = self.scaled_glyph_instances(scale);
+            // draw foreground
+            if !glyph_instances.is_empty() {
+                let font_instance_key = self.font_instance_key();
+                let visible_rect = (x, y).by(self.width as i32, visible_height, scale);
 
-                    builder.push_text(
-                        &CommonItemProperties::new(visible_rect, space_and_clip),
-                        visible_rect,
-                        &glyph_instances,
-                        font_instance_key,
-                        foreground_color,
-                        None,
-                    );
-                }
-            });
+                builder.push_text(
+                    &CommonItemProperties::new(visible_rect, space_and_clip),
+                    visible_rect,
+                    &glyph_instances,
+                    font_instance_key,
+                    foreground_color,
+                    None,
+                );
+            }
+        });
     }
 
     fn draw_composite_foreground(&mut self) {
@@ -952,14 +948,12 @@ impl GlyphStringExtWr for GlyphStringRef {
     }
 
     fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
-        self.frame()
-            .wr_data()
-            .display(|builder, space_and_clip, _| {
-                builder.push_rect(
-                    &CommonItemProperties::new(rect, space_and_clip),
-                    rect,
-                    clear_color,
-                );
-            });
+        self.frame().wr().display(|builder, space_and_clip, _| {
+            builder.push_rect(
+                &CommonItemProperties::new(rect, space_and_clip),
+                rect,
+                clear_color,
+            );
+        });
     }
 }

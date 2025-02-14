@@ -106,7 +106,7 @@ pub extern "C" fn wr_update_window_end(
     unsafe { unblock_input() };
 
     let frame: FrameRef = window.get_frame();
-    frame.wr_data().flush();
+    frame.wr().flush();
 }
 
 #[no_mangle]
@@ -133,7 +133,7 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
-    let scale = frame.wr_data().scale();
+    let scale = frame.wr().scale();
 
     let row_rect: LayoutRect = unsafe {
         let (window_x, window_y, window_width, _) = window.area_box(GlyphRowArea::Any);
@@ -404,7 +404,7 @@ pub extern "C" fn wr_update_end(f: *mut Frame) {
 #[no_mangle]
 pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
     let frame: FrameRef = f.into();
-    frame.wr_data().delete_image_by_pixmap(pixmap);
+    frame.wr().delete_image_by_pixmap(pixmap);
 
     // take back ownership and RAII will drop resource.
     let _ = unsafe { Box::from_raw(pixmap as *mut WrPixmap) };
@@ -473,11 +473,11 @@ pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
     let index = font_info.index as u32;
 
     let wr_font_key = f
-        .wr_data()
+        .wr()
         .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
 
-    let scale = f.wr_data().scale();
-    let wr_font_instance_key = f.wr_data().wr_add_font_instance(
+    let scale = f.wr().scale();
+    let wr_font_instance_key = f.wr().wr_add_font_instance(
         wr_font_key,
         FontSize::from_f64_px(font.pixel_size as f64 * scale as f64),
         Some(FontInstanceOptions::default()),
@@ -577,7 +577,7 @@ pub extern "C" fn wr_fit_context(f: *mut Frame) {
     if frame.output().is_null() || frame.output().wr_data.is_null() {
         return;
     }
-    frame.wr_data().update();
+    frame.wr().update();
 }
 
 // /// Capture the contents of the current WebRender frame and
