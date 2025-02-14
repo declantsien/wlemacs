@@ -130,9 +130,7 @@ impl ImageExt for ImageRef {
                 let size = descriptor.size;
                 self.width = size.width;
                 self.height = size.height;
-                frame
-                    .gl_renderer()
-                    .add_or_update_image(&hash, descriptor, data);
+                frame.wr_data().add_or_update_image(&hash, descriptor, data);
                 let lisp_data = animation_frame_meta_to_lisp_data(meta);
                 self.lisp_data = lisp_data;
                 return true;
@@ -150,9 +148,7 @@ impl ImageExt for ImageRef {
         let (descriptor, data) = self.data(self.pixmap());
         // update WebRender resource
         let hash = self.hash();
-        frame
-            .gl_renderer()
-            .add_or_update_image(&hash, descriptor, data);
+        frame.wr_data().add_or_update_image(&hash, descriptor, data);
         // store transformed props
         let size = descriptor.size;
         self.width = size.width;
@@ -177,7 +173,7 @@ impl ImageExt for ImageRef {
     }
     fn meta(&self, frame: FrameRef) -> Option<(ImageKey, ImageDescriptor)> {
         let hash = self.hash();
-        frame.gl_renderer().image_key(&hash)
+        frame.wr_data().image_key(&hash)
     }
 }
 

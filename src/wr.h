@@ -51,7 +51,7 @@ extern void wr_clear_frame (struct frame *);
 
 #if defined USE_WEBRENDER && defined HAVE_PGTK
 extern int
-gl_renderer_parse_color (struct frame *f, const char *color_name,
+wr_parse_color (struct frame *f, const char *color_name,
 		Emacs_Color * color);
 #endif
 
@@ -61,11 +61,11 @@ extern void wr_prepara_font (struct frame *f, struct font *font);
 extern void
 wr_clear_under_internal_border (struct frame *f);
 extern void
-gl_renderer_free_frame_resources (struct frame *f);
+wr_free_frame_resources (struct frame *f);
 extern void
-gl_renderer_free_terminal_resources (struct terminal *f);
+wr_free_terminal_resources (struct terminal *f);
 extern void
-gl_renderer_fit_context (struct frame *f);
+wr_fit_context (struct frame *f);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);

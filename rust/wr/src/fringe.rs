@@ -17,7 +17,7 @@ use webrender::api::ImageDescriptorFlags;
 use webrender::api::ImageFormat;
 use webrender::api::ImageKey;
 
-use crate::output::GlRendererRef;
+use crate::output::WrDataRef;
 
 static FRINGE_BITMAP_CACHE: LazyLock<Mutex<FastHashMap<i32, FringeBitmap>>> =
     LazyLock::new(Default::default);
@@ -45,7 +45,7 @@ pub fn get_or_create_fringe_bitmap(
         return Some(bitmap.clone());
     }
 
-    let bitmap = create_fringe_bitmap(frame.gl_renderer(), p);
+    let bitmap = create_fringe_bitmap(frame.wr_data(), p);
 
     // add bitmap to cache
     cache.insert(which, bitmap.clone());
@@ -53,10 +53,7 @@ pub fn get_or_create_fringe_bitmap(
     return Some(bitmap);
 }
 
-fn create_fringe_bitmap(
-    mut canvas: GlRendererRef,
-    p: *mut draw_fringe_bitmap_params,
-) -> FringeBitmap {
+fn create_fringe_bitmap(mut canvas: WrDataRef, p: *mut draw_fringe_bitmap_params) -> FringeBitmap {
     let image_buffer = create_fringe_bitmap_image_buffer(p);
 
     let (width, height) = image_buffer.dimensions();

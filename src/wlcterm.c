@@ -524,7 +524,7 @@ wlc_delete_frame (struct frame *f)
 
   check_window_system (f);
 
-  /* gl_renderer_free_frame_resources(f); */
+  wr_free_frame_resources(f);
 
   /* /\* If a display connection is dead, don't try sending more */
   /*    commands to the X server.  *\/ */
@@ -635,8 +635,6 @@ wlc_delete_terminal (struct terminal *terminal)
     return;
 
   block_input ();
-
-  gl_renderer_free_terminal_resources(terminal);
 
   //TODO more to cleanup
 

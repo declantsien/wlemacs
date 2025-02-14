@@ -21,7 +21,7 @@ use emacs_sys::frame::FrameRef;
 
 use super::texture::TextureResourceManager;
 
-pub struct GlRenderer {
+pub struct WrData {
     fonts: FastHashMap<FontTemplate, FontKey>,
     font_instances: FastHashMap<
         (
@@ -48,13 +48,13 @@ pub struct GlRenderer {
     frame: FrameRef,
 }
 
-impl fmt::Debug for GlRenderer {
+impl fmt::Debug for WrData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "gl renderer data")
     }
 }
 
-impl GlRenderer {
+impl WrData {
     pub fn build(frame: FrameRef) -> Self {
         let mut gl_context = frame.create_gl_context();
         let gl = gl_context.load_gl();
@@ -454,7 +454,7 @@ impl GlRenderer {
     }
 }
 
-pub type GlRendererRef = ExternalPtr<GlRenderer>;
+pub type WrDataRef = ExternalPtr<WrData>;
 
 struct Notifier {}
 

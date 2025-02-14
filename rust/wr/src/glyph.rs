@@ -224,14 +224,14 @@ impl WrGlyph for GlyphStringRef {
     fn font_key(&self) -> FontKey {
         let font_tpl = crate::font::wr_font_tpl(self.font().as_mut());
         // println!("font tpl {:?}", font_tpl);
-        self.frame().gl_renderer().wr_add_font(font_tpl)
+        self.frame().wr_data().wr_add_font(font_tpl)
     }
 
     fn font_instance_key(&self) -> FontInstanceKey {
         let font_key = self.font_key();
         let f = self.frame();
-        let scale = f.gl_renderer().scale();
-        f.gl_renderer().wr_add_font_instance(
+        let scale = f.wr_data().scale();
+        f.wr_data().wr_add_font_instance(
             font_key,
             FontSize::from_f64_px(self.font().pixel_size as f64 * scale as f64),
             Some(FontInstanceOptions::default()),
@@ -245,7 +245,7 @@ impl WrGlyph for GlyphStringRef {
     fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>> {
         let key = self.font_instance_key();
         let f = self.frame();
-        f.gl_renderer().glyph_dimensions(key, glyph_indices)
+        f.wr_data().glyph_dimensions(key, glyph_indices)
     }
 
     fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
@@ -767,7 +767,7 @@ impl GlyphStringExtWr for GlyphStringRef {
 
         let visible_height = self.visible_height();
         self.frame()
-            .gl_renderer()
+            .wr_data()
             .display(|builder, space_and_clip, scale| {
                 let common = CommonItemProperties::new(
                     (x, y).by(self.width as i32, visible_height, scale),
@@ -898,7 +898,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         );
 
         self.frame()
-            .gl_renderer()
+            .wr_data()
             .display(|builder, space_and_clip, scale| {
                 let foreground_color = self.fg_color_f();
 
@@ -953,7 +953,7 @@ impl GlyphStringExtWr for GlyphStringRef {
 
     fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
         self.frame()
-            .gl_renderer()
+            .wr_data()
             .display(|builder, space_and_clip, _| {
                 builder.push_rect(
                     &CommonItemProperties::new(rect, space_and_clip),

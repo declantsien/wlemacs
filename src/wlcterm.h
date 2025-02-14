@@ -108,9 +108,6 @@ struct wlc_touch_event
 
 struct wlc_display_info
 {
-  /* Gl Renderer global data in Rust */
-  void *gl_renderer_data;
-
   /* Chain of all wlc_display_info structures.  */
   struct wlc_display_info *next;
 
@@ -242,7 +239,7 @@ extern struct wlc_display_info *x_display_list;
 struct wlc_output
 {
   /* Inner perporty in Rust */
-  void *gl_renderer;
+  void *wr_data;
 
   bool enable_compositor;
   enum sync_mode sync_mode;

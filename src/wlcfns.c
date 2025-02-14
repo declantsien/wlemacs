@@ -1003,7 +1003,7 @@ xdg_toplevel_configure_handler(void *data,
         wp_viewport_set_destination(FRAME_OUTPUT_DATA (f)->viewport, FRAME_PIXEL_WIDTH (f),
 				    FRAME_PIXEL_HEIGHT (f));
       } else {
-	gl_renderer_fit_context(f);
+	wr_fit_context(f);
 	wl_surface_commit(FRAME_OUTPUT_DATA (f)->surface);
       }
     }
@@ -1029,7 +1029,7 @@ xdg_surface_configure_handler(void *data,
 			      struct xdg_surface *xdg_surface, uint32_t serial)
 {
   struct frame *f = data;
-  gl_renderer_fit_context(f);
+  wr_fit_context(f);
   xdg_surface_ack_configure(xdg_surface, serial);
   /* struct wl_buffer *buffer = draw_frame(f); */
   /* wl_surface_attach(FRAME_OUTPUT_DATA(f)->surface, buffer, 0, 0); */
@@ -1792,7 +1792,7 @@ This function is an internal primitive--use `make-frame' instead.  */)
   gui_default_parameter (f, parms, Qfullscreen, Qnil,
                          "fullscreen", "Fullscreen", RES_TYPE_SYMBOL);
 
-  gl_renderer_fit_context(f);
+  wr_fit_context(f);
   /* #ifdef USE_CAIRO */
   /*   /\* Set the initial size of the Cairo surface to the frame's current */
   /*      width and height.  If the window manager doesn't resize the new */

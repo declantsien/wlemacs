@@ -1,4 +1,4 @@
-use crate::bindings::gl_renderer_fit_context;
+use crate::bindings::wr_fit_context;
 use crate::frame::Frame;
 use crate::frame::FrameRef;
 use crate::gfx::context::GLContextTrait;
@@ -69,7 +69,7 @@ impl GLContextTrait for ContextImpl {
                         DeviceIntSize::new(allocation.width() as i32, allocation.height() as i32);
                     log::debug!("Gtk fixed size allocated {size:?} scale_factor: {scale_factor:?}");
 
-                    unsafe { gl_renderer_fit_context(frame) };
+                    unsafe { wr_fit_context(frame) };
                 }
             });
 
@@ -77,7 +77,7 @@ impl GLContextTrait for ContextImpl {
                 let frame = fixed_wiget_to_frame(widget);
                 let scale_factor = widget.scale_factor() as f64;
                 log::debug!("Gtk fixed scale_factor: {scale_factor:?}");
-                unsafe { gl_renderer_fit_context(frame) };
+                unsafe { wr_fit_context(frame) };
             });
 
             (fixed, area)

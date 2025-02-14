@@ -341,7 +341,7 @@ fn generate_bindings() {
     let munged = re.unwrap().replace_all(&source, "");
     let mut file = File::create(out_path).unwrap();
     let text: String = std::fs::read_to_string(
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("bindings.rs"),
+        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("template.rs"),
     )
     .unwrap();
     write!(file, "{}", text).expect("Write error!");

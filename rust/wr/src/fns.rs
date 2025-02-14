@@ -103,14 +103,14 @@ pub extern "C" fn wr_update_window_end(
     unsafe { unblock_input() };
 
     let frame: FrameRef = window.get_frame();
-    frame.gl_renderer().flush();
+    frame.wr_data().flush();
 }
 
 #[no_mangle]
 pub extern "C" fn wr_flush_display(f: *mut Frame) {
     let frame: FrameRef = f.into();
 
-    frame.gl_renderer().flush();
+    frame.wr_data().flush();
 }
 
 #[allow(unused_variables)]
@@ -131,7 +131,7 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
-    let scale = frame.gl_renderer().scale();
+    let scale = frame.wr_data().scale();
 
     let row_rect: LayoutRect = unsafe {
         let (window_x, window_y, window_width, _) = window.area_box(GlyphRowArea::Any);
@@ -227,7 +227,7 @@ pub extern "C" fn wr_draw_vertical_window_border(window: *mut Window, x: i32, y0
 
 // pub extern "C" fn wr_draw_rectangle(f: *mut Frame, color_pixel:::libc::c_ulong, x: i32, y: i32, width: i32, height: i32) {
 //     let color = pixel_to_color(color_pixel);
-//     let scale = self.gl_renderer().scale();
+//     let scale = self.wr_data().scale();
 //     let rect = (x, y).by(width, height, scale);
 //     self.draw_rectangle(color, rect);
 // }
@@ -397,7 +397,7 @@ pub extern "C" fn wr_update_end(f: *mut Frame) {
 #[no_mangle]
 pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
     let frame: FrameRef = f.into();
-    frame.gl_renderer().delete_image_by_pixmap(pixmap);
+    frame.wr_data().delete_image_by_pixmap(pixmap);
 
     // take back ownership and RAII will drop resource.
     let _ = unsafe { Box::from_raw(pixmap as *mut WrPixmap) };
@@ -466,11 +466,11 @@ pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
     let index = font_info.index as u32;
 
     let wr_font_key = f
-        .gl_renderer()
+        .wr_data()
         .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
 
-    let scale = f.gl_renderer().scale();
-    let wr_font_instance_key = f.gl_renderer().wr_add_font_instance(
+    let scale = f.wr_data().scale();
+    let wr_font_instance_key = f.wr_data().wr_add_font_instance(
         wr_font_key,
         FontSize::from_f64_px(font.pixel_size as f64 * scale as f64),
         Some(FontInstanceOptions::default()),
@@ -541,7 +541,7 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
 }
 
 #[no_mangle]
-pub extern "C" fn gl_renderer_parse_color(
+pub extern "C" fn wr_parse_color(
     _f: *mut Frame,
     color_name: *const ::libc::c_char,
     xcolor: *mut Emacs_Color,
@@ -558,24 +558,19 @@ pub extern "C" fn gl_renderer_parse_color(
 }
 
 #[no_mangle]
-pub extern "C" fn gl_renderer_free_frame_resources(f: *mut Frame) {
+pub extern "C" fn wr_free_frame_resources(f: *mut Frame) {
     let mut frame: FrameRef = f.into();
-    frame.free_gl_renderer_resources();
-}
-
-#[no_mangle]
-pub extern "C" fn gl_renderer_free_terminal_resources(terminal: *mut terminal) {
-    // nothing to here anymore
+    frame.free_wr_data();
 }
 
 /// Fit GL context to frame, reflecting frame/scale factor changes
 #[no_mangle]
-pub extern "C" fn gl_renderer_fit_context(f: *mut Frame) {
+pub extern "C" fn wr_fit_context(f: *mut Frame) {
     let frame: FrameRef = f.into();
-    if frame.output().is_null() || frame.output().gl_renderer.is_null() {
+    if frame.output().is_null() || frame.output().wr_data.is_null() {
         return;
     }
-    frame.gl_renderer().update();
+    frame.wr_data().update();
 }
 
 // /// Capture the contents of the current WebRender frame and
@@ -612,7 +607,7 @@ pub extern "C" fn gl_renderer_fit_context(f: *mut Frame) {
 //         };
 
 //         let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
-//         let canvas = frame.gl_renderer();
+//         let canvas = frame.wr_data();
 //         let bits = webrender::CaptureBits::from_bits(bits_raw as _).unwrap();
 //         let revision_file_path = path.join("wr.txt");
 //         message!("Trying to save webrender capture under {:?}", &path);
@@ -650,7 +645,7 @@ pub extern "C" fn gl_renderer_fit_context(f: *mut Frame) {
 
 //         message!("Stop capturing WR state");
 //         let frame = emacs_sys::frame::window_frame_live_or_selected(Qnil);
-//         let canvas = frame.gl_renderer();
+//         let canvas = frame.wr_data();
 //         canvas.render_api.stop_capture_sequence();
 //     }
 // }

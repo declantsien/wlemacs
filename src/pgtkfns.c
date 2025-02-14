@@ -1135,7 +1135,7 @@ update_watched_scale_factor (struct atimer *timer)
 					   FRAME_CR_SURFACE_DESIRED_HEIGHT (f),
 					   true);
 #elif defined USE_WEBRENDER
-      gl_renderer_fit_context (f);
+      wr_fit_context (f);
 #endif
     }
 }

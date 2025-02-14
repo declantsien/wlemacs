@@ -18,7 +18,7 @@ pub fn draw_hollow_box_cursor(window: WindowRef, row: GlyphRowRef) {
     let width = window.phys_cursor_width;
 
     let mut frame = window.get_frame();
-    let scale = frame.gl_renderer().scale();
+    let scale = frame.wr_data().scale();
     let cursor_rect = (x, y).by(width, height, scale);
 
     let window_rect = {
