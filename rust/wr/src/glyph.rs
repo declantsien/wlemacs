@@ -2,7 +2,6 @@ use crate::color::pixel_to_color;
 use crate::face::WrFace;
 use crate::font::FontInfoRef;
 use crate::frame::FrameExtWrCommon;
-use crate::image::ImageRef;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
 use emacs_sys::bindings::face_box_type::{self};
@@ -14,7 +13,6 @@ use emacs_sys::bindings::Emacs_GC;
 use emacs_sys::bindings::Emacs_Rectangle as NativeRectangle;
 use emacs_sys::display_traits::DrawGlyphsFace;
 use emacs_sys::display_traits::GlyphStringRef;
-use emacs_sys::frame::FrameRef;
 use emacs_sys::lisp::LispObject;
 use emacs_sys::number::LNumber;
 use euclid::Scale;
@@ -25,36 +23,27 @@ use webrender::api::FontInstanceOptions;
 use webrender::api::FontInstancePlatformOptions;
 use webrender::api::FontKey;
 use webrender::api::FontSize;
-use webrender::api::FontTemplate;
-use webrender::api::NativeFontHandle;
 use webrender::api::*;
 use webrender::{self};
 // TODO: maybe configurable from lisp world
 const WAVY_LINE_THICKNESS: i32 = 1;
-use emacs_sys::bindings::font;
-use emacs_sys::font::FontRef;
 
 pub trait WrGlyph {
-    fn bg_color_f(&self) -> ColorF;
     fn fg_color_f(&self) -> ColorF;
     fn underline_color_f(&self) -> ColorF;
     fn overline_color_f(&self) -> ColorF;
     fn strike_through_color_f(&self) -> ColorF;
     fn x(&self) -> i32;
-    fn box_line_width(&self) -> i32;
     fn underline_area(&self) -> LayoutRect;
     fn underwave_area(&self) -> LayoutRect;
-    fn font(&self) -> FontRef;
     fn font_info(&self) -> FontInfoRef;
     fn font_key(&self) -> FontKey;
     fn font_instance_key(&self) -> FontInstanceKey;
     fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>>;
     fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>>;
-    fn image(&self) -> ImageRef;
     fn composite_p(&self) -> bool;
     fn automatic_composite_p(&self) -> bool;
     fn visible_height(&self) -> i32;
-    fn frame(&self) -> FrameRef;
     fn scale_factor(&self) -> f32;
     fn glyph_indices(&self) -> Vec<u32>;
     fn scaled_glyph_instances(&self, scale: f32) -> Vec<GlyphInstance>;
@@ -65,10 +54,6 @@ pub trait WrGlyph {
 }
 
 impl WrGlyph for GlyphStringRef {
-    fn bg_color_f(&self) -> ColorF {
-        pixel_to_color(self.bg_color())
-    }
-
     fn fg_color_f(&self) -> ColorF {
         pixel_to_color(self.fg_color())
     }
@@ -96,10 +81,6 @@ impl WrGlyph for GlyphStringRef {
         } else {
             self.x
         }
-    }
-
-    fn box_line_width(&self) -> i32 {
-        std::cmp::max(unsafe { (*self.face).box_horizontal_line_width }, 0)
     }
 
     fn underwave_area(&self) -> LayoutRect {
@@ -185,24 +166,12 @@ impl WrGlyph for GlyphStringRef {
         (self.x, y).by(self.width as i32, thickness, self.scale_factor())
     }
 
-    fn frame(&self) -> FrameRef {
-        self.f.into()
-    }
-
     fn scale_factor(&self) -> f32 {
         self.frame().scale_factor() as f32
     }
 
-    fn font(&self) -> FontRef {
-        FontRef::new(self.font as *mut font)
-    }
-
     fn font_info(&self) -> FontInfoRef {
         FontInfoRef::new(self.font as *mut font_info)
-    }
-
-    fn image(&self) -> ImageRef {
-        self.img.into()
     }
 
     fn composite_p(&self) -> bool {
@@ -429,18 +398,6 @@ pub trait GlyphStringExtWr {
     fn set_cursor_gc(&mut self);
     fn set_mouse_gc(&mut self);
     fn clip_rect(&mut self) -> NativeRectangle;
-    fn set_clipping(&mut self);
-    fn set_clipping_exactly(&mut self, dist: Self);
-    fn draw(&mut self);
-    fn draw_stretch(&mut self);
-    fn fill_rectangle(
-        &mut self,
-        color: u64,
-        layout_rect: LayoutRect,
-        respect_alpha_background: bool,
-    );
-    fn fill_background(&mut self, x: i32, y: i32, width: i32, height: i32);
-    fn draw_box(&mut self);
     fn draw_line(
         &self,
         style: LineStyle,
@@ -451,15 +408,6 @@ pub trait GlyphStringExtWr {
     fn draw_underline(&self);
     fn draw_overline(&mut self);
     fn draw_strike_through(&mut self);
-    fn draw_image(&mut self);
-    fn draw_xwidget(&mut self);
-    fn draw_background(&mut self, is_force: bool);
-    fn draw_foreground(&mut self);
-    fn draw_composite_foreground(&mut self);
-    fn draw_glyphless_foreground(&mut self);
-    fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
-    fn clear_rect(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32);
-    fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect);
 }
 
 impl GlyphStringExtWr for GlyphStringRef {
@@ -499,8 +447,6 @@ impl GlyphStringExtWr for GlyphStringRef {
             /* Cursor on non-default face: must merge.  */
             // FIXME not sure the logic below is aligned with x_set_cursor_gc
             // needs to check
-            let mut dpyinfo = f.display_info();
-
             let mut foreground = face.background;
             let mut background = f.cursor_color();
 
@@ -556,201 +502,6 @@ impl GlyphStringExtWr for GlyphStringRef {
 
         unsafe { get_glyph_string_clip_rect(self.as_mut(), &mut clip_rect) };
         clip_rect
-    }
-
-    fn set_clipping(&mut self) {
-        log::error!("unimplemented set clipping ref: x_set_glyph_string_clipping");
-    }
-    fn set_clipping_exactly(&mut self, _dist: Self) {
-        log::error!("unimplemented set clipping ref: x_set_glyph_string_clipping");
-    }
-
-    fn draw(&mut self) {
-        let mut is_relief_drawn = false;
-        // If S draws into the background of its successors, draw the
-        // background of the successors first so that S can draw into it.
-        // This makes S->next use XDrawString instead of XDrawImageString.
-        let right_overhang = self.right_overhang;
-        if right_overhang != 0 && !self.is_for_overlaps() && self.next().is_some() {
-            let mut width = 0;
-            for (_, mut s) in self.next().unwrap().into_iter().enumerate() {
-                if width >= right_overhang {
-                    break;
-                }
-
-                let glyph_type = s.glyph_type();
-                if glyph_type != glyph_type::IMAGE_GLYPH {
-                    s.set_gc();
-                    s.set_clipping();
-                } else if glyph_type == glyph_type::STRETCH_GLYPH {
-                    s.draw_stretch();
-                } else {
-                    s.draw_background(false);
-                }
-                width += s.width;
-            }
-        }
-
-        // Set up S->gc, set clipping and draw S.
-        self.set_gc();
-
-        // Draw relief (if any) in advance for char/composition so that the
-        // glyph string can be drawn over it.
-        if !self.is_for_overlaps()
-            && self.face().box_() != face_box_type::FACE_NO_BOX
-            && (self.glyph_type() == glyph_type::CHAR_GLYPH
-                || self.glyph_type() == glyph_type::COMPOSITE_GLYPH)
-        {
-            self.set_clipping();
-            self.draw_background(true);
-            self.draw_box();
-            self.set_clipping();
-            is_relief_drawn = true;
-        } else if self.clip_head().is_none() // draw_glyphs didn't specify a clip mask.
-            && self.clip_tail().is_none()
-            && (self.prev().map(|s| s.hl() != self.hl() && self.left_overhang != 0)
-                .unwrap_or(false)
-                || self.next().map(|s| s.hl() != self.hl() && self.right_overhang != 0)
-                    .unwrap_or(false))
-        {
-            // We must clip just this glyph.  left_overhang part has already
-            // drawn when s->prev was drawn, and right_overhang part will be
-            // drawn later when s->next is drawn.
-            self.set_clipping_exactly(self.clone());
-        } else {
-            self.set_clipping();
-        }
-
-        match self.glyph_type() {
-            glyph_type::IMAGE_GLYPH => self.draw_image(),
-            glyph_type::XWIDGET_GLYPH => self.draw_xwidget(),
-            glyph_type::STRETCH_GLYPH => self.draw_stretch(),
-            glyph_type::CHAR_GLYPH => {
-                if self.for_overlaps() != 0 {
-                    self.set_background_filled_p(true);
-                } else {
-                    self.draw_background(false);
-                }
-                self.draw_foreground();
-            }
-            glyph_type::COMPOSITE_GLYPH => {
-                if self.for_overlaps() != 0
-                    || (self.cmp_from > 0 && !self.is_automatic_composition())
-                {
-                    self.set_background_filled_p(true);
-                } else {
-                    self.draw_background(true);
-                }
-                self.draw_composite_foreground();
-            }
-            glyph_type::GLYPHLESS_GLYPH => {
-                if self.for_overlaps() != 0 {
-                    self.set_background_filled_p(true);
-                } else {
-                    self.draw_background(true);
-                }
-                self.draw_glyphless_foreground()
-            }
-            _ => {}
-        }
-
-        if !self.is_for_overlaps() {
-            // Draw relief if not yet drawn.
-            if !is_relief_drawn && self.face().box_() != face_box_type::FACE_NO_BOX {
-                self.draw_box();
-            }
-
-            // Draw underline
-            // match self.face().underline_type() {
-            //     FaceUnderlineType::Wave => {
-            //         self.draw_underwave(self.underline_color());
-            //     }
-            //     FaceUnderlineType::Line => {
-            //         let layout_rect = self.underline_layout_area();
-            //         self.fill_rectangle(self.underline_color(), layout_rect, false);
-            //     }
-            //     FaceUnderlineType::None => todo!(),
-            // }
-
-            // Draw overline
-            if self.face().overline_p() {
-                // let dy = 0;
-                // let h = 1;
-                // let layout_rect = (self.x, self.y + dy).by(self.width, h, self.scale_factor());
-
-                // self.fill_rectangle(self.overline_color(), layout_rect, false);
-            }
-
-            /* Draw strike-through.  */
-            if self.face().strike_through_p() {
-                // /* Y-coordinate and height of the glyph string's first
-                // glyph.  We cannot use s->y and s->height because those
-                // could be larger if there are taller display elements
-                // (e.g., characters displayed with a larger font) in the
-                // same glyph row.  */
-                // let glyph_y = self.ybase - self.first_glyph().ascent as i32;
-                // let glyph_height = self.first_glyph().ascent + self.first_glyph().descent;
-                // /* Strike-through width and offset from the glyph string's
-                // top edge.  */
-                // let h = 1;
-                // let dy = (glyph_height - h) / 2;
-                // let layout_rect =
-                //     (self.x, glyph_y + dy as i32).by(self.width, h as i32, self.scale_factor());
-                // self.fill_rectangle(self.strike_through_color(), layout_rect, false);
-            }
-
-            if self.prev().is_some() {
-                // todo!()
-                /* As prev was drawn while clipped to its own area, we
-                must draw the right_overhang part using s->hl now.  */
-            }
-            if self.next().is_some() {
-                // self.next().unwrap().into_iter().for_each(|s| {
-                //     //todo!()
-                // });
-            }
-        }
-        /* TODO: figure out in which cases the stipple is actually drawn on
-        WR.  */
-        match self.row() {
-            Some(mut row) => {
-                if !row.stipple_p() {
-                    row.set_stipple_p(self.face().stipple != 0);
-                }
-            }
-            _ => {}
-        }
-
-        /* Reset clipping.  */
-        // pgtk_end_cr_clip (s->f);
-        self.num_clips = 0;
-    }
-
-    fn draw_stretch(&mut self) {
-        todo!()
-    }
-
-    fn fill_rectangle(
-        &mut self,
-        _color: u64,
-        _layout_rect: LayoutRect,
-        _respect_alpha_background: bool,
-    ) {
-        // let scale_factor = self.scale_factor();
-        todo!();
-    }
-
-    fn fill_background(&mut self, _x: i32, _y: i32, _width: i32, _height: i32) {
-        // let scale_factor = self.scale_factor();
-        todo!();
-    }
-
-    fn draw_box(&mut self) {
-        todo!()
-    }
-
-    fn draw_image(&mut self) {
-        todo!()
     }
 
     // underline/wave overline strike-through etc
@@ -828,132 +579,5 @@ impl GlyphStringExtWr for GlyphStringRef {
             area,
             LineOrientation::Horizontal,
         );
-    }
-
-    fn draw_xwidget(&mut self) {
-        todo!()
-    }
-
-    // Draw the background of glyph_string S.  If S->background_filled_p
-    // is non-zero don't draw it.  FORCE_P non-zero means draw the
-    // background even if it wouldn't be drawn normally.  This is used
-    // when a string preceding S draws into the background of S, or S
-    // contains the first component of a composition.
-    fn draw_background(&mut self, is_force: bool) {
-        // Nothing to do if background has already been drawn or if it
-        // shouldn't be drawn in the first place.
-        if self.background_filled_p() {
-            return;
-        }
-        let box_line_width = std::cmp::max(self.face().box_horizontal_line_width, 0);
-
-        if self.stippled_p() {
-            // Fill background with a stipple pattern.
-            self.fill_background(
-                self.x,
-                self.y + box_line_width,
-                self.background_width,
-                self.height - 2 * box_line_width,
-            );
-            self.set_background_filled_p(true);
-        } else if self.font_info().font.height < self.height - 2 * box_line_width
-	    /* When xdisp.c ignores FONT_HEIGHT, we cannot trust
-	    font dimensions, since the actual glyphs might be
-	    much smaller.  So in that case we always clear the
-	    rectangle with background color.  */
-	    || self.font().too_high_p()
-            || self.font_not_found_p()
-            || self.extends_to_end_of_line_p() || is_force
-        {
-            let background_color = self.bg_color_f();
-            self.clear_rect(
-                background_color,
-                self.x,
-                self.y + box_line_width,
-                self.background_width,
-                self.height - 2 * box_line_width,
-            );
-
-            self.set_background_filled_p(true);
-        }
-    }
-
-    // Draw the foreground of glyph string S.
-    fn draw_foreground(&mut self) {
-        let x = self.x;
-        let y = self.y;
-
-        let visible_height = self.visible_height();
-
-        // draw background
-        let background_color = self.bg_color_f();
-        self.clear_area(
-            background_color,
-            x,
-            y,
-            self.background_width,
-            visible_height,
-        );
-
-        self.frame().wr().display(|builder, space_and_clip, scale| {
-            let foreground_color = self.fg_color_f();
-
-            // // draw underline
-            // if face.underline_type() != face_underline_type::FACE_NO_UNDERLINE {
-            //     self.draw_underline(
-            //         builder,
-            //         s,
-            //         font_info,
-            //         foreground_color,
-            //         face,
-            //         space_and_clip,
-            //         scale,
-            //     );
-            // }
-
-            let glyph_instances = self.scaled_glyph_instances(scale);
-            // draw foreground
-            if !glyph_instances.is_empty() {
-                let font_instance_key = self.font_instance_key();
-                let visible_rect = (x, y).by(self.width as i32, visible_height, scale);
-
-                builder.push_text(
-                    &CommonItemProperties::new(visible_rect, space_and_clip),
-                    visible_rect,
-                    &glyph_instances,
-                    font_instance_key,
-                    foreground_color,
-                    None,
-                );
-            }
-        });
-    }
-
-    fn draw_composite_foreground(&mut self) {
-        todo!()
-    }
-
-    fn draw_glyphless_foreground(&mut self) {
-        todo!()
-    }
-
-    fn clear_area(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32) {
-        let scale = self.scale_factor();
-        let rect = (x, y).by(width, height, scale);
-        self.draw_rectangle(clear_color, rect);
-    }
-
-    fn clear_rect(&mut self, clear_color: ColorF, x: i32, y: i32, width: i32, height: i32) {
-        self.clear_area(clear_color, x, y, width, height);
-    }
-
-    fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
-        self.frame().wr().display(|builder, space_and_clip, _| {
-            builder.push_rect(
-                &CommonItemProperties::new(rect, space_and_clip),
-                rect,
-                clear_color,
-            );
-        });
     }
 }

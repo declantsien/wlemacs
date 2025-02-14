@@ -26,13 +26,10 @@ pub mod platform {
     }
 }
 
-use crate::frame::FrameExtWrCommon;
 use emacs_sys::bindings::font_info;
 use emacs_sys::font::FontRef;
 use emacs_sys::lisp::ExternalPtr;
 use webrender::api::FontInstanceKey;
-use webrender::api::GlyphDimensions;
-use webrender::api::GlyphIndex;
 
 use emacs_sys::frame::FrameRef;
 
@@ -44,7 +41,6 @@ use emacs_sys::bindings::frame;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use webrender::api::units::*;
 use webrender::api::*;
 use wr_glyph_rasterizer::BaseFontInstance;
 use wr_glyph_rasterizer::FontInstance;

@@ -1,6 +1,5 @@
 use crate::color::color_to_xcolor;
 use crate::color::lookup_color_by_name_or_hex;
-use crate::color::pixel_to_color;
 use crate::cursor::draw_bar_cursor;
 use crate::cursor::draw_filled_cursor;
 use crate::cursor::draw_hollow_box_cursor;
@@ -11,7 +10,6 @@ use crate::image::ImageExt;
 use crate::image::ImageRef;
 use crate::image::WrPixmap;
 use crate::output::OutputRef;
-use crate::output::WrData;
 use crate::output::WrDataRef;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::block_input;
@@ -30,15 +28,12 @@ use emacs_sys::bindings::gui_draw_vertical_border;
 use emacs_sys::bindings::image;
 use emacs_sys::bindings::lookup_basic_face;
 use emacs_sys::bindings::run;
-use emacs_sys::bindings::terminal;
 use emacs_sys::bindings::text_cursor_kinds;
 use emacs_sys::bindings::unblock_input;
 use emacs_sys::bindings::Emacs_Color;
 use emacs_sys::bindings::Emacs_Pixmap;
-use emacs_sys::bindings::Fprovide;
 use emacs_sys::bindings::AREF;
 use emacs_sys::bindings::FACE_FROM_ID_OR_NULL;
-use emacs_sys::display_traits::FaceId;
 use emacs_sys::display_traits::FaceRef;
 use emacs_sys::display_traits::GlyphRowArea;
 use emacs_sys::display_traits::GlyphRowRef;
@@ -47,14 +42,9 @@ use emacs_sys::font::FontRef;
 use emacs_sys::font::LispFontRef;
 use emacs_sys::frame::Frame;
 use emacs_sys::frame::FrameRef;
-use emacs_sys::globals::Qnil;
-use emacs_sys::globals::Qwr;
 use emacs_sys::lisp::LispObject;
-use emacs_sys::multibyte::LispStringRef;
-use emacs_sys::terminal::TerminalRef;
 use emacs_sys::window::Window;
 use emacs_sys::window::WindowRef;
-use webrender::api::CommonItemProperties;
 use webrender::api::FontInstanceOptions;
 use webrender::api::FontInstancePlatformOptions;
 use webrender::api::FontSize;
@@ -67,7 +57,6 @@ use std::ffi::CString;
 use std::ptr;
 use webrender::api::units::LayoutPoint;
 use webrender::api::units::LayoutRect;
-use webrender::api::ColorF;
 
 #[no_mangle]
 pub extern "C" fn wr_update_window_end(
@@ -213,7 +202,7 @@ pub extern "C" fn wr_push_rect(
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
-    let mut frame: FrameRef = f.into();
+    let frame: FrameRef = f.into();
 
     let color = frame.background_pixel;
 

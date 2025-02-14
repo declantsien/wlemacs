@@ -1,8 +1,6 @@
 use super::util::HandyDandyRectBuilder;
-use crate::color::color_to_pixel;
 use crate::color::pixel_to_color;
 use crate::face::WrFace;
-use crate::fns::wr_push_rect;
 use crate::fringe::FringeBitmap;
 use crate::glyph::GlyphStringExtWr;
 use crate::glyph::WrGlyph;
