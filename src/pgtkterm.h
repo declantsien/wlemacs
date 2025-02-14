@@ -25,6 +25,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "character.h"
 #include "font.h"
 #include "sysselect.h"
+#ifdef USE_WEBRENDER
+#include "wr.h"
+#endif
 
 #ifdef HAVE_PGTK
 
@@ -146,7 +149,6 @@ struct scroll_bar
 struct pgtk_display_info
 {
 
-#ifdef USE_WEBRENDER
   /* Chain of all pgtk_display_info structures.  */
   struct pgtk_display_info *next;
 
@@ -690,7 +692,6 @@ extern int pgtk_emacs_to_gtk_modifiers (struct pgtk_display_info *, int);
 
 #ifdef USE_WEBRENDER
 extern struct frame *pgtk_fixed_to_frame (GtkWidget *);
-#include "wr.h"
 #endif  /* USE_WEBRENDER */
 
 #endif /* HAVE_PGTK */

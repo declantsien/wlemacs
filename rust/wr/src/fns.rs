@@ -16,7 +16,6 @@ use emacs_sys::bindings::block_input;
 use emacs_sys::bindings::draw_fringe_bitmap_params;
 use emacs_sys::bindings::face_id;
 use emacs_sys::bindings::font_info;
-use emacs_sys::bindings::fontset_from_font;
 use emacs_sys::bindings::globals;
 use emacs_sys::bindings::glyph_row;
 use emacs_sys::bindings::glyph_string;

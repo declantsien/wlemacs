@@ -7413,7 +7413,7 @@ else
 CARGO_FLAGS="$CARGO_FLAGS --release"
 fi
 CARGO_FLAGS="$CARGO_FLAGS -Zgitoxide=fetch -Zgit=shallow-deps,shallow-index"
-CARGO_FLAGS="$CARGO_FLAGS -Z unstable-options"
+CARGO_FLAGS="$CARGO_FLAGS -Z unstable-options --no-default-features"
 
 RUST_CFLAGS=
 case "${opsys}" in
@@ -7716,7 +7716,7 @@ optsep=
 if test $window_system = pgtk && test "${with_webrender}" = "yes"; then
     pgtk_use_wr=yes
 fi
-for opt in pgtk glyph-debug profiling wr_pgtk wlc; do
+for opt in pgtk glyph-debug profiling wlc; do
     tmp=no
     if test "${window_system}" = "$opt"; then
 	tmp=yes
@@ -7899,7 +7899,7 @@ SMALL_JA_DIC=$with_small_ja_dic
 AC_SUBST([SMALL_JA_DIC])
 
 dnl AC_CONFIG_FILES([$srcdir/.cargo/config:$srcdir/.cargo/config.in])
-AC_CONFIG_FILES([$srcdir/crates/emacs-sys/build.rs])
+AC_CONFIG_FILES([$srcdir/rust/emacs-sys/build.rs])
 
 dnl The following commands are run on the build system when building
 dnl Emacs.

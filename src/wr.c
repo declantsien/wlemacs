@@ -27,7 +27,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "frame.h"
 #include TERM_HEADER
 
-#define FRAME_WR_DATA(f) ((f)->output_data.wlc->wr_data)
+#define FRAME_WR_DATA(f) (FRAME_OUTPUT_DATA (f)->wr_data)
 
 void
 wr_after_update_window_line (struct window *w,
