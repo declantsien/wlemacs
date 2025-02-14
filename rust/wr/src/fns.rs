@@ -1,18 +1,17 @@
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
-use crate::cursor::{draw_bar_cursor, draw_filled_cursor, draw_hollow_box_cursor};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::fringe::get_or_create_fringe_bitmap;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::{OutputRef, WrDataRef};
+use crate::output::WrDataRef;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
     block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_row, glyph_string,
-    gui_clear_cursor, image, lookup_basic_face, run, text_cursor_kinds, unblock_input, Emacs_Color,
+    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Color,
     Emacs_Pixmap, AREF, FACE_FROM_ID_OR_NULL,
 };
-use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphRowRef, GlyphStringRef};
-use emacs_sys::font::{FontRef, LispFontRef};
+use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphStringRef};
+use emacs_sys::font::FontRef;
 use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
@@ -129,56 +128,46 @@ pub extern "C" fn wr_push_rect(
 }
 
 #[no_mangle]
+pub extern "C" fn wr_push_rect_with_clip(
+    wr_data: *mut libc::c_void,
+    color_pixel: ::libc::c_ulong,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    x1: i32,
+    y1: i32,
+    width1: i32,
+    height1: i32,
+) {
+    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
+    wr.push_rect_with_clip(color_pixel, x, y, width, height, x1, y1, width1, height1);
+}
+
+#[no_mangle]
+pub extern "C" fn wr_push_border_with_clip(
+    wr_data: *mut libc::c_void,
+    color_pixel: ::libc::c_ulong,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    x1: i32,
+    y1: i32,
+    width1: i32,
+    height1: i32,
+) {
+    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
+    wr.push_border_with_clip(color_pixel, x, y, width, height, x1, y1, width1, height1);
+}
+
+#[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
     let frame: FrameRef = f.into();
 
     let color = frame.background_pixel;
 
     frame.wr().push_rect(color, x, y, width, height);
-}
-
-#[no_mangle]
-pub extern "C" fn wr_draw_window_cursor(
-    window: *mut Window,
-    row: *mut glyph_row,
-    _x: i32,
-    _y: i32,
-    cursor_type: text_cursor_kinds::Type,
-    cursor_width: i32,
-    on_p: bool,
-    _active_p: bool,
-) {
-    let mut window: WindowRef = window.into();
-    let row: GlyphRowRef = row.into();
-
-    if !on_p {
-        return;
-    }
-
-    window.phys_cursor_type = cursor_type;
-    window.set_phys_cursor_on_p(true);
-
-    match cursor_type {
-        text_cursor_kinds::FILLED_BOX_CURSOR => {
-            draw_filled_cursor(window, row);
-        }
-
-        text_cursor_kinds::HOLLOW_BOX_CURSOR => {
-            draw_hollow_box_cursor(window, row);
-        }
-
-        text_cursor_kinds::BAR_CURSOR => {
-            draw_bar_cursor(window, row, cursor_width, false);
-        }
-        text_cursor_kinds::HBAR_CURSOR => {
-            draw_bar_cursor(window, row, cursor_width, true);
-        }
-
-        text_cursor_kinds::NO_CURSOR => {
-            window.phys_cursor_width = 0;
-        }
-        _ => panic!("invalid cursor type"),
-    }
 }
 
 #[no_mangle]

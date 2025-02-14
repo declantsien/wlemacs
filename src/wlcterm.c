@@ -481,6 +481,231 @@ wlc_decode_color (struct frame *f, Lisp_Object color_name, int mono_color)
   signal_error ("Undefined color", color_name);
 }
 
+static void
+wr_row_clip_bounds (struct window *w, struct glyph_row *row,
+		  enum glyph_row_area area, Emacs_Rectangle *rect)
+{
+  int window_x, window_y, window_width;
+
+  window_box (w, area, &window_x, &window_y, &window_width, 0);
+
+  rect->x = window_x;
+  rect->y = WINDOW_TO_FRAME_PIXEL_Y (w, max (0, row->y));
+  rect->y = max (rect->y, window_y);
+  rect->width = window_width;
+  rect->height = row->visible_height;
+
+}
+
+/* Draw a hollow box cursor on window W in glyph row ROW.  */
+
+static void
+wlc_draw_hollow_cursor (struct window *w, struct glyph_row *row)
+{
+  struct frame *f = XFRAME (WINDOW_FRAME (w));
+  int x, y, wd, h;
+  struct glyph *cursor_glyph;
+
+  /* Get the glyph the cursor is on.  If we can't tell because
+     the current matrix is invalid or such, give up.  */
+  cursor_glyph = get_phys_cursor_glyph (w);
+  if (cursor_glyph == NULL)
+    return;
+
+  /* Compute frame-relative coordinates for phys cursor.  */
+  get_phys_cursor_geometry (w, row, cursor_glyph, &x, &y, &h);
+  wd = w->phys_cursor_width - 1;
+
+  /* The foreground of cursor_gc is typically the same as the normal
+     background color, which can cause the cursor box to be invisible.  */
+  const Emacs_Rectangle clip_bounds;
+  wr_row_clip_bounds (w, row, TEXT_AREA, &clip_bounds);
+
+  /* When on R2L character, show cursor at the right edge of the
+     glyph, unless the cursor box is as wide as the glyph or wider
+     (the latter happens when x-stretch-cursor is non-nil).  */
+  if ((cursor_glyph->resolved_level & 1) != 0
+      && cursor_glyph->pixel_width > wd)
+    {
+      x += cursor_glyph->pixel_width - wd;
+      if (wd > 0)
+	wd -= 1;
+    }
+
+  wr_push_border_with_clip (FRAME_WR_DATA (f), FRAME_X_OUTPUT (f)->cursor_color,
+			  x, y, wd, h - 1,
+			  clip_bounds.x, clip_bounds.y,
+			  clip_bounds.width, clip_bounds.height);
+}
+
+/* Draw a bar cursor on window W in glyph row ROW.
+
+   Implementation note: One would like to draw a bar cursor with an
+   angle equal to the one given by the font property XA_ITALIC_ANGLE.
+   Unfortunately, I didn't find a font yet that has this property set.
+   --gerd.  */
+
+static void
+wlc_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
+		   enum text_cursor_kinds kind)
+{
+  struct frame *f = XFRAME (w->frame);
+  struct glyph *cursor_glyph;
+
+  /* If cursor is out of bounds, don't draw garbage.  This can happen
+     in mini-buffer windows when switching between echo area glyphs
+     and mini-buffer.  */
+  cursor_glyph = get_phys_cursor_glyph (w);
+  if (cursor_glyph == NULL)
+    return;
+
+  /* Experimental avoidance of cursor on xwidget.  */
+  if (cursor_glyph->type == XWIDGET_GLYPH)
+    return;
+
+  /* If on an image, draw like a normal cursor.  That's usually better
+     visible than drawing a bar, esp. if the image is large so that
+     the bar might not be in the window.  */
+  if (cursor_glyph->type == IMAGE_GLYPH)
+    {
+      struct glyph_row *r;
+      r = MATRIX_ROW (w->current_matrix, w->phys_cursor.vpos);
+      draw_phys_cursor_glyph (w, r, DRAW_CURSOR);
+    }
+  else
+    {
+      struct face *face = FACE_FROM_ID (f, cursor_glyph->face_id);
+      unsigned long color;
+
+      /* cairo_t *cr = pgtk_begin_cr_clip (f); */
+
+      /* If the glyph's background equals the color we normally draw
+         the bars cursor in, the bar cursor in its normal color is
+         invisible.  Use the glyph's foreground color instead in this
+         case, on the assumption that the glyph's colors are chosen so
+         that the glyph is legible.  */
+      if (face->background == FRAME_X_OUTPUT (f)->cursor_color)
+	color = face->foreground;
+      else
+	color = FRAME_X_OUTPUT (f)->cursor_color;
+
+      const Emacs_Rectangle clip_bounds;
+      wr_row_clip_bounds (w, row, TEXT_AREA, &clip_bounds);
+
+      if (kind == BAR_CURSOR)
+	{
+	  int x = WINDOW_TEXT_TO_FRAME_PIXEL_X (w, w->phys_cursor.x);
+
+	  if (width < 0)
+	    width = FRAME_CURSOR_WIDTH (f);
+	  width = min (cursor_glyph->pixel_width, width);
+
+	  w->phys_cursor_width = width;
+
+	  /* If the character under cursor is R2L, draw the bar cursor
+	     on the right of its glyph, rather than on the left.  */
+	  if ((cursor_glyph->resolved_level & 1) != 0)
+	    x += cursor_glyph->pixel_width - width;
+
+	  wr_push_rect_with_clip (FRAME_WR_DATA (f), color, x,
+				  WINDOW_TO_FRAME_PIXEL_Y (w, w->phys_cursor.y),
+				  width, row->height,
+				  clip_bounds.x, clip_bounds.y,
+				  clip_bounds.width, clip_bounds.height);
+	}
+      else			/* HBAR_CURSOR */
+	{
+	  int dummy_x, dummy_y, dummy_h;
+	  int x = WINDOW_TEXT_TO_FRAME_PIXEL_X (w, w->phys_cursor.x);
+
+	  if (width < 0)
+	    width = row->height;
+
+	  width = min (row->height, width);
+
+	  get_phys_cursor_geometry (w, row, cursor_glyph, &dummy_x,
+				    &dummy_y, &dummy_h);
+
+	  if ((cursor_glyph->resolved_level & 1) != 0
+	      && cursor_glyph->pixel_width > w->phys_cursor_width - 1)
+	    x += cursor_glyph->pixel_width - w->phys_cursor_width + 1;
+	  wr_push_rect_with_clip (FRAME_WR_DATA (f), color, x,
+				  WINDOW_TO_FRAME_PIXEL_Y (w, w->phys_cursor.y +
+							   row->height - width),
+				  w->phys_cursor_width - 1, width,
+				  clip_bounds.x, clip_bounds.y,
+				  clip_bounds.width, clip_bounds.height);
+	}
+
+    }
+}
+
+/* RIF: Draw cursor on window W.  */
+
+static void
+wlc_draw_window_cursor (struct window *w, struct glyph_row *glyph_row, int x,
+			 int y, enum text_cursor_kinds cursor_type,
+			 int cursor_width, bool on_p, bool active_p)
+{
+  struct frame *f = XFRAME (w->frame);
+
+  if (on_p)
+    {
+      w->phys_cursor_type = cursor_type;
+      w->phys_cursor_on_p = true;
+
+      if (glyph_row->exact_window_width_line_p
+	  && (glyph_row->reversed_p
+	      ? (w->phys_cursor.hpos < 0)
+	      : (w->phys_cursor.hpos >= glyph_row->used[TEXT_AREA])))
+	{
+	  glyph_row->cursor_in_fringe_p = true;
+	  draw_fringe_bitmap (w, glyph_row, glyph_row->reversed_p);
+	}
+      else
+	{
+	  switch (cursor_type)
+	    {
+	    case HOLLOW_BOX_CURSOR:
+	      wlc_draw_hollow_cursor (w, glyph_row);
+	      break;
+
+	    case FILLED_BOX_CURSOR:
+	      draw_phys_cursor_glyph (w, glyph_row, DRAW_CURSOR);
+	      break;
+
+	    case BAR_CURSOR:
+	      wlc_draw_bar_cursor (w, glyph_row, cursor_width, BAR_CURSOR);
+	      break;
+
+	    case HBAR_CURSOR:
+	      wlc_draw_bar_cursor (w, glyph_row, cursor_width, HBAR_CURSOR);
+	      break;
+
+	    case NO_CURSOR:
+	      w->phys_cursor_width = 0;
+	      break;
+
+	    default:
+	      emacs_abort ();
+	    }
+	}
+
+      if (w == XWINDOW (f->selected_window))
+	{
+	  int frame_x = (WINDOW_TO_FRAME_PIXEL_X (w, x)
+			 + WINDOW_LEFT_FRINGE_WIDTH (w)
+			 + WINDOW_LEFT_MARGIN_WIDTH (w));
+	  int frame_y = WINDOW_TO_FRAME_PIXEL_Y (w, y);
+	  /* pgtk_im_set_cursor_location (f, frame_x, frame_y, */
+	  /* 			       w->phys_cursor_width, */
+	  /* 			       w->phys_cursor_height); */
+	}
+    }
+
+}
+
+
 /* Set up use of Wayland before we make the first connection.  */
 
 static struct redisplay_interface wlc_redisplay_interface = {
@@ -505,7 +730,7 @@ static struct redisplay_interface wlc_redisplay_interface = {
   0, /* wl_define_frame_cursor, */
   wr_clear_frame_area,
   wr_clear_under_internal_border,
-  wr_draw_window_cursor,
+  wlc_draw_window_cursor,
   wr_draw_vertical_window_border,
   wr_draw_window_divider,
   0, /* wl_shift_glyphs_for_insert, /\* Never called; see comment in

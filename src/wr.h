@@ -67,9 +67,15 @@ extern void
 wr_fit_context (struct frame *f);
 extern void
 wr_push_rect(wr_data *, unsigned long, int, int, int, int);
+extern void
+wr_push_rect_with_clip(wr_data *, unsigned long, int, int, int, int, int, int, int, int);
+extern void
+wr_push_border_with_clip(wr_data *, unsigned long, int, int, int, int, int, int, int, int);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
+
+#define FRAME_WR_DATA(f) (FRAME_OUTPUT_DATA (f)->wr_data)
 
 #define BLACK_PIX_DEFAULT(f) 0
 #define WHITE_PIX_DEFAULT(f) 65535

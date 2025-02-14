@@ -6,7 +6,7 @@ use crate::glyph::{GlyphStringExtWr, WrGlyph};
 use crate::image::{ImageExt, ImageRef};
 use crate::output::{WrData, WrDataRef};
 use emacs_sys::bindings::glyph_type;
-use emacs_sys::display_traits::{DrawGlyphsFace, FaceRef, GlyphStringRef};
+use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;
 use euclid::Scale;
 use std::cmp::min;
@@ -65,8 +65,6 @@ pub trait FrameExtWrCommon {
         to_y: i32,
         scroll_height: i32,
     );
-    fn draw_hollow_box_cursor(&mut self, cursor_rect: LayoutRect, clip_rect: LayoutRect);
-    fn draw_bar_cursor(&mut self, face: Option<FaceRef>, x: i32, y: i32, width: i32, height: i32);
 }
 
 impl FrameExtWrCommon for FrameRef {
@@ -459,46 +457,5 @@ impl FrameExtWrCommon for FrameRef {
                 );
             });
         }
-    }
-
-    fn draw_hollow_box_cursor(&mut self, cursor_rect: LayoutRect, clip_rect: LayoutRect) {
-        let cursor_color = self.cursor_color_f();
-
-        let border_widths = LayoutSideOffsets::new_all_same(1.0);
-
-        let border_side = BorderSide {
-            color: cursor_color,
-            style: BorderStyle::Solid,
-        };
-
-        let border_details = BorderDetails::Normal(NormalBorder {
-            top: border_side,
-            right: border_side,
-            bottom: border_side,
-            left: border_side,
-            radius: BorderRadius::uniform(0.0),
-            do_aa: true,
-        });
-
-        self.wr().display(|builder, space_and_clip, _scale| {
-            builder.push_border(
-                &CommonItemProperties::new(clip_rect, space_and_clip),
-                cursor_rect,
-                border_widths,
-                border_details,
-            );
-        });
-    }
-
-    fn draw_bar_cursor(&mut self, face: Option<FaceRef>, x: i32, y: i32, width: i32, height: i32) {
-        let cursor_color = match face {
-            Some(face) if face.bg_color_f() == self.cursor_color_f() => face.fg_color_f(),
-            _ => self.cursor_color_f(),
-        };
-
-        let scale = self.wr().scale();
-        let bounds = (x, y).by(width, height, scale);
-
-        self.wr().draw_rectangle(cursor_color, bounds);
     }
 }

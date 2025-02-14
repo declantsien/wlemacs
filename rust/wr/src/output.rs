@@ -467,16 +467,107 @@ impl WrData {
         width: i32,
         height: i32,
     ) {
-        let clear_color = pixel_to_color(color_pixel);
         let scale = self.scale();
         let rect = (x, y).by(width, height, scale);
+        self.push_rect_impl(color_pixel, rect, None);
+    }
+
+    pub fn push_rect_impl(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        rect: LayoutRect,
+        clip_rect: Option<LayoutRect>,
+    ) {
+        let clear_color = pixel_to_color(color_pixel);
         self.display(|builder, space_and_clip, _| {
             builder.push_rect(
-                &CommonItemProperties::new(rect, space_and_clip),
+                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
                 rect,
                 clear_color,
             );
         });
+    }
+
+    pub fn push_rect_with_clip(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        x0: i32,
+        y0: i32,
+        width0: i32,
+        height0: i32,
+        x1: i32,
+        y1: i32,
+        width1: i32,
+        height1: i32,
+    ) {
+        let scale = self.scale();
+        let bounds = (x0, y0).by(width0, height0, scale);
+        let clip_bounds = (x1, y1).by(width1, height1, scale);
+        self.push_rect_impl(color_pixel, bounds, Some(clip_bounds));
+    }
+
+    pub fn push_border(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) {
+        let scale = self.scale();
+        let rect = (x, y).by(width, height, scale);
+        self.push_border_impl(color_pixel, rect, None);
+    }
+
+    pub fn push_border_impl(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        rect: LayoutRect,
+        clip_rect: Option<LayoutRect>,
+    ) {
+        let color = pixel_to_color(color_pixel);
+        let border_widths = LayoutSideOffsets::new_all_same(1.0);
+
+        let border_side = BorderSide {
+            color,
+            style: BorderStyle::Solid,
+        };
+
+        let border_details = BorderDetails::Normal(NormalBorder {
+            top: border_side,
+            right: border_side,
+            bottom: border_side,
+            left: border_side,
+            radius: BorderRadius::uniform(0.0),
+            do_aa: true,
+        });
+
+        self.display(|builder, space_and_clip, _| {
+            builder.push_border(
+                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
+                rect,
+                border_widths,
+                border_details,
+            );
+        });
+    }
+
+    pub fn push_border_with_clip(
+        &mut self,
+        color_pixel: ::libc::c_ulong,
+        x0: i32,
+        y0: i32,
+        width0: i32,
+        height0: i32,
+        x1: i32,
+        y1: i32,
+        width1: i32,
+        height1: i32,
+    ) {
+        let scale = self.scale();
+        let bounds = (x0, y0).by(width0, height0, scale);
+        let clip_bounds = (x1, y1).by(width1, height1, scale);
+        self.push_border_impl(color_pixel, bounds, Some(clip_bounds));
     }
 
     pub fn deinit(mut self) {

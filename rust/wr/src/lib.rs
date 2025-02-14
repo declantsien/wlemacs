@@ -7,8 +7,6 @@ extern crate emacs_sys;
 
 pub mod frame;
 
-mod cursor;
-
 pub mod color;
 pub mod fns;
 pub mod image;
