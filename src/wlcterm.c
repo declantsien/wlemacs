@@ -577,6 +577,23 @@ wlc_new_font (struct frame *f, Lisp_Object font_object, int fontset)
   return font_object;
 }
 
+static void
+wlc_update_begin (struct frame *f)
+{
+  wr_clear_under_internal_border (f);
+}
+
+/* End update of frame F.  This function is installed as a hook in
+   update_end.  */
+
+static void
+wlc_update_end (struct frame *f)
+{
+  /* Mouse highlight may be displayed again.  */
+  MOUSE_HL_INFO (f)->mouse_face_defer = false;
+}
+
+
 /* Destroy the X window of frame F.  */
 
 static void
@@ -744,8 +761,8 @@ wlc_create_terminal (struct wlc_display_info *dpyinfo)
 /*   terminal->delete_glyphs_hook = x_delete_glyphs; */
 /*   terminal->ring_bell_hook = XTring_bell; */
 /*   terminal->toggle_invisible_pointer_hook = XTtoggle_invisible_pointer; */
-  terminal->update_begin_hook = wr_update_begin;
-  terminal->update_end_hook = wr_update_end;
+  terminal->update_begin_hook = wlc_update_begin;
+  terminal->update_end_hook = wlc_update_end;
   terminal->read_socket_hook = wlc_read_socket;
 /*   terminal->frame_up_to_date_hook = XTframe_up_to_date; */
 /* #ifdef HAVE_XDBE */

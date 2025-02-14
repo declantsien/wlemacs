@@ -79,12 +79,6 @@ wr_clear_frame (struct frame *f)
   unblock_input ();
 }
 
-void
-wr_update_begin (struct frame *f)
-{
-  wr_clear_under_internal_border (f);
-}
-
 /* Draw a vertical window border from (x,y0) to (x,y1)  */
 
 void

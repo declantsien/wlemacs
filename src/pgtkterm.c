@@ -3310,13 +3310,17 @@ pgtk_text_icon (struct frame *f, const char *icon_name)
    each window being updated.  Currently, there is nothing to do here
    because all interesting stuff is done on a window basis.  */
 
-#ifndef USE_WEBRENDER
 static void
 pgtk_update_begin (struct frame *f)
 {
+#ifdef USE_WEBRENDER
+  wr_clear_under_internal_border (f);
+#else
   pgtk_clear_under_internal_border (f);
+#endif
 }
 
+#ifndef USE_WEBRENDER
 /* Draw a vertical window border from (x,y0) to (x,y1)  */
 
 static void
@@ -3393,6 +3397,7 @@ pgtk_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
 
   pgtk_end_cr_clip (f);
 }
+#endif  /* USE_WEBRENDER */
 
 /* End update of frame F.  This function is installed as a hook in
    update_end.  */
@@ -3403,7 +3408,6 @@ pgtk_update_end (struct frame *f)
   /* Mouse highlight may be displayed again.  */
   MOUSE_HL_INFO (f)->mouse_face_defer = false;
 }
-#endif  /* USE_WEBRENDER */
 
 static void
 pgtk_frame_up_to_date (struct frame *f)
@@ -4876,13 +4880,8 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->clear_frame_hook = pgtk_clear_frame;
   terminal->ring_bell_hook = pgtk_ring_bell;
   terminal->toggle_invisible_pointer_hook = pgtk_toggle_invisible_pointer;
-#ifndef USE_WEBRENDER
   terminal->update_begin_hook = pgtk_update_begin;
   terminal->update_end_hook = pgtk_update_end;
-#else
-  terminal->update_begin_hook = wr_update_begin;
-  terminal->update_end_hook = wr_update_end;
-#endif  /* USE_WEBRENDER */
   terminal->read_socket_hook = pgtk_read_socket;
   terminal->frame_up_to_date_hook = pgtk_frame_up_to_date;
   terminal->mouse_position_hook = pgtk_mouse_position;

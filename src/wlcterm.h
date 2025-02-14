@@ -29,6 +29,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "xdg-decoration-protocol.h"
 #include "wr.h"
 
+#include "termopts.h"
+#include "termchar.h"
+
 INLINE_HEADER_BEGIN
 
 struct wlc_bitmap_record

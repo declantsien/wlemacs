@@ -255,17 +255,6 @@ pub extern "C" fn wr_scroll_run(w: *mut Window, run: *mut run) {
 }
 
 #[no_mangle]
-pub extern "C" fn wr_update_end(f: *mut Frame) {
-    let mut dpyinfo = {
-        let frame: FrameRef = f.into();
-        frame.display_info()
-    };
-
-    // Mouse highlight may be displayed again.
-    dpyinfo.mouse_highlight.set_mouse_face_defer(false);
-}
-
-#[no_mangle]
 pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
     let frame: FrameRef = f.into();
     frame.wr().delete_image_by_pixmap(pixmap);

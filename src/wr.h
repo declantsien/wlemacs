@@ -44,10 +44,6 @@ extern void
 wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1);
 extern void
 wr_free_pixmap (struct frame *f, Emacs_Pixmap pixmap);
-extern void
-wr_update_begin (struct frame *f);
-extern void
-wr_update_end (struct frame *f);
 extern Lisp_Object wr_new_font (struct frame *f, Lisp_Object font_object, int fontset);
 extern bool wr_defined_color (struct frame *, const char *, Emacs_Color *,
                                bool, bool);
