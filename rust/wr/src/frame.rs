@@ -10,14 +10,12 @@ use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;
 use euclid::Scale;
 use std::cmp::min;
-use std::ptr;
 use webrender::api::units::*;
 use webrender::api::*;
 
 pub trait FrameExtWrCommon {
     fn is_wr_data_initialized(&self) -> bool;
     fn wr(&self) -> WrDataRef;
-    fn free_wr_data(&mut self);
     fn fg_color_f(&self) -> ColorF;
     fn cursor_color_f(&self) -> ColorF;
     fn cursor_foreground_color_f(&self) -> ColorF;
@@ -80,11 +78,6 @@ impl FrameExtWrCommon for FrameRef {
         }
 
         WrDataRef::new(self.output().wr_data as *mut WrData)
-    }
-
-    fn free_wr_data(&mut self) {
-        let _ = unsafe { Box::from_raw(self.output().wr_data as *mut WrData) };
-        self.output().wr_data = ptr::null_mut();
     }
 
     fn fg_color_f(&self) -> ColorF {

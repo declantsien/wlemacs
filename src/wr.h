@@ -10,6 +10,7 @@ typedef void wr_data;
 
 // defined in rust
 extern void wr_flush (wr_data *);
+extern void wr_destroy (wr_data *);
 
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
@@ -61,8 +62,6 @@ extern void
 wr_clear_under_internal_border (struct frame *f);
 extern void
 wr_free_frame_resources (struct frame *f);
-extern void
-wr_free_terminal_resources (struct terminal *f);
 extern void
 wr_fit_context (struct frame *f);
 extern void

@@ -857,7 +857,7 @@ wlc_delete_frame (struct frame *f)
   fprintf(stderr, "delete frame");
 
   xfree (f->output_data.wlc);
-  f->output_data.x = NULL;
+  f->output_data.wlc = NULL;
 
   dpyinfo->reference_count--;
 }

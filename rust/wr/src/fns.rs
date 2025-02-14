@@ -3,12 +3,12 @@ use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::fringe::get_or_create_fringe_bitmap;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::WrDataRef;
+use crate::output::{WrData, WrDataRef};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
     block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_row, glyph_string,
-    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Color,
-    Emacs_Pixmap, AREF, FACE_FROM_ID_OR_NULL,
+    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Color, Emacs_Pixmap,
+    AREF, FACE_FROM_ID_OR_NULL,
 };
 use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphStringRef};
 use emacs_sys::font::FontRef;
@@ -373,9 +373,8 @@ pub extern "C" fn wr_parse_color(
 }
 
 #[no_mangle]
-pub extern "C" fn wr_free_frame_resources(f: *mut Frame) {
-    let mut frame: FrameRef = f.into();
-    frame.free_wr_data();
+pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
+    let _ = unsafe { Box::from_raw(wr_data as *mut WrData) };
 }
 
 /// Fit GL context to frame, reflecting frame/scale factor changes

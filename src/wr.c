@@ -136,6 +136,12 @@ wr_flush_display (struct frame *f)
   wr_flush(FRAME_WR_DATA (f));
 }
 
+extern void
+wr_free_frame_resources (struct frame *f) {
+  wr_destroy (FRAME_WR_DATA (f));
+  FRAME_WR_DATA (f) = NULL;
+}
+
 void
 syms_of_webrender (void)
 {
