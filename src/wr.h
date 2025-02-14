@@ -6,8 +6,10 @@ typedef struct wlc_output output;
 
 #include TERM_HEADER
 
-/* typedef struct WrState WrState; */
-typedef struct WrData WrData;
+typedef void *WrDataPtr;
+
+// defined in rust
+extern void wr_flush (WrDataPtr);
 
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
@@ -26,7 +28,6 @@ extern void wr_scroll_run (struct window *w, struct run *run);
 
 extern void wr_update_window_begin (struct window *);
 extern void wr_update_window_end (struct window *, bool, bool);
-
 extern void wr_flush_display (struct frame *f);
 extern void
 wr_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
@@ -72,12 +73,10 @@ wr_free_terminal_resources (struct terminal *f);
 extern void
 wr_fit_context (struct frame *f);
 extern void
-wr_push_rect(struct WrData *, unsigned long, int, int, int, int);
+wr_push_rect(WrDataPtr, unsigned long, int, int, int, int);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
-
-#define FRAME_WR_DATA(f) ((f)->output_data.wlc->wr_data)
 
 #define BLACK_PIX_DEFAULT(f) 0
 #define WHITE_PIX_DEFAULT(f) 65535

@@ -110,10 +110,9 @@ pub extern "C" fn wr_update_window_end(
 }
 
 #[no_mangle]
-pub extern "C" fn wr_flush_display(f: *mut Frame) {
-    let frame: FrameRef = f.into();
-
-    frame.wr_data().flush();
+pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
+    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
+    wr.flush();
 }
 
 #[allow(unused_variables)]
@@ -227,7 +226,7 @@ pub extern "C" fn wr_push_rect(
     width: i32,
     height: i32,
 ) {
-    let mut wr = WrDataRef::new(wr_data as *mut WrData);
+    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
     let clear_color = pixel_to_color(color_pixel);
     let scale = wr.scale();
     let rect = (x, y).by(width, height, scale);

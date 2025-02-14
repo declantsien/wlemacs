@@ -290,7 +290,7 @@ struct pgtk_output
 
 #ifdef USE_WEBRENDER
   /* Inner perporty in Rust */
-  void *wr_data;
+  WrDataPtr wr_data;
 #endif  /*USE_WEBRENDER*/
 
   unsigned long foreground_color;
