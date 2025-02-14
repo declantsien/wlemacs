@@ -209,15 +209,6 @@ pub extern "C" fn wr_draw_window_cursor(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn wr_get_string_resource(
-    _rdb: *mut libc::c_void,
-    _name: *const libc::c_char,
-    _class: *const libc::c_char,
-) -> *const libc::c_char {
-    ptr::null()
-}
-
 // FIXME this is not needed from wr
 #[no_mangle]
 pub extern "C" fn wr_new_font(
