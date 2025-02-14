@@ -27,6 +27,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "xdg-shell-client-protocol.h"
 #include "viewporter-client-protocol.h"
 #include "xdg-decoration-protocol.h"
+#include "wr.h"
 
 INLINE_HEADER_BEGIN
 
@@ -400,8 +401,6 @@ extern int wlc_decode_color (struct frame *f, Lisp_Object color_name,
 			    int mono_color);
 extern int wlc_parse_color (struct frame *, const char *, Emacs_Color *);
 
-
-#include "wr.h"
 INLINE_HEADER_END
 
 #endif /* WLCTERM_H */

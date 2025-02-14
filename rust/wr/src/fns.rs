@@ -11,6 +11,8 @@ use crate::image::ImageExt;
 use crate::image::ImageRef;
 use crate::image::WrPixmap;
 use crate::output::OutputRef;
+use crate::output::WrData;
+use crate::output::WrDataRef;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::block_input;
 use emacs_sys::bindings::display_and_set_cursor;
@@ -52,6 +54,7 @@ use emacs_sys::multibyte::LispStringRef;
 use emacs_sys::terminal::TerminalRef;
 use emacs_sys::window::Window;
 use emacs_sys::window::WindowRef;
+use webrender::api::CommonItemProperties;
 use webrender::api::FontInstanceOptions;
 use webrender::api::FontInstancePlatformOptions;
 use webrender::api::FontSize;
@@ -216,21 +219,26 @@ pub extern "C" fn wr_draw_window_divider(window: *mut Window, x0: i32, x1: i32, 
 }
 
 #[no_mangle]
-pub extern "C" fn wr_draw_vertical_window_border(window: *mut Window, x: i32, y0: i32, y1: i32) {
-    let window: WindowRef = window.into();
-    let mut frame: FrameRef = window.get_frame();
-
-    let face = frame.face_from_id(face_id::VERTICAL_BORDER_FACE_ID);
-
-    frame.draw_vertical_window_border(face, x, y0, y1);
+pub extern "C" fn wr_push_rect(
+    wr_data: *mut libc::c_void,
+    color_pixel: ::libc::c_ulong,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+) {
+    let mut wr = WrDataRef::new(wr_data as *mut WrData);
+    let clear_color = pixel_to_color(color_pixel);
+    let scale = wr.scale();
+    let rect = (x, y).by(width, height, scale);
+    wr.display(|builder, space_and_clip, _| {
+        builder.push_rect(
+            &CommonItemProperties::new(rect, space_and_clip),
+            rect,
+            clear_color,
+        );
+    });
 }
-
-// pub extern "C" fn wr_draw_rectangle(f: *mut Frame, color_pixel:::libc::c_ulong, x: i32, y: i32, width: i32, height: i32) {
-//     let color = pixel_to_color(color_pixel);
-//     let scale = self.wr_data().scale();
-//     let rect = (x, y).by(width, height, scale);
-//     self.draw_rectangle(color, rect);
-// }
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {

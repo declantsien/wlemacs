@@ -4,6 +4,11 @@ typedef struct pgtk_output output;
 typedef struct wlc_output output;
 #endif
 
+#include TERM_HEADER
+
+/* typedef struct WrState WrState; */
+typedef struct WrData WrData;
+
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
 
@@ -66,9 +71,13 @@ extern void
 wr_free_terminal_resources (struct terminal *f);
 extern void
 wr_fit_context (struct frame *f);
+extern void
+wr_push_rect(struct WrData *, unsigned long, int, int, int, int);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
+
+#define FRAME_WR_DATA(f) ((f)->output_data.wlc->wr_data)
 
 #define BLACK_PIX_DEFAULT(f) 0
 #define WHITE_PIX_DEFAULT(f) 65535

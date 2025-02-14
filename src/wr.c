@@ -25,6 +25,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "lisp.h"
 #include "blockinput.h"
 #include "frame.h"
+#include "wr.h"
 
 void
 wr_after_update_window_line (struct window *w,
@@ -82,6 +83,18 @@ wr_update_begin (struct frame *f)
   wr_clear_under_internal_border (f);
 }
 
+/* Draw a vertical window border from (x,y0) to (x,y1)  */
+
+void
+wr_draw_vertical_window_border (struct window *w, int x, int y0, int y1)
+{
+  struct frame *f = XFRAME (WINDOW_FRAME (w));
+  struct face *face;
+
+  face = FACE_FROM_ID_OR_NULL (f, VERTICAL_BORDER_FACE_ID);
+
+  wr_push_rect(FRAME_WR_DATA (f), face->foreground, x, y0, 1, y1 - y0);
+}
 
 void
 syms_of_webrender (void)

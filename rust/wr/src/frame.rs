@@ -1,6 +1,8 @@
 use super::util::HandyDandyRectBuilder;
+use crate::color::color_to_pixel;
 use crate::color::pixel_to_color;
 use crate::face::WrFace;
+use crate::fns::wr_push_rect;
 use crate::fringe::FringeBitmap;
 use crate::glyph::GlyphStringExtWr;
 use crate::glyph::WrGlyph;
@@ -59,8 +61,6 @@ pub trait FrameExtWrCommon {
         clear_rect: LayoutRect,
         row_rect: LayoutRect,
     );
-
-    fn draw_vertical_window_border(&mut self, face: Option<FaceRef>, x: i32, y0: i32, y1: i32);
 
     fn draw_window_divider(
         &mut self,
@@ -423,21 +423,6 @@ impl FrameExtWrCommon for FrameRef {
                 );
             }
         });
-    }
-
-    fn draw_vertical_window_border(&mut self, face: Option<FaceRef>, x: i32, y0: i32, y1: i32) {
-        // Fix the border height
-        // Don't known why the height is short than expected.
-        let y1 = y1 + 1;
-
-        let color = match face {
-            Some(f) => f.fg_color_f(),
-            None => ColorF::BLACK,
-        };
-
-        let scale = self.wr_data().scale();
-        let visible_rect = (x, y0).by(1, y1 - y0, scale);
-        self.draw_rectangle(color, visible_rect);
     }
 
     fn draw_window_divider(
