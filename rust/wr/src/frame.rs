@@ -62,17 +62,6 @@ pub trait FrameExtWrCommon {
         row_rect: LayoutRect,
     );
 
-    fn draw_window_divider(
-        &mut self,
-        color: ColorF,
-        color_first: ColorF,
-        color_last: ColorF,
-        x0: i32,
-        x1: i32,
-        y0: i32,
-        y1: i32,
-    );
-
     fn scroll(
         &mut self,
         x: i32,
@@ -424,50 +413,6 @@ impl FrameExtWrCommon for FrameRef {
                 );
             }
         });
-    }
-
-    fn draw_window_divider(
-        &mut self,
-        color: ColorF,
-        color_first: ColorF,
-        color_last: ColorF,
-        x0: i32,
-        x1: i32,
-        y0: i32,
-        y1: i32,
-    ) {
-        let scale = self.wr().scale();
-        let (first, middle, last) = if (y1 - y0 > x1 - x0) && (x1 - x0 >= 3) {
-            // A vertical divider, at least three pixels wide: Draw first and
-            // last pixels differently.
-
-            let first = (x0, y0).to(x0 + 1, y1, scale);
-            let middle = (x0 + 1, y0).to(x1 - 1, y1, scale);
-            let last = (x1 - 1, y0).to(x1, y1, scale);
-            (Some(first), Some(middle), Some(last))
-        } else if (x1 - x0 > y1 - y0) && (y1 - y0 >= 3) {
-            // A horizontal divider, at least three pixels high: Draw first and
-            // last pixels differently.
-
-            let first = (x0, y0).to(x1, 1, scale);
-            let middle = (x0, y0 + 1).to(x1, y1 - 1, scale);
-            let last = (x0, y1 - 1).to(x1, y1, scale);
-            (Some(first), Some(middle), Some(last))
-        } else {
-            // In any other case do not draw the first and last pixels
-            // differently.
-            let visible_rect = (x0, y0).to(x1, y1, scale);
-            (None, Some(visible_rect), None)
-        };
-        if let Some(first) = first {
-            self.wr().draw_rectangle(color_first, first);
-        }
-        if let Some(middle) = middle {
-            self.wr().draw_rectangle(color, middle);
-        }
-        if let Some(last) = last {
-            self.wr().draw_rectangle(color_last, last);
-        }
     }
 
     fn scroll(

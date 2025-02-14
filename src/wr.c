@@ -98,6 +98,46 @@ wr_draw_vertical_window_border (struct window *w, int x, int y0, int y1)
   wr_push_rect(FRAME_WR_DATA (f), face->foreground, x, y0, 1, y1 - y0);
 }
 
+
+/* Draw a window divider from (x0,y0) to (x1,y1)  */
+
+void
+wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
+{
+  struct frame *f = XFRAME (WINDOW_FRAME (w));
+  struct face *face = FACE_FROM_ID_OR_NULL (f, WINDOW_DIVIDER_FACE_ID);
+  struct face *face_first
+    = FACE_FROM_ID_OR_NULL (f, WINDOW_DIVIDER_FIRST_PIXEL_FACE_ID);
+  struct face *face_last
+    = FACE_FROM_ID_OR_NULL (f, WINDOW_DIVIDER_LAST_PIXEL_FACE_ID);
+  unsigned long color = face ? face->foreground : FRAME_FOREGROUND_PIXEL (f);
+  unsigned long color_first = (face_first
+			       ? face_first->foreground
+			       : FRAME_FOREGROUND_PIXEL (f));
+  unsigned long color_last = (face_last
+			      ? face_last->foreground
+			      : FRAME_FOREGROUND_PIXEL (f));
+
+  if (y1 - y0 > x1 - x0 && x1 - x0 > 2)
+    /* Vertical.  */
+    {
+      wr_push_rect(FRAME_WR_DATA (f), color_first, x0, y0, 1, y1 - y0);
+      wr_push_rect(FRAME_WR_DATA (f), color, x0 + 1, y0, x1 - x0 - 2, y1 - y0);
+      wr_push_rect(FRAME_WR_DATA (f), color_last, x1 - 1, y0, 1, y1 - y0);
+    }
+  else if (x1 - x0 > y1 - y0 && y1 - y0 > 3)
+    /* Horizontal.  */
+    {
+      wr_push_rect(FRAME_WR_DATA (f), color_first, x0, y0, x1 - x0, 1);
+      wr_push_rect(FRAME_WR_DATA (f), color, x0, y0 + 1, x1 - x0, y1 - y0 - 2);
+      wr_push_rect(FRAME_WR_DATA (f), color_last, x0, y1 - 1, x1 - x0, 1);
+    }
+  else
+    {
+      wr_push_rect(FRAME_WR_DATA (f), color, x0, y0, x1 - x0, y1 - y0);
+    }
+}
+
 void
 wr_flush_display (struct frame *f)
 {

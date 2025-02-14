@@ -199,25 +199,6 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 }
 
 #[no_mangle]
-pub extern "C" fn wr_draw_window_divider(window: *mut Window, x0: i32, x1: i32, y0: i32, y1: i32) {
-    let window: WindowRef = window.into();
-    let mut frame: FrameRef = window.get_frame();
-
-    let face_fg_color = |id: FaceId| -> ColorF {
-        frame
-            .face_from_id(id)
-            .map(|f| f.fg_color_f())
-            .unwrap_or(frame.fg_color_f())
-    };
-
-    let color = face_fg_color(FaceId::WindowDivider);
-    let color_first = face_fg_color(FaceId::WindowDividerFirstPixel);
-    let color_last = face_fg_color(FaceId::WindowDividerLastPixel);
-
-    frame.draw_window_divider(color, color_first, color_last, x0, x1, y0, y1);
-}
-
-#[no_mangle]
 pub extern "C" fn wr_push_rect(
     wr_data: *mut libc::c_void,
     color_pixel: ::libc::c_ulong,
