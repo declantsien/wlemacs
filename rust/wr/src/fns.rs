@@ -209,50 +209,6 @@ pub extern "C" fn wr_draw_window_cursor(
     }
 }
 
-// FIXME this is not needed from wr
-#[no_mangle]
-pub extern "C" fn wr_new_font(
-    frame: *mut Frame,
-    font_object: LispObject,
-    fontset: i32,
-) -> LispObject {
-    let mut frame: FrameRef = frame.into();
-
-    let font = LispFontRef::from_vectorlike(font_object.as_vectorlike().unwrap()).as_font_mut();
-
-    let fontset = if fontset < 0 {
-        unsafe { fontset_from_font(font_object) }
-    } else {
-        fontset
-    };
-
-    frame.set_fontset(fontset);
-
-    if frame.font() == font.into() {
-        return font_object;
-    }
-
-    frame.set_font(font.into());
-    let font = FontRef::new(font);
-
-    frame.line_height = font.height;
-    frame.column_width = font.average_width;
-
-    let pixel_width = frame.text_cols * frame.column_width;
-    let pixel_height = frame.text_lines * frame.line_height;
-
-    /* Now make the frame display the given font.  */
-    frame.adjust_size(
-        pixel_width,
-        pixel_height,
-        3,
-        false,
-        emacs_sys::globals::Qfont,
-    );
-
-    font_object
-}
-
 #[no_mangle]
 pub extern "C" fn wr_defined_color(
     _frame: *mut Frame,

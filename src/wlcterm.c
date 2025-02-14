@@ -515,6 +515,68 @@ static struct redisplay_interface wlc_redisplay_interface = {
   wlc_default_font_parameter,
 };
 
+static Lisp_Object
+wlc_new_font (struct frame *f, Lisp_Object font_object, int fontset)
+{
+  struct font *font = XFONT_OBJECT (font_object);
+  int font_ascent, font_descent;
+
+  if (fontset < 0)
+    fontset = fontset_from_font (font_object);
+  FRAME_FONTSET (f) = fontset;
+
+  if (FRAME_FONT (f) == font)
+    {
+      /* This font is already set in frame F.  There's nothing more to
+         do.  */
+      return font_object;
+    }
+
+  FRAME_FONT (f) = font;
+
+  FRAME_BASELINE_OFFSET (f) = font->baseline_offset;
+  FRAME_COLUMN_WIDTH (f) = font->average_width;
+  get_font_ascent_descent (font, &font_ascent, &font_descent);
+  FRAME_LINE_HEIGHT (f) = font_ascent + font_descent;
+
+  /* We could use a more elaborate calculation here.  */
+  FRAME_TAB_BAR_HEIGHT (f) = FRAME_TAB_BAR_LINES (f) * FRAME_LINE_HEIGHT (f);
+
+  /* Compute the scroll bar width in character columns.  */
+  if (FRAME_CONFIG_SCROLL_BAR_WIDTH (f) > 0)
+    {
+      int wid = FRAME_COLUMN_WIDTH (f);
+      FRAME_CONFIG_SCROLL_BAR_COLS (f)
+	= (FRAME_CONFIG_SCROLL_BAR_WIDTH (f) + wid - 1) / wid;
+    }
+  else
+    {
+      int wid = FRAME_COLUMN_WIDTH (f);
+      FRAME_CONFIG_SCROLL_BAR_COLS (f) = (14 + wid - 1) / wid;
+    }
+
+  /* Compute the scroll bar height in character lines.  */
+  if (FRAME_CONFIG_SCROLL_BAR_HEIGHT (f) > 0)
+    {
+      int height = FRAME_LINE_HEIGHT (f);
+      FRAME_CONFIG_SCROLL_BAR_LINES (f)
+	= (FRAME_CONFIG_SCROLL_BAR_HEIGHT (f) + height - 1) / height;
+    }
+  else
+    {
+      int height = FRAME_LINE_HEIGHT (f);
+      FRAME_CONFIG_SCROLL_BAR_LINES (f) = (14 + height - 1) / height;
+    }
+
+  /* Now make the frame display the given font.  */
+  if (FRAME_XDG_TOPLEVEL (f) != NULL)
+    adjust_frame_size (f, FRAME_COLS (f) * FRAME_COLUMN_WIDTH (f),
+		       FRAME_LINES (f) * FRAME_LINE_HEIGHT (f), 3,
+		       false, Qfont);
+
+  return font_object;
+}
+
 /* Destroy the X window of frame F.  */
 
 static void
@@ -706,7 +768,7 @@ wlc_create_terminal (struct wlc_display_info *dpyinfo)
 /*   terminal->set_window_size_hook = x_set_window_size; */
 /*   terminal->set_frame_offset_hook = x_set_offset; */
 /*   terminal->set_frame_alpha_hook = x_set_frame_alpha; */
-  terminal->set_new_font_hook = wr_new_font;
+  terminal->set_new_font_hook = wlc_new_font;
 /*   terminal->set_bitmap_icon_hook = x_bitmap_icon; */
   terminal->implicit_set_name_hook = wlc_implicitly_set_name;
 /*   terminal->menu_show_hook = x_menu_show; */

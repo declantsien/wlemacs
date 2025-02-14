@@ -837,7 +837,6 @@ pgtk_make_frame_visible_invisible (struct frame *f, bool visible)
     pgtk_make_frame_invisible (f);
 }
 
-#ifndef USE_WEBRENDER
 static Lisp_Object
 pgtk_new_font (struct frame *f, Lisp_Object font_object, int fontset)
 {
@@ -899,7 +898,6 @@ pgtk_new_font (struct frame *f, Lisp_Object font_object, int fontset)
 
   return font_object;
 }
-#endif  /* USE_WEBRENDER */
 
 int
 pgtk_display_pixel_height (struct pgtk_display_info *dpyinfo)
@@ -4907,11 +4905,7 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->delete_terminal_hook = pgtk_delete_terminal;
   terminal->query_frame_background_color = pgtk_query_frame_background_color;
   terminal->defined_color_hook = pgtk_defined_color;
-#ifndef USE_WEBRENDER
   terminal->set_new_font_hook = pgtk_new_font;
-#else
-  terminal->set_new_font_hook = wr_new_font;
-#endif  /* USE_WEBRENDER */
   terminal->set_bitmap_icon_hook = pgtk_bitmap_icon;
   terminal->implicit_set_name_hook = pgtk_implicitly_set_name;
   terminal->iconify_frame_hook = pgtk_iconify_frame;
