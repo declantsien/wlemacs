@@ -15,13 +15,47 @@ use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
 use webrender::api::{
-    FontInstanceOptions, FontInstancePlatformOptions, FontSize, FontTemplate, NativeFontHandle,
+    FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontSize, FontTemplate,
+    NativeFontHandle,
 };
 
 use crate::font::FontInfoRef;
 use std::ffi::CString;
 use std::ptr;
-use webrender::api::units::{DeviceIntLength, DeviceIntPoint, DeviceRect};
+use webrender::api::units::{
+    DeviceIntLength, DeviceIntPoint, DeviceIntRect, DeviceIntSize, DevicePoint, DeviceRect,
+    DeviceSize,
+};
+
+#[repr(C)]
+pub struct WrVecU8 {
+    /// `data` must always be valid for passing to Vec::from_raw_parts.
+    /// In particular, it must be non-null even if capacity is zero.
+    data: *mut u8,
+    length: usize,
+    capacity: usize,
+}
+
+#[repr(C)]
+pub struct WrRect {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Into<DeviceRect> for &WrRect {
+    fn into(self) -> DeviceRect {
+        (self.x, self.y)
+            .by(self.width as i32, self.height as i32)
+            .to_f32()
+    }
+}
+
+#[repr(C)]
+pub struct WrFontKey(pub u32, pub u32);
+#[repr(C)]
+pub struct WrFontInstanceKey(pub u32, pub u32);
 
 #[no_mangle]
 pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
@@ -29,6 +63,7 @@ pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
     wr.flush();
 }
 
+/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
@@ -39,20 +74,18 @@ pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
     frame.draw_glyph_string(s);
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_draw_fringe_bitmap(
     window: *mut Window,
     p: *mut draw_fringe_bitmap_params,
-    clip_bounds_x: i32,
-    clip_bounds_y: i32,
-    clip_bounds_width: i32,
-    clip_bounds_height: i32,
+    clip_bounds: &WrRect,
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
 
     let clip_bounds: DeviceRect =
-        (clip_bounds_x, clip_bounds_y).by(clip_bounds_width, clip_bounds_height);
+        (clip_bounds.x, clip_bounds.y).by(clip_bounds.width as i32, clip_bounds.height as i32);
 
     let which = unsafe { (*p).which };
 
@@ -113,58 +146,35 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 pub extern "C" fn wr_push_rect(
     wr_data: *mut libc::c_void,
     color_pixel: ::libc::c_ulong,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
+    bounds: &WrRect,
+    clip_bounds: Option<&WrRect>,
 ) {
     let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.push_rect(color_pixel, x, y, width, height);
+    wr.push_rect(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
 #[no_mangle]
-pub extern "C" fn wr_push_rect_with_clip(
+pub extern "C" fn wr_push_border(
     wr_data: *mut libc::c_void,
     color_pixel: ::libc::c_ulong,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    x1: i32,
-    y1: i32,
-    width1: i32,
-    height1: i32,
+    bounds: &WrRect,
+    clip_bounds: Option<&WrRect>,
 ) {
     let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.push_rect_with_clip(color_pixel, x, y, width, height, x1, y1, width1, height1);
+    wr.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
-#[no_mangle]
-pub extern "C" fn wr_push_border_with_clip(
-    wr_data: *mut libc::c_void,
-    color_pixel: ::libc::c_ulong,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    x1: i32,
-    y1: i32,
-    width1: i32,
-    height1: i32,
-) {
-    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.push_border_with_clip(color_pixel, x, y, width, height, x1, y1, width1, height1);
-}
-
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
     let frame: FrameRef = f.into();
 
     let color = frame.background_pixel;
 
-    frame.wr().push_rect(color, x, y, width, height);
+    frame.wr().push_rect(color, (x, y).by(width, height), None);
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_defined_color(
     _frame: *mut Frame,
@@ -192,6 +202,7 @@ pub extern "C" fn wr_defined_color(
     }
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_scroll_run(w: *mut Window, run: *mut run) {
     let window: WindowRef = w.into();
@@ -210,6 +221,7 @@ pub extern "C" fn wr_scroll_run(w: *mut Window, run: *mut run) {
     frame.scroll(x, y, width, height, from_y, to_y, scroll_height);
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
     let frame: FrameRef = f.into();
@@ -219,23 +231,27 @@ pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
     let _ = unsafe { Box::from_raw(pixmap as *mut WrPixmap) };
 }
 
+/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_get_pixel(ximg: *mut image, x: i32, y: i32) -> i32 {
     unimplemented!();
 }
 
+/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_put_pixel(ximg: *mut image, x: i32, y: i32, pixel: u64) {
     unimplemented!();
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_can_use_native_image_api(image_type: LispObject) -> bool {
     crate::image::can_use_native_image_api(image_type)
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_load_image(
     frame: FrameRef,
@@ -247,6 +263,7 @@ pub extern "C" fn wr_load_image(
     image.load(frame)
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_transform_image(
     frame: FrameRef,
@@ -259,6 +276,7 @@ pub extern "C" fn wr_transform_image(
     image.transform(frame, width, height, rotation);
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
     let f = FrameRef::new(frame);
@@ -291,6 +309,7 @@ pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
     // font_info.font_instance_key = wr_font_instance_key;
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn image_pixmap_draw_cross(
     _frame: FrameRef,
@@ -304,11 +323,13 @@ pub extern "C" fn image_pixmap_draw_cross(
     unimplemented!();
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn image_sync_to_pixmaps(_frame: FrameRef, _img: *mut image) {
     unimplemented!();
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     let mut f = FrameRef::new(f);
@@ -350,6 +371,7 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     unsafe { unblock_input() };
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_parse_color(
     _f: *mut Frame,
@@ -378,6 +400,7 @@ pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
     let _ = unsafe { Box::from_raw(wr_data as *mut WrData) };
 }
 
+/// cbindgen:ignore
 /// Fit GL context to frame, reflecting frame/scale factor changes
 #[no_mangle]
 pub extern "C" fn wr_fit_context(f: *mut Frame) {

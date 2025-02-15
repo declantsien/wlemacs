@@ -136,6 +136,7 @@ fn wr_font_instance(
     instance.clone()
 }
 
+/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_prepara_font(f: *mut frame, font: *mut font) {

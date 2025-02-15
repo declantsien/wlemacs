@@ -540,24 +540,8 @@ impl WrData {
             );
         });
     }
+
     pub fn push_rect(
-        &mut self,
-        color_pixel: ::libc::c_ulong,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-    ) {
-        let rect = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x, y),
-            DeviceIntSize::new(width, height),
-        )
-        .to_f32();
-
-        self.push_rect_impl(color_pixel, rect, None);
-    }
-
-    pub fn push_rect_impl(
         &mut self,
         color_pixel: ::libc::c_ulong,
         rect: DeviceRect,
@@ -576,48 +560,7 @@ impl WrData {
         });
     }
 
-    pub fn push_rect_with_clip(
-        &mut self,
-        color_pixel: ::libc::c_ulong,
-        x0: i32,
-        y0: i32,
-        width0: i32,
-        height0: i32,
-        x1: i32,
-        y1: i32,
-        width1: i32,
-        height1: i32,
-    ) {
-        let bounds = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x0, y0),
-            DeviceIntSize::new(width0, height0),
-        )
-        .to_f32();
-        let clip_bounds = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x1, y1),
-            DeviceIntSize::new(width1, height1),
-        )
-        .to_f32();
-        self.push_rect_impl(color_pixel, bounds, Some(clip_bounds));
-    }
-
     pub fn push_border(
-        &mut self,
-        color_pixel: ::libc::c_ulong,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-    ) {
-        let rect = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x, y),
-            DeviceIntSize::new(width, height),
-        )
-        .to_f32();
-        self.push_border_impl(color_pixel, rect, None);
-    }
-
-    pub fn push_border_impl(
         &mut self,
         color_pixel: ::libc::c_ulong,
         rect: DeviceRect,
@@ -651,31 +594,6 @@ impl WrData {
                 border_details,
             );
         });
-    }
-
-    pub fn push_border_with_clip(
-        &mut self,
-        color_pixel: ::libc::c_ulong,
-        x0: i32,
-        y0: i32,
-        width0: i32,
-        height0: i32,
-        x1: i32,
-        y1: i32,
-        width1: i32,
-        height1: i32,
-    ) {
-        let bounds = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x0, y0),
-            DeviceIntSize::new(width0, height0),
-        )
-        .to_f32();
-        let clip_bounds = DeviceIntRect::from_origin_and_size(
-            DeviceIntPoint::new(x1, y1),
-            DeviceIntSize::new(width1, height1),
-        )
-        .to_f32();
-        self.push_border_impl(color_pixel, bounds, Some(clip_bounds));
     }
 
     pub fn deinit(mut self) {

@@ -483,7 +483,7 @@ wlc_decode_color (struct frame *f, Lisp_Object color_name, int mono_color)
 
 static void
 wr_row_clip_bounds (struct window *w, struct glyph_row *row,
-		  enum glyph_row_area area, Emacs_Rectangle *rect)
+		  enum glyph_row_area area, wr_rect *rect)
 {
   int window_x, window_y, window_width;
 
@@ -531,11 +531,10 @@ wlc_draw_hollow_cursor (struct window *w, struct glyph_row *row)
       if (wd > 0)
 	wd -= 1;
     }
-
-  wr_push_border_with_clip (FRAME_WR_DATA (f), FRAME_X_OUTPUT (f)->cursor_color,
-			  x, y, wd, h - 1,
-			  clip_bounds.x, clip_bounds.y,
-			  clip_bounds.width, clip_bounds.height);
+  const wr_rect bounds = {x, y, wd, h - 1};
+  wr_push_border (FRAME_WR_DATA (f), FRAME_X_OUTPUT (f)->cursor_color,
+			    &bounds,
+			    &clip_bounds);
 }
 
 /* Draw a bar cursor on window W in glyph row ROW.
@@ -589,7 +588,7 @@ wlc_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
       else
 	color = FRAME_X_OUTPUT (f)->cursor_color;
 
-      const Emacs_Rectangle clip_bounds;
+      const wr_rect clip_bounds;
       wr_row_clip_bounds (w, row, TEXT_AREA, &clip_bounds);
 
       if (kind == BAR_CURSOR)
@@ -606,12 +605,13 @@ wlc_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
 	     on the right of its glyph, rather than on the left.  */
 	  if ((cursor_glyph->resolved_level & 1) != 0)
 	    x += cursor_glyph->pixel_width - width;
-
-	  wr_push_rect_with_clip (FRAME_WR_DATA (f), color, x,
+	  const wr_rect bounds = {x,
 				  WINDOW_TO_FRAME_PIXEL_Y (w, w->phys_cursor.y),
-				  width, row->height,
-				  clip_bounds.x, clip_bounds.y,
-				  clip_bounds.width, clip_bounds.height);
+				  width, row->height};
+
+
+	  wr_push_rect (FRAME_WR_DATA (f), color, &bounds,
+				  &clip_bounds);
 	}
       else			/* HBAR_CURSOR */
 	{
@@ -629,12 +629,13 @@ wlc_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
 	  if ((cursor_glyph->resolved_level & 1) != 0
 	      && cursor_glyph->pixel_width > w->phys_cursor_width - 1)
 	    x += cursor_glyph->pixel_width - w->phys_cursor_width + 1;
-	  wr_push_rect_with_clip (FRAME_WR_DATA (f), color, x,
+	  const wr_rect bounds = {x,
 				  WINDOW_TO_FRAME_PIXEL_Y (w, w->phys_cursor.y +
 							   row->height - width),
-				  w->phys_cursor_width - 1, width,
-				  clip_bounds.x, clip_bounds.y,
-				  clip_bounds.width, clip_bounds.height);
+				  w->phys_cursor_width - 1, width};
+
+	  wr_push_rect (FRAME_WR_DATA (f), color, &bounds,
+				  &clip_bounds);
 	}
 
     }
@@ -712,9 +713,9 @@ wlc_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
   struct frame *f = XFRAME (WINDOW_FRAME (w));
   struct face *face = p->face;
 
-  const Emacs_Rectangle clip_bounds;
+  const wr_rect clip_bounds;
   wr_row_clip_bounds (w, row, ANY_AREA, &clip_bounds);
-  wr_draw_fringe_bitmap(w, p, clip_bounds.x, clip_bounds.y, clip_bounds.width, clip_bounds.height);
+  wr_draw_fringe_bitmap(w, p, &clip_bounds);
   /* /\* Must clip because of partially visible lines.  *\/ */
   /* pgtk_clip_to_row (w, row, ANY_AREA, cr); */
 

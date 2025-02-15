@@ -87,7 +87,8 @@ wr_draw_vertical_window_border (struct window *w, int x, int y0, int y1)
 
   face = FACE_FROM_ID_OR_NULL (f, VERTICAL_BORDER_FACE_ID);
 
-  wr_push_rect(FRAME_WR_DATA (f), face->foreground, x, y0, 1, y1 - y0);
+  const wr_rect bounds = {x, y0, 1, y1 - y0};
+  wr_push_rect(FRAME_WR_DATA (f), face->foreground, &bounds, NULL);
 }
 
 
@@ -110,23 +111,32 @@ wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
 			      ? face_last->foreground
 			      : FRAME_FOREGROUND_PIXEL (f));
 
+  static wr_rect bounds;
+
   if (y1 - y0 > x1 - x0 && x1 - x0 > 2)
     /* Vertical.  */
     {
-      wr_push_rect(FRAME_WR_DATA (f), color_first, x0, y0, 1, y1 - y0);
-      wr_push_rect(FRAME_WR_DATA (f), color, x0 + 1, y0, x1 - x0 - 2, y1 - y0);
-      wr_push_rect(FRAME_WR_DATA (f), color_last, x1 - 1, y0, 1, y1 - y0);
+      bounds = (wr_rect){x0, y0, 1, y1 - y0};
+      wr_push_rect(FRAME_WR_DATA (f), color_first, &bounds, NULL);
+      bounds = (wr_rect){x0 + 1, y0, x1 - x0 - 2, y1 - y0};
+      wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
+      bounds = (wr_rect){x1 - 1, y0, 1, y1 - y0};
+      wr_push_rect(FRAME_WR_DATA (f), color_last, &bounds, NULL);
     }
   else if (x1 - x0 > y1 - y0 && y1 - y0 > 3)
     /* Horizontal.  */
     {
-      wr_push_rect(FRAME_WR_DATA (f), color_first, x0, y0, x1 - x0, 1);
-      wr_push_rect(FRAME_WR_DATA (f), color, x0, y0 + 1, x1 - x0, y1 - y0 - 2);
-      wr_push_rect(FRAME_WR_DATA (f), color_last, x0, y1 - 1, x1 - x0, 1);
+      bounds = (wr_rect){x0, y0, x1 - x0, 1};
+      wr_push_rect(FRAME_WR_DATA (f), color_first, &bounds, NULL);
+      bounds = (wr_rect){x0, y0 + 1, x1 - x0, y1 - y0 - 2};
+      wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
+      bounds = (wr_rect){x0, y1 - 1, x1 - x0, 1};
+      wr_push_rect(FRAME_WR_DATA (f), color_last, &bounds, NULL);
     }
   else
     {
-      wr_push_rect(FRAME_WR_DATA (f), color, x0, y0, x1 - x0, y1 - y0);
+      bounds = (wr_rect){x0, y0, x1 - x0, y1 - y0};
+      wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
     }
 }
 

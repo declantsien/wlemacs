@@ -184,10 +184,8 @@ impl FrameExtWrCommon for FrameRef {
             let background_color = s.bg_color();
             self.wr().push_rect(
                 background_color,
-                s.x,
-                s.y + box_line_width,
-                s.background_width,
-                s.height - 2 * box_line_width,
+                (s.x, s.y + box_line_width).by(s.background_width, s.height - 2 * box_line_width),
+                None,
             );
 
             s.set_background_filled_p(true);
@@ -202,8 +200,11 @@ impl FrameExtWrCommon for FrameRef {
 
         // draw background
         let background_color = s.bg_color();
-        self.wr()
-            .push_rect(background_color, x, y, s.background_width, visible_height);
+        self.wr().push_rect(
+            background_color,
+            (x, y).by(s.background_width, visible_height),
+            None,
+        );
 
         self.wr().display(|builder, space_and_clip, scale| {
             let foreground_color = s.fg_color_f();
@@ -241,8 +242,11 @@ impl FrameExtWrCommon for FrameRef {
         };
 
         let background_color = s.bg_color();
-        self.wr()
-            .push_rect(background_color, s.x, s.y, background_width, visible_height);
+        self.wr().push_rect(
+            background_color,
+            (s.x, s.y).by(background_width, visible_height),
+            None,
+        );
 
         s.set_background_filled_p(true);
     }
@@ -253,8 +257,11 @@ impl FrameExtWrCommon for FrameRef {
         let y = s.y;
         let visible_height = s.visible_height();
         let background_color = s.bg_color();
-        self.wr()
-            .push_rect(background_color, x, y, s.background_width, visible_height);
+        self.wr().push_rect(
+            background_color,
+            (x, y).by(s.background_width, visible_height),
+            None,
+        );
         let clip_rect = s.clip_rect();
 
         let background_color = s.face().bg_color_f();
@@ -321,7 +328,7 @@ impl FrameExtWrCommon for FrameRef {
         if s.font_not_found_p() {
             if s.cmp_from == 0 {
                 self.wr()
-                    .push_rect(self.cursor_color(), s.x, s.y, s.width, s.height);
+                    .push_rect(self.cursor_color(), (s.x, s.y).by(s.width, s.height), None);
             }
         } else {
             let visible_height = s.visible_height();
@@ -329,8 +336,11 @@ impl FrameExtWrCommon for FrameRef {
             let x = s.x;
             let y = s.y;
             let background_color = s.bg_color();
-            self.wr()
-                .push_rect(background_color, x, y, s.background_width, visible_height);
+            self.wr().push_rect(
+                background_color,
+                (x, y).by(s.background_width, visible_height),
+                None,
+            );
             self.wr().display(|builder, space_and_clip, scale| {
                 let s = s.clone();
 
