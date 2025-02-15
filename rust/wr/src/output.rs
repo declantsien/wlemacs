@@ -1,6 +1,7 @@
 use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::gfx::context::GLContext;
+use image::GenericImageView;
 
 use super::image::cache::ImageHash;
 use emacs_sys::bindings::Emacs_Pixmap;
@@ -11,6 +12,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use gleam::gl;
 use webrender::FastHashMap;
@@ -25,8 +27,17 @@ use emacs_sys::frame::FrameRef;
 
 use super::texture::TextureResourceManager;
 
+#[derive(Clone)]
+pub struct FringeBitmap {
+    pub image_key: ImageKey,
+
+    pub width: u32,
+    pub height: u32,
+}
+
 pub struct WrData {
     fonts: FastHashMap<FontTemplate, FontKey>,
+    fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
     font_instances: FastHashMap<
         (
             FontKey,
@@ -111,6 +122,7 @@ impl WrData {
             fonts: FastHashMap::default(),
             font_instances: FastHashMap::default(),
             images: FastHashMap::default(),
+            fringe_bitmaps: FastHashMap::default(),
             allow_mipmaps: false,
             render_api: api,
             document_id,
@@ -449,6 +461,55 @@ impl WrData {
         self.images.get(hash).copied()
     }
 
+    pub fn get_or_create_fringe_bitmap(
+        &mut self,
+        which: i32,
+        bitmap_width: u32,
+        bitmap_height: u32,
+        bits: *mut ::libc::c_ushort,
+    ) -> Option<FringeBitmap> {
+        if which <= 0 {
+            return None;
+        }
+
+        if let Some(bitmap) = self.fringe_bitmaps.get(&which) {
+            return Some(bitmap.clone());
+        }
+
+        let bitmap = self.create_fringe_bitmap(bitmap_width, bitmap_height, bits);
+
+        // add bitmap to cache
+        self.fringe_bitmaps.insert(which, bitmap.clone());
+
+        return Some(bitmap);
+    }
+
+    fn create_fringe_bitmap(
+        &mut self,
+        bitmap_width: u32,
+        bitmap_height: u32,
+        bits: *mut ::libc::c_ushort,
+    ) -> FringeBitmap {
+        let image_buffer = create_fringe_bitmap_image_buffer(bitmap_width, bitmap_height, bits);
+
+        let (width, height) = image_buffer.dimensions();
+        let descriptor = ImageDescriptor::new(
+            width as i32,
+            height as i32,
+            ImageFormat::RGBA8,
+            ImageDescriptorFlags::empty(),
+        );
+
+        let data = ImageData::Raw(Arc::new(image_buffer.to_rgba8().to_vec()));
+
+        let image_key = self.add_image(descriptor, data);
+
+        FringeBitmap {
+            image_key,
+            width,
+            height,
+        }
+    }
     pub fn update(&mut self) {
         let size = self.device_size();
         let device_rect =
@@ -614,4 +675,42 @@ impl RenderNotifier for Notifier {
     ) {
         self.wake_up(composite_needed);
     }
+}
+
+fn create_fringe_bitmap_image_buffer(
+    bitmap_width: u32,
+    bitmap_height: u32,
+    bits: *mut ::libc::c_ushort,
+) -> image::DynamicImage {
+    use image::{Rgba, RgbaImage};
+
+    // convert unsigned short array into u8 array
+    let bits: Vec<u8> = if bits.is_null() {
+        // `len` is assumed to be 0.
+        Vec::new()
+    } else {
+        let bits = unsafe { std::slice::from_raw_parts(bits, (8 * bitmap_height) as usize) };
+        bits.iter().map(|v| *v as u8).collect()
+    };
+
+    let bits = bit_vec::BitVec::from_bytes(&bits);
+
+    let white_pixel = Rgba([255, 255, 255, 255]);
+    let transparent_pixel = Rgba([0, 0, 0, 0]);
+
+    let image_buffer = RgbaImage::from_fn(bitmap_width, bitmap_height, |x, y| {
+        let index = (y * bitmap_width + x) as usize;
+
+        if bits
+            .get(index)
+            .expect("RgbaImage construction: out of index.")
+            == true
+        {
+            white_pixel
+        } else {
+            transparent_pixel
+        }
+    });
+
+    image::DynamicImage::ImageRgba8(image_buffer)
 }

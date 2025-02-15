@@ -14,7 +14,6 @@ pub mod output;
 
 mod face;
 pub mod font;
-mod fringe;
 mod glyph;
 mod texture;
 mod util;

@@ -1,10 +1,9 @@
 use super::util::HandyDandyRectBuilder;
 use crate::color::pixel_to_color;
 use crate::face::WrFace;
-use crate::fringe::FringeBitmap;
 use crate::glyph::{GlyphStringExtWr, WrGlyph};
 use crate::image::{ImageExt, ImageRef};
-use crate::output::{WrData, WrDataRef};
+use crate::output::{FringeBitmap, WrData, WrDataRef};
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;

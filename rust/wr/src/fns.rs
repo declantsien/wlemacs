@@ -1,7 +1,6 @@
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
-use crate::fringe::get_or_create_fringe_bitmap;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
 use crate::output::{WrData, WrDataRef};
 use crate::util::HandyDandyRectBuilder;
@@ -89,7 +88,13 @@ pub extern "C" fn wr_draw_fringe_bitmap(
         LayoutRect::zero()
     };
 
-    let image = get_or_create_fringe_bitmap(frame, which, p);
+    let bitmap_width = 8 as u32;
+    let bitmap_height = (unsafe { (*p).h } + unsafe { (*p).dh }) as u32;
+    let bits = unsafe { (*p).bits };
+
+    let image = frame
+        .wr()
+        .get_or_create_fringe_bitmap(which, bitmap_width, bitmap_height, bits);
 
     let face = FaceRef::new(unsafe { (*p).face });
 
