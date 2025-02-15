@@ -43,26 +43,18 @@ pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
 #[no_mangle]
 pub extern "C" fn wr_draw_fringe_bitmap(
     window: *mut Window,
-    row: *mut glyph_row,
     p: *mut draw_fringe_bitmap_params,
+    clip_bounds_x: i32,
+    clip_bounds_y: i32,
+    clip_bounds_width: i32,
+    clip_bounds_height: i32,
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
     let scale = frame.wr().scale();
 
-    let row_rect: LayoutRect = unsafe {
-        let (window_x, window_y, window_width, _) = window.area_box(GlyphRowArea::Any);
-
-        let x = window_x;
-
-        let row_y = window.frame_pixel_y(max(0, (*row).y));
-        let y = max(row_y, window_y);
-
-        let width = window_width;
-        let height = (*row).visible_height;
-
-        (x, y).by(width, height, scale)
-    };
+    let clip_bounds: LayoutRect =
+        (clip_bounds_x, clip_bounds_y).by(clip_bounds_width, clip_bounds_height, scale);
 
     let which = unsafe { (*p).which };
 
@@ -115,7 +107,7 @@ pub extern "C" fn wr_draw_fringe_bitmap(
         background_color,
         image_clip_rect,
         clear_rect,
-        row_rect,
+        clip_bounds,
     );
 }
 

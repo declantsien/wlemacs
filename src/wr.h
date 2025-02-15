@@ -29,8 +29,9 @@ extern void wr_scroll_run (struct window *w, struct run *run);
 
 extern void wr_flush_display (struct frame *f);
 extern void
-wr_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
-		       struct draw_fringe_bitmap_params *p);
+wr_draw_fringe_bitmap (struct window *w,
+		       struct draw_fringe_bitmap_params *p,
+		       int, int, int, int);
 extern void
 wr_draw_glyph_string (struct glyph_string *s);
 extern void wr_clear_area (struct frame *, int, int, int, int);
