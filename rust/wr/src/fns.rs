@@ -2,10 +2,10 @@ use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::{WrData, WrDataRef};
+use crate::output::{DeviceLength, WrData, WrDataRef};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
-    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_row, glyph_string,
+    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string,
     gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Color, Emacs_Pixmap,
     AREF, FACE_FROM_ID_OR_NULL,
 };
@@ -19,10 +19,9 @@ use webrender::api::{
 };
 
 use crate::font::FontInfoRef;
-use std::cmp::max;
 use std::ffi::CString;
 use std::ptr;
-use webrender::api::units::{LayoutPoint, LayoutRect};
+use webrender::api::units::{DeviceIntLength, DeviceIntPoint, DeviceRect};
 
 #[no_mangle]
 pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
@@ -51,33 +50,32 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
-    let scale = frame.wr().scale();
 
-    let clip_bounds: LayoutRect =
-        (clip_bounds_x, clip_bounds_y).by(clip_bounds_width, clip_bounds_height, scale);
+    let clip_bounds: DeviceRect =
+        (clip_bounds_x, clip_bounds_y).by(clip_bounds_width, clip_bounds_height);
 
     let which = unsafe { (*p).which };
 
     let pos_x = unsafe { (*p).x };
     let pos_y = unsafe { (*p).y };
 
-    let pos = LayoutPoint::new(pos_x as f32, pos_y as f32);
+    let pos = DeviceIntPoint::new(pos_x, pos_y).to_f32();
 
-    let image_clip_rect: LayoutRect = {
+    let image_clip_rect: DeviceRect = {
         let width = unsafe { (*p).wd };
         let height = unsafe { (*p).h };
 
         if which > 0 {
-            (pos_x, pos_y).by(width, height, scale)
+            (pos_x, pos_y).by(width, height)
         } else {
-            LayoutRect::zero()
+            DeviceRect::zero()
         }
     };
 
     let clear_rect = if unsafe { (*p).bx >= 0 && !(*p).overlay_p() } {
-        unsafe { ((*p).bx, (*p).by).by((*p).nx, (*p).ny, scale) }
+        unsafe { ((*p).bx, (*p).by).by((*p).nx, (*p).ny) }
     } else {
-        LayoutRect::zero()
+        DeviceRect::zero()
     };
 
     let bitmap_width = 8 as u32;
@@ -281,10 +279,10 @@ pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
         .wr()
         .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
 
-    let scale = f.wr().scale();
+    let scale = f.wr().layout_to_device_scale_factor();
     let wr_font_instance_key = f.wr().wr_add_font_instance(
         wr_font_key,
-        FontSize::from_f64_px(font.pixel_size as f64 * scale as f64),
+        FontSize::from_f32_px((DeviceLength::new(font.pixel_size as f32) / scale).get()),
         Some(FontInstanceOptions::default()),
         Some(FontInstancePlatformOptions::default()),
         Vec::new(),

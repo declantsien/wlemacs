@@ -2,6 +2,7 @@ use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::gfx::context::GLContext;
 use image::GenericImageView;
+use webrender::api::euclid::Length;
 
 use super::image::cache::ImageHash;
 use emacs_sys::bindings::Emacs_Pixmap;
@@ -22,6 +23,9 @@ use webrender::api::*;
 use webrender::{
     RenderApi, Renderer, Transaction, {self},
 };
+
+pub type LayoutLength = Length<f32, LayoutPixel>;
+pub type DeviceLength = Length<f32, DevicePixel>;
 
 use emacs_sys::frame::FrameRef;
 
@@ -179,8 +183,12 @@ impl WrData {
         image_key
     }
 
-    pub fn scale(&self) -> f32 {
-        self.frame.scale_factor() as f32
+    // pub fn scale(&self) -> f32 {
+    //     self.frame.scale_factor() as f32
+    // }
+
+    pub fn layout_to_device_scale_factor(&self) -> LayoutToDeviceScale {
+        LayoutToDeviceScale::new(1.0 / (self.frame.scale_factor() as f32))
     }
 
     fn layout_size(&self) -> LayoutSize {
@@ -221,7 +229,7 @@ impl WrData {
 
     pub fn display<F>(&mut self, f: F)
     where
-        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, f32),
+        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, LayoutToDeviceScale),
     {
         if self.display_list_builder.is_none() {
             let layout_size = self.layout_size();
@@ -234,12 +242,12 @@ impl WrData {
         }
 
         let pipeline_id = PipelineId(0, 0);
-        let scale = self.scale();
+        let scale_factor = self.layout_to_device_scale_factor();
 
         if let Some(builder) = &mut self.display_list_builder {
             let space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
 
-            f(builder, space_and_clip, scale);
+            f(builder, space_and_clip, scale_factor);
         }
 
         self.assert_no_gl_error();
@@ -523,11 +531,11 @@ impl WrData {
             .resize(&size.cast_unit::<emacs_sys::DevicePixel>());
     }
 
-    pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
-        self.display(|builder, space_and_clip, _| {
+    pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: DeviceRect) {
+        self.display(|builder, space_and_clip, scale_factor| {
             builder.push_rect(
-                &CommonItemProperties::new(rect, space_and_clip),
-                rect,
+                &CommonItemProperties::new(rect / scale_factor, space_and_clip),
+                rect / scale_factor,
                 clear_color,
             );
         });
@@ -540,22 +548,29 @@ impl WrData {
         width: i32,
         height: i32,
     ) {
-        let scale = self.scale();
-        let rect = (x, y).by(width, height, scale);
+        let rect = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x, y),
+            DeviceIntSize::new(width, height),
+        )
+        .to_f32();
+
         self.push_rect_impl(color_pixel, rect, None);
     }
 
     pub fn push_rect_impl(
         &mut self,
         color_pixel: ::libc::c_ulong,
-        rect: LayoutRect,
-        clip_rect: Option<LayoutRect>,
+        rect: DeviceRect,
+        clip_rect: Option<DeviceRect>,
     ) {
         let clear_color = pixel_to_color(color_pixel);
-        self.display(|builder, space_and_clip, _| {
+        self.display(|builder, space_and_clip, scale_factor| {
             builder.push_rect(
-                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
-                rect,
+                &CommonItemProperties::new(
+                    clip_rect.unwrap_or(rect) / scale_factor,
+                    space_and_clip,
+                ),
+                rect / scale_factor,
                 clear_color,
             );
         });
@@ -573,9 +588,16 @@ impl WrData {
         width1: i32,
         height1: i32,
     ) {
-        let scale = self.scale();
-        let bounds = (x0, y0).by(width0, height0, scale);
-        let clip_bounds = (x1, y1).by(width1, height1, scale);
+        let bounds = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x0, y0),
+            DeviceIntSize::new(width0, height0),
+        )
+        .to_f32();
+        let clip_bounds = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x1, y1),
+            DeviceIntSize::new(width1, height1),
+        )
+        .to_f32();
         self.push_rect_impl(color_pixel, bounds, Some(clip_bounds));
     }
 
@@ -587,16 +609,19 @@ impl WrData {
         width: i32,
         height: i32,
     ) {
-        let scale = self.scale();
-        let rect = (x, y).by(width, height, scale);
+        let rect = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x, y),
+            DeviceIntSize::new(width, height),
+        )
+        .to_f32();
         self.push_border_impl(color_pixel, rect, None);
     }
 
     pub fn push_border_impl(
         &mut self,
         color_pixel: ::libc::c_ulong,
-        rect: LayoutRect,
-        clip_rect: Option<LayoutRect>,
+        rect: DeviceRect,
+        clip_rect: Option<DeviceRect>,
     ) {
         let color = pixel_to_color(color_pixel);
         let border_widths = LayoutSideOffsets::new_all_same(1.0);
@@ -615,10 +640,13 @@ impl WrData {
             do_aa: true,
         });
 
-        self.display(|builder, space_and_clip, _| {
+        self.display(|builder, space_and_clip, scale_factor| {
             builder.push_border(
-                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
-                rect,
+                &CommonItemProperties::new(
+                    clip_rect.unwrap_or(rect) / scale_factor,
+                    space_and_clip,
+                ),
+                rect / scale_factor,
                 border_widths,
                 border_details,
             );
@@ -637,9 +665,16 @@ impl WrData {
         width1: i32,
         height1: i32,
     ) {
-        let scale = self.scale();
-        let bounds = (x0, y0).by(width0, height0, scale);
-        let clip_bounds = (x1, y1).by(width1, height1, scale);
+        let bounds = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x0, y0),
+            DeviceIntSize::new(width0, height0),
+        )
+        .to_f32();
+        let clip_bounds = DeviceIntRect::from_origin_and_size(
+            DeviceIntPoint::new(x1, y1),
+            DeviceIntSize::new(width1, height1),
+        )
+        .to_f32();
         self.push_border_impl(color_pixel, bounds, Some(clip_bounds));
     }
 

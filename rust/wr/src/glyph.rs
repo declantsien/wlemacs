@@ -2,10 +2,9 @@ use crate::color::pixel_to_color;
 use crate::face::WrFace;
 use crate::font::FontInfoRef;
 use crate::frame::FrameExtWrCommon;
+use crate::output::{DeviceLength, LayoutLength};
 use crate::util::HandyDandyRectBuilder;
-use emacs_sys::bindings::face_box_type::{
-    FACE_NO_BOX, {self},
-};
+use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
 use emacs_sys::bindings::{
     face_underline_type, font_info, globals, glyph_type, Emacs_GC,
     Emacs_Rectangle as NativeRectangle,
@@ -13,7 +12,6 @@ use emacs_sys::bindings::{
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::number::LNumber;
-use euclid::Scale;
 use std::cmp::max;
 use webrender::api::units::*;
 use webrender::api::{
@@ -29,23 +27,25 @@ pub trait WrGlyph {
     fn overline_color_f(&self) -> ColorF;
     fn strike_through_color_f(&self) -> ColorF;
     fn x(&self) -> i32;
-    fn underline_area(&self) -> LayoutRect;
-    fn underwave_area(&self) -> LayoutRect;
+    fn underline_area(&self) -> DeviceRect;
+    fn underwave_area(&self) -> DeviceRect;
     fn font_info(&self) -> FontInfoRef;
     fn font_key(&self) -> FontKey;
     fn font_instance_key(&self) -> FontInstanceKey;
     fn glyph_dimensions(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<GlyphDimensions>>;
-    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>>;
+    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>)
+        -> Vec<Option<LayoutLength>>;
     fn composite_p(&self) -> bool;
     fn automatic_composite_p(&self) -> bool;
     fn visible_height(&self) -> i32;
-    fn scale_factor(&self) -> f32;
     fn glyph_indices(&self) -> Vec<u32>;
-    fn scaled_glyph_instances(&self, scale: f32) -> Vec<GlyphInstance>;
-    fn glyph_instances(&self) -> Vec<GlyphInstance>;
-    fn char_glyph_instances(&self) -> Vec<GlyphInstance>;
-    fn composite_glyph_instances(&self) -> Vec<GlyphInstance>;
-    fn automatic_composite_glyph_instances(&self) -> Vec<GlyphInstance>;
+    fn glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance>;
+    fn char_glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance>;
+    fn composite_glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance>;
+    fn automatic_composite_glyph_instances(
+        &self,
+        scale_factor: LayoutToDeviceScale,
+    ) -> Vec<GlyphInstance>;
 }
 
 impl WrGlyph for GlyphStringRef {
@@ -78,17 +78,13 @@ impl WrGlyph for GlyphStringRef {
         }
     }
 
-    fn underwave_area(&self) -> LayoutRect {
+    fn underwave_area(&self) -> DeviceRect {
         let wave_height = 3;
         // let wave_length = 2; // Webrender internals
-        (self.x, self.ybase - wave_height + 3).by(
-            self.width as i32,
-            wave_height,
-            self.scale_factor(),
-        )
+        (self.x, self.ybase - wave_height + 3).by(self.width as i32, wave_height)
     }
 
-    fn underline_area(&self) -> LayoutRect {
+    fn underline_area(&self) -> DeviceRect {
         assert_ne!(
             self.face().underline_type(),
             face_underline_type::FACE_UNDERLINE_WAVE
@@ -158,11 +154,7 @@ impl WrGlyph for GlyphStringRef {
         self.clone().underline_thickness = thickness;
         self.clone().underline_position = position;
         let y = self.ybase + position;
-        (self.x, y).by(self.width as i32, thickness, self.scale_factor())
-    }
-
-    fn scale_factor(&self) -> f32 {
-        self.frame().scale_factor() as f32
+        (self.x, y).by(self.width as i32, thickness)
     }
 
     fn font_info(&self) -> FontInfoRef {
@@ -194,10 +186,10 @@ impl WrGlyph for GlyphStringRef {
     fn font_instance_key(&self) -> FontInstanceKey {
         let font_key = self.font_key();
         let f = self.frame();
-        let scale = f.wr().scale();
+        let scale = f.wr().layout_to_device_scale_factor();
         f.wr().wr_add_font_instance(
             font_key,
-            FontSize::from_f64_px(self.font().pixel_size as f64 * scale as f64),
+            FontSize::from_f32_px((DeviceLength::new(self.font().pixel_size as f32) / scale).get()),
             Some(FontInstanceOptions::default()),
             Some(FontInstancePlatformOptions::default()),
             Vec::new(),
@@ -212,10 +204,13 @@ impl WrGlyph for GlyphStringRef {
         f.wr().glyph_dimensions(key, glyph_indices)
     }
 
-    fn get_glyph_advance_widths(&self, glyph_indices: Vec<GlyphIndex>) -> Vec<Option<f32>> {
+    fn get_glyph_advance_widths(
+        &self,
+        glyph_indices: Vec<GlyphIndex>,
+    ) -> Vec<Option<LayoutLength>> {
         self.glyph_dimensions(glyph_indices)
             .iter()
-            .map(|i| i.map(|d| d.advance))
+            .map(|i| i.map(|d| LayoutLength::new(d.advance)))
             .collect()
     }
 
@@ -229,46 +224,23 @@ impl WrGlyph for GlyphStringRef {
             .collect()
     }
 
-    fn scaled_glyph_instances(&self, scale: f32) -> Vec<GlyphInstance> {
-        let instances = self.glyph_instances();
-
-        let face = self.face;
-        let overstrike = unsafe { (*face).overstrike() };
-
-        let mut scaled: Vec<GlyphInstance> = vec![];
-        for instance in instances.iter() {
-            let cur_point = instance.point;
-            scaled.push(GlyphInstance {
-                point: cur_point * Scale::new(scale),
-                ..*instance
-            });
-            if overstrike {
-                scaled.push(GlyphInstance {
-                    point: LayoutPoint::new(cur_point.x + 1.0, cur_point.y) * Scale::new(scale),
-                    ..*instance
-                });
-            }
-        }
-        scaled
-    }
-
-    fn glyph_instances(&self) -> Vec<GlyphInstance> {
+    fn glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance> {
         let glyph_type = self.glyph_type();
 
         match glyph_type {
-            glyph_type::CHAR_GLYPH => self.char_glyph_instances(),
+            glyph_type::CHAR_GLYPH => self.char_glyph_instances(scale_factor),
             glyph_type::COMPOSITE_GLYPH => {
                 if self.automatic_composite_p() {
-                    self.automatic_composite_glyph_instances()
+                    self.automatic_composite_glyph_instances(scale_factor)
                 } else {
-                    self.composite_glyph_instances()
+                    self.composite_glyph_instances(scale_factor)
                 }
             }
             _ => vec![],
         }
     }
 
-    fn char_glyph_instances(&self) -> Vec<GlyphInstance> {
+    fn char_glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance> {
         let font_info = self.font_info();
 
         let x_start = self.x();
@@ -280,26 +252,34 @@ impl WrGlyph for GlyphStringRef {
         let mut glyph_instances: Vec<GlyphInstance> = vec![];
         // println!("indices: {:?}, dimensions: {:?}", glyph_indices.clone(), glyph_dimensions);
 
+        let face = self.face;
+
         for (i, index) in glyph_indices.into_iter().enumerate() {
             let previous_char_width = if i == 0 {
-                0.0
+                0
             } else {
                 // wr get_glyph_dimensions return none for ‘empty’ textures (height or width = 0)
                 // spaces (’ ’) will mostly be None
-                glyph_advances[i - 1].unwrap_or(0.0)
+                glyph_advances[i - 1]
+                    .map(|len| (len * scale_factor).get() as i32)
+                    .unwrap_or(0)
             };
 
             let previous_char_start = if i == 0 {
-                x_start as f32
+                x_start
             } else {
-                glyph_instances[i - 1].point.x
+                (glyph_instances[i - 1].point * scale_factor).to_i32().x
             };
 
-            let start = previous_char_start + previous_char_width;
+            let mut start = previous_char_start + previous_char_width;
+
+            if self.face().overstrike() {
+                start += 1;
+            }
 
             let glyph_instance = GlyphInstance {
                 index,
-                point: LayoutPoint::new(start, y_start as f32),
+                point: DeviceIntPoint::new(start, y_start).to_f32() / scale_factor,
             };
 
             glyph_instances.push(glyph_instance);
@@ -307,7 +287,7 @@ impl WrGlyph for GlyphStringRef {
         glyph_instances
     }
 
-    fn composite_glyph_instances(&self) -> Vec<GlyphInstance> {
+    fn composite_glyph_instances(&self, scale_factor: LayoutToDeviceScale) -> Vec<GlyphInstance> {
         let font_info = self.font_info();
 
         let x = self.x();
@@ -329,12 +309,15 @@ impl WrGlyph for GlyphStringRef {
                     return None;
                 }
 
-                let xx = x + offsets[n as usize * 2] as i32;
+                let mut xx = x + offsets[n as usize * 2] as i32;
                 let yy = y_start - offsets[n as usize * 2 + 1] as i32;
+                if self.face().overstrike() {
+                    xx += 1;
+                }
 
                 let glyph_instance = GlyphInstance {
                     index: *glyph,
-                    point: LayoutPoint::new(xx as f32, yy as f32),
+                    point: DeviceIntPoint::new(xx, yy).to_f32() / scale_factor,
                 };
 
                 Some(glyph_instance)
@@ -343,7 +326,10 @@ impl WrGlyph for GlyphStringRef {
         glyph_instances
     }
 
-    fn automatic_composite_glyph_instances(&self) -> Vec<GlyphInstance> {
+    fn automatic_composite_glyph_instances(
+        &self,
+        scale_factor: LayoutToDeviceScale,
+    ) -> Vec<GlyphInstance> {
         let mut instances: Vec<GlyphInstance> = vec![];
         let lgstring = self.get_lgstring();
         let mut composite_lglyph = |lglyph: LispObject, x: i32, y: i32| {
@@ -351,7 +337,7 @@ impl WrGlyph for GlyphStringRef {
             let index: webrender::api::GlyphIndex = code.try_into().unwrap();
             let glyph_instance = GlyphInstance {
                 index,
-                point: LayoutPoint::new(x as f32, y as f32),
+                point: DeviceIntPoint::new(x, y).to_f32() / scale_factor,
             };
             log::warn!("automatic composite glyph instance {glyph_instance:?}");
             instances.push(glyph_instance);
@@ -397,7 +383,7 @@ pub trait GlyphStringExtWr {
         &self,
         style: LineStyle,
         color: ColorF,
-        rect: LayoutRect,
+        rect: DeviceRect,
         orientation: LineOrientation,
     );
     fn draw_underline(&self);
@@ -505,7 +491,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         &self,
         style: LineStyle,
         color: ColorF,
-        area: LayoutRect,
+        area: DeviceRect,
         orientation: LineOrientation,
     ) {
         let x = self.x;
@@ -514,13 +500,13 @@ impl GlyphStringExtWr for GlyphStringRef {
         let visible_height = self.visible_height();
         self.frame().wr().display(|builder, space_and_clip, scale| {
             let common = CommonItemProperties::new(
-                (x, y).by(self.width as i32, visible_height, scale),
+                (x, y).by(self.width as i32, visible_height) / scale,
                 space_and_clip,
             );
 
             builder.push_line(
                 &common,
-                &area,
+                &(area / scale),
                 WAVY_LINE_THICKNESS as f32,
                 orientation,
                 &color,
@@ -545,7 +531,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         assert_eq!(self.face().overline_p(), true);
         let dy = 0;
         let h = 1;
-        let area = (self.x, self.y + dy).by(self.width, h, self.scale_factor());
+        let area = (self.x, self.y + dy).by(self.width, h);
         self.draw_line(
             LineStyle::Solid,
             self.overline_color_f(),
@@ -567,7 +553,7 @@ impl GlyphStringExtWr for GlyphStringRef {
         top edge.  */
         let h = 1;
         let dy = (glyph_height - h) / 2;
-        let area = (self.x, glyph_y + dy as i32).by(self.width, h as i32, self.scale_factor());
+        let area = (self.x, glyph_y + dy as i32).by(self.width, h as i32);
         self.draw_line(
             LineStyle::Solid,
             self.strike_through_color_f(),

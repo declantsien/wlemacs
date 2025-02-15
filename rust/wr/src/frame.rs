@@ -7,7 +7,6 @@ use crate::output::{FringeBitmap, WrData, WrDataRef};
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;
-use euclid::Scale;
 use std::cmp::min;
 use webrender::api::units::*;
 use webrender::api::*;
@@ -35,21 +34,21 @@ pub trait FrameExtWrCommon {
     fn draw_image(
         &mut self,
         image_key: ImageKey,
-        bounds: LayoutRect,
-        clip_bounds: Option<LayoutRect>,
+        bounds: DeviceRect,
+        clip_bounds: Option<DeviceRect>,
     );
 
     fn draw_composite_glyph_string_foreground(&mut self, s: GlyphStringRef);
 
     fn draw_fringe_bitmap(
         &mut self,
-        pos: LayoutPoint,
+        pos: DevicePoint,
         image: Option<FringeBitmap>,
         bitmap_color: ColorF,
         background_color: ColorF,
-        image_clip_rect: LayoutRect,
-        clear_rect: LayoutRect,
-        row_rect: LayoutRect,
+        image_clip_rect: DeviceRect,
+        clear_rect: DeviceRect,
+        row_rect: DeviceRect,
     );
 
     fn scroll(
@@ -209,11 +208,11 @@ impl FrameExtWrCommon for FrameRef {
         self.wr().display(|builder, space_and_clip, scale| {
             let foreground_color = s.fg_color_f();
 
-            let glyph_instances = s.scaled_glyph_instances(scale);
+            let glyph_instances = s.glyph_instances(scale);
             // draw foreground
             if !glyph_instances.is_empty() {
                 let font_instance_key = s.font_instance_key();
-                let visible_rect = (x, y).by(s.width as i32, visible_height, scale);
+                let visible_rect = (x, y).by(s.width as i32, visible_height) / scale;
 
                 builder.push_text(
                     &CommonItemProperties::new(visible_rect, space_and_clip),
@@ -259,10 +258,9 @@ impl FrameExtWrCommon for FrameRef {
         let clip_rect = s.clip_rect();
 
         let background_color = s.face().bg_color_f();
-        let scale = s.frame().wr().scale();
         let clip_bounds =
-            (clip_rect.x, clip_rect.y).by(clip_rect.width as i32, clip_rect.height as i32, scale);
-        let bounds = (s.x, s.y).by(s.slice.width() as i32, s.slice.height() as i32, scale);
+            (clip_rect.x, clip_rect.y).by(clip_rect.width as i32, clip_rect.height as i32);
+        let bounds = (s.x, s.y).by(s.slice.width() as i32, s.slice.height() as i32);
 
         // render background
         let background_rect = bounds.intersection(&clip_bounds);
@@ -279,7 +277,7 @@ impl FrameExtWrCommon for FrameRef {
             //We do scaling here to avoid stretching
             let dwidth = s.slice.height() as f32 / descriptor.size.height as f32
                 * descriptor.size.width as f32;
-            let bounds = (s.x, s.y).by(dwidth as i32, s.slice.height() as i32, scale);
+            let bounds = (s.x, s.y).by(dwidth as i32, s.slice.height() as i32);
             self.draw_image(image_key, bounds, Some(clip_bounds));
         }
     }
@@ -293,15 +291,17 @@ impl FrameExtWrCommon for FrameRef {
     fn draw_image(
         &mut self,
         image_key: ImageKey,
-        bounds: LayoutRect,
-        clip_bounds: Option<LayoutRect>,
+        bounds: DeviceRect,
+        clip_bounds: Option<DeviceRect>,
     ) {
-        let clip_bounds = clip_bounds.unwrap_or(bounds);
-        self.wr().display(|builder, space_and_clip, _scale| {
+        self.wr().display(|builder, space_and_clip, scale_factor| {
             // render image
             builder.push_image(
-                &CommonItemProperties::new(clip_bounds, space_and_clip),
-                bounds,
+                &CommonItemProperties::new(
+                    clip_bounds.unwrap_or(bounds) / scale_factor,
+                    space_and_clip,
+                ),
+                bounds / scale_factor,
                 ImageRendering::Auto,
                 AlphaType::Alpha,
                 image_key,
@@ -336,9 +336,9 @@ impl FrameExtWrCommon for FrameRef {
 
                 let foreground_color = s.fg_color_f();
 
-                let visible_rect = (x, y).by(s.width, visible_height, scale);
+                let visible_rect = (x, y).by(s.width, visible_height) / scale;
 
-                let glyph_instances = s.scaled_glyph_instances(scale);
+                let glyph_instances = s.glyph_instances(scale);
                 // draw foreground
                 if !glyph_instances.is_empty() {
                     let font_instance_key = s.font_instance_key();
@@ -357,37 +357,37 @@ impl FrameExtWrCommon for FrameRef {
 
     fn draw_fringe_bitmap(
         &mut self,
-        pos: LayoutPoint,
+        pos: DevicePoint,
         image: Option<FringeBitmap>,
         bitmap_color: ColorF,
         background_color: ColorF,
-        image_clip_rect: LayoutRect,
-        clear_rect: LayoutRect,
-        row_rect: LayoutRect,
+        image_clip_rect: DeviceRect,
+        clear_rect: DeviceRect,
+        row_rect: DeviceRect,
     ) {
         // Fixed clear_rect
         let clear_rect = clear_rect
             .union(&image_clip_rect)
             .intersection(&row_rect)
-            .unwrap_or_else(|| LayoutRect::zero());
+            .unwrap_or_else(|| DeviceRect::zero());
 
         // Fixed image_clip_rect
         let image_clip_rect = image_clip_rect
             .intersection(&row_rect)
-            .unwrap_or_else(|| LayoutRect::zero());
+            .unwrap_or_else(|| DeviceRect::zero());
 
         // clear area
         self.wr().draw_rectangle(background_color, clear_rect);
 
         self.wr().display(|builder, space_and_clip, scale| {
             if let Some(image) = &image {
-                let image_display_rect = LayoutRect::new(
+                let image_display_rect = DeviceRect::new(
                     pos,
-                    LayoutPoint::new(image.width as f32, image.height as f32),
-                ) * Scale::new(scale);
+                    DevicePoint::new(image.width as f32, image.height as f32),
+                ) / scale;
                 // render image
                 builder.push_image(
-                    &CommonItemProperties::new(image_clip_rect, space_and_clip),
+                    &CommonItemProperties::new(image_clip_rect / scale, space_and_clip),
                     image_display_rect,
                     ImageRendering::Auto,
                     AlphaType::Alpha,
@@ -436,9 +436,9 @@ impl FrameExtWrCommon for FrameRef {
 
         if let Some(image_key) = self.wr().get_previous_frame() {
             self.wr().display(|builder, space_and_clip, scale| {
-                let viewport = (x, to_y).by(width, height, scale);
+                let viewport = (x, to_y).by(width, height) / scale;
                 let new_frame_position =
-                    (0, 0 + diff_y).by(frame_size.width as i32, frame_size.height as i32, scale);
+                    (0, 0 + diff_y).by(frame_size.width as i32, frame_size.height as i32) / scale;
                 builder.push_image(
                     &CommonItemProperties::new(viewport, space_and_clip),
                     new_frame_position,
