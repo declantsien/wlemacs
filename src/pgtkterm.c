@@ -7423,7 +7423,7 @@ pgtk_defined_color (struct frame *f, const char *name,
 #ifndef USE_WEBRENDER
     r = pgtk_parse_color (f, name, color_def);
 #else
-    r = wr_parse_color (f, name, color_def);
+    r = wr_parse_color (name, color_def);
 #endif
   unblock_input ();
   return r;

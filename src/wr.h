@@ -49,12 +49,6 @@ extern bool wr_defined_color (struct frame *, const char *, Emacs_Color *,
                                bool, bool);
 extern void wr_clear_frame (struct frame *);
 
-#if defined USE_WEBRENDER && defined HAVE_PGTK
-extern int
-wr_parse_color (struct frame *f, const char *color_name,
-		Emacs_Color * color);
-#endif
-
 extern bool wr_add_font (struct frame *f, Lisp_Object font_object);
 extern void wr_prepara_font (struct frame *f, struct font *font);
 

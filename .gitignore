@@ -397,3 +397,4 @@ wayland-protocols/*
 !wayland-protocols/README
 !wayland-protocols/Makefile.in
 /src/wr_ffi_generated.h
+/rust/wr/src/capi.rs

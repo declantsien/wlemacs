@@ -1,3 +1,4 @@
+use crate::capi::Emacs_Color;
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
@@ -6,8 +7,8 @@ use crate::output::{DeviceLength, WrData, WrDataRef};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
     block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string,
-    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Color, Emacs_Pixmap,
-    AREF, FACE_FROM_ID_OR_NULL,
+    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Pixmap, AREF,
+    FACE_FROM_ID_OR_NULL,
 };
 use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphStringRef};
 use emacs_sys::font::FontRef;
@@ -172,34 +173,6 @@ pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, heigh
     let color = frame.background_pixel;
 
     frame.wr().push_rect(color, (x, y).by(width, height), None);
-}
-
-/// cbindgen:ignore
-#[no_mangle]
-pub extern "C" fn wr_defined_color(
-    _frame: *mut Frame,
-    color_name: *const libc::c_char,
-    color_def: *mut Emacs_Color,
-    _alloc_p: bool,
-    _make_indext: bool,
-) -> bool {
-    let c_color = unsafe { CString::from_raw(color_name as *mut _) };
-
-    let color = c_color
-        .to_str()
-        .ok()
-        .and_then(|color| lookup_color_by_name_or_hex(color));
-
-    // throw back the c pointer
-    let _ = c_color.into_raw();
-
-    match color {
-        Some(c) => {
-            color_to_xcolor(c, color_def);
-            true
-        }
-        _ => false,
-    }
 }
 
 /// cbindgen:ignore
@@ -371,10 +344,8 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     unsafe { unblock_input() };
 }
 
-/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_parse_color(
-    _f: *mut Frame,
     color_name: *const ::libc::c_char,
     xcolor: *mut Emacs_Color,
 ) -> ::libc::c_int {

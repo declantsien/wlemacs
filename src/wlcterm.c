@@ -1011,6 +1011,29 @@ wlc_query_colors (struct frame *f, Emacs_Color * colors, int ncolors)
     }
 }
 
+/* Decide if color named COLOR_NAME is valid for use on frame F.  If
+   so, return the RGB values in COLOR.  If ALLOC_P, allocate the
+   color.  Value is false if COLOR_NAME is invalid, or no color could
+   be allocated.  MAKE_INDEX is some mysterious argument used on
+   NS. */
+
+bool
+wlc_defined_color (struct frame *f, const char *color_name,
+		       Emacs_Color *color, bool alloc_p,
+		       bool make_index)
+{
+  bool success_p;
+
+  success_p = false;
+
+  block_input ();
+  success_p = wr_parse_color (color_name, color);
+  unblock_input ();
+
+  return success_p;
+}
+
+
 /* Create a struct terminal, initialize it with the Wayland specific
    functions and make DISPLAY->TERMINAL point to it.  */
 
@@ -1038,7 +1061,7 @@ wlc_create_terminal (struct wlc_display_info *dpyinfo)
 /* #ifdef HAVE_XDBE */
 /*   terminal->buffer_flipping_unblocked_hook = XTbuffer_flipping_unblocked_hook; */
 /* #endif */
-  terminal->defined_color_hook = wr_defined_color;
+  terminal->defined_color_hook = wlc_defined_color;
 /*   terminal->query_frame_background_color = x_query_frame_background_color; */
   terminal->query_colors = wlc_query_colors;
 /*   terminal->mouse_position_hook = XTmouse_position; */

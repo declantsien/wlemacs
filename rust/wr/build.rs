@@ -1,5 +1,4 @@
 use cfg_aliases::cfg_aliases;
-extern crate cbindgen;
 
 use anyhow::Context;
 use std::env;
@@ -11,18 +10,6 @@ const RGB_TXT_PATH: &str = "../../etc/rgb.txt";
 
 fn main() -> anyhow::Result<()> {
     generate_color_map()?;
-
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-
-    cbindgen::generate(&crate_dir).map_or_else(
-        |error| match error {
-            cbindgen::Error::ParseSyntaxError { .. } => {}
-            e => panic!("{:?}", e),
-        },
-        |bindings| {
-            bindings.write_to_file(Path::new(&crate_dir).join("../../src/wr_ffi_generated.h"));
-        },
-    );
 
     // Setup cfg aliases
     cfg_aliases! {
