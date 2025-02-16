@@ -22,8 +22,6 @@ extern bool wr_load_image (struct frame *f, struct image *img,
 extern bool wr_can_use_native_image_api (Lisp_Object type);
 extern void wr_transform_image(struct frame *f, struct image *img, int width, int height, double rotation);
 
-extern void wr_scroll_run (struct window *w, struct run *run);
-
 extern void wr_flush_display (struct frame *f);
 extern void
 wr_draw_fringe_bitmap (struct window *w,

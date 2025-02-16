@@ -50,17 +50,6 @@ pub trait FrameExtWrCommon {
         clear_rect: DeviceRect,
         row_rect: DeviceRect,
     );
-
-    fn scroll(
-        &mut self,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-        from_y: i32,
-        to_y: i32,
-        scroll_height: i32,
-    );
 }
 
 impl FrameExtWrCommon for FrameRef {
@@ -406,58 +395,5 @@ impl FrameExtWrCommon for FrameRef {
                 );
             }
         });
-    }
-
-    fn scroll(
-        &mut self,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-        from_y: i32,
-        to_y: i32,
-        scroll_height: i32,
-    ) {
-        let bottom_y = y + height;
-
-        let height = if to_y < from_y {
-            // Scrolling up.  Make sure we don't copy part of the mode
-            // line at the bottom.
-            if (from_y + scroll_height) > bottom_y {
-                bottom_y - from_y
-            } else {
-                scroll_height
-            }
-        } else {
-            // Scrolling down.  Make sure we don't copy over the mode line.
-            // at the bottom.
-            if (to_y + scroll_height) > bottom_y {
-                bottom_y - to_y
-            } else {
-                scroll_height
-            }
-        };
-
-        // flush all content to screen before coping screen pixels
-        self.wr().flush();
-
-        let diff_y = to_y - from_y;
-        let frame_size = self.logical_size();
-
-        if let Some(image_key) = self.wr().get_previous_frame() {
-            self.wr().display(|builder, space_and_clip, scale| {
-                let viewport = (x, to_y).by(width, height) / scale;
-                let new_frame_position =
-                    (0, 0 + diff_y).by(frame_size.width as i32, frame_size.height as i32) / scale;
-                builder.push_image(
-                    &CommonItemProperties::new(viewport, space_and_clip),
-                    new_frame_position,
-                    ImageRendering::Auto,
-                    AlphaType::PremultipliedAlpha,
-                    image_key,
-                    ColorF::WHITE,
-                );
-            });
-        }
     }
 }

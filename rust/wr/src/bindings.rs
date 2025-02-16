@@ -15,8 +15,8 @@ use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
 use webrender::api::{
-    FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontSize, FontTemplate,
-    NativeFontHandle,
+    AlphaType, ColorF, CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions,
+    FontKey, FontSize, FontTemplate, ImageRendering, NativeFontHandle,
 };
 
 use crate::font::FontInfoRef;
@@ -43,6 +43,14 @@ impl Into<DeviceRect> for &Emacs_Rectangle {
             .to_f32()
     }
 }
+
+// impl From<&Emacs_Rectangle> for DeviceRect {
+//     fn from(rect: &Emacs_Rectangle) -> Self {
+//         (rect.x, rect.y)
+//             .by(rect.width as i32, rect.height as i32)
+//             .to_f32()
+//     }
+// }
 
 #[repr(C)]
 pub struct WrFontKey(pub u32, pub u32);
@@ -165,23 +173,26 @@ pub extern "C" fn wr_clear_area(
     canvas.push_rect(color, (x, y).by(width, height), None);
 }
 
-/// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_scroll_run(w: *mut Window, run: *mut run) {
-    let window: WindowRef = w.into();
-    let mut frame = window.get_frame();
-
-    let (x, y, width, height) = window.area_box(GlyphRowArea::Any);
-
-    let from_y = unsafe { (*run).current_y + window.top_edge_y() };
-    let to_y = unsafe { (*run).desired_y + window.top_edge_y() };
-
-    let scroll_height = unsafe { (*run).height };
-
-    // Cursor off.  Will be switched on again in gui_update_window_end.
-    unsafe { gui_clear_cursor(w) };
-
-    frame.scroll(x, y, width, height, from_y, to_y, scroll_height);
+pub extern "C" fn wr_scroll_run(
+    canvas: &mut WrCanvas,
+    viewport: &Emacs_Rectangle,
+    new_frame_position: &Emacs_Rectangle,
+) {
+    let viewport: DeviceRect = viewport.into();
+    let new_frame_position: DeviceRect = new_frame_position.into();
+    if let Some(image_key) = canvas.get_previous_frame() {
+        canvas.display(|builder, space_and_clip, scale| {
+            builder.push_image(
+                &CommonItemProperties::new(viewport / scale, space_and_clip),
+                new_frame_position / scale,
+                ImageRendering::Auto,
+                AlphaType::PremultipliedAlpha,
+                image_key,
+                ColorF::WHITE,
+            );
+        });
+    }
 }
 
 #[no_mangle]

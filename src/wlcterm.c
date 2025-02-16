@@ -751,6 +751,58 @@ wlc_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
   /* pgtk_end_cr_clip (f); */
 }
 
+/* Scroll part of the display as described by RUN.  */
+
+static void
+wlc_scroll_run (struct window *w, struct run *run)
+{
+  struct frame *f = XFRAME (w->frame);
+  int x, y, width, height, from_y, to_y, bottom_y;
+
+  /* Get frame-relative bounding box of the text display area of W,
+     without mode lines.  Include in this box the left and right
+     fringe of W.  */
+  window_box (w, ANY_AREA, &x, &y, &width, &height);
+
+  from_y = WINDOW_TO_FRAME_PIXEL_Y (w, run->current_y);
+  to_y = WINDOW_TO_FRAME_PIXEL_Y (w, run->desired_y);
+  bottom_y = y + height;
+
+  if (to_y < from_y)
+    {
+      /* Scrolling up.  Make sure we don't copy part of the mode
+         line at the bottom.  */
+      if (from_y + run->height > bottom_y)
+	height = bottom_y - from_y;
+      else
+	height = run->height;
+    }
+  else
+    {
+      /* Scrolling down.  Make sure we don't copy over the mode line.
+         at the bottom.  */
+      if (to_y + run->height > bottom_y)
+	height = bottom_y - to_y;
+      else
+	height = run->height;
+    }
+
+  block_input ();
+
+  /* Cursor off.  Will be switched on again in x_update_window_end.  */
+  gui_clear_cursor (w);
+
+  {
+    int diff_y = to_y - from_y;
+    const Emacs_Rectangle viewport = {x, to_y, width, height};
+    const Emacs_Rectangle new_frame_position = {0, 0 + diff_y, FRAME_PIXEL_WIDTH(f), FRAME_PIXEL_HEIGHT(f)};
+
+    wr_scroll_run(FRAME_WR_DATA(f), &viewport, &new_frame_position);
+  }
+
+  unblock_input ();
+}
+
 /* Set up use of Wayland before we make the first connection.  */
 
 static struct redisplay_interface wlc_redisplay_interface = {
@@ -759,7 +811,7 @@ static struct redisplay_interface wlc_redisplay_interface = {
   gui_write_glyphs,
   gui_insert_glyphs,
   gui_clear_end_of_line,
-  wr_scroll_run,
+  wlc_scroll_run,
   wr_after_update_window_line,
   NULL, /* update_window_begin */
   NULL, /* update_window_end   */
