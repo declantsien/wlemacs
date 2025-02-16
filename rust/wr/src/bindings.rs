@@ -1,14 +1,13 @@
-use crate::capi::{Emacs_Color, Emacs_Rectangle};
+use crate::capi::{Emacs_Color, Emacs_Pixmap, Emacs_Rectangle};
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::{Canvas, CanvasRef, DeviceLength};
+use crate::output::{CanvasRef, DeviceLength, WrCanvas};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
     block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string,
-    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, Emacs_Pixmap, AREF,
-    FACE_FROM_ID_OR_NULL,
+    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, AREF, FACE_FROM_ID_OR_NULL,
 };
 use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphStringRef};
 use emacs_sys::font::FontRef;
@@ -51,7 +50,7 @@ pub struct WrFontKey(pub u32, pub u32);
 pub struct WrFontInstanceKey(pub u32, pub u32);
 
 #[no_mangle]
-pub extern "C" fn wr_flush(canvas: &mut Canvas) {
+pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
     canvas.flush();
 }
 
@@ -136,7 +135,7 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 
 #[no_mangle]
 pub extern "C" fn wr_push_rect(
-    canvas: &mut Canvas,
+    canvas: &mut WrCanvas,
     color_pixel: ::libc::c_ulong,
     bounds: &Emacs_Rectangle,
     clip_bounds: Option<&Emacs_Rectangle>,
@@ -146,7 +145,7 @@ pub extern "C" fn wr_push_rect(
 
 #[no_mangle]
 pub extern "C" fn wr_push_border(
-    canvas: &mut Canvas,
+    canvas: &mut WrCanvas,
     color_pixel: ::libc::c_ulong,
     bounds: &Emacs_Rectangle,
     clip_bounds: Option<&Emacs_Rectangle>,
@@ -156,7 +155,7 @@ pub extern "C" fn wr_push_border(
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(
-    canvas: &mut Canvas,
+    canvas: &mut WrCanvas,
     color: ::std::os::raw::c_ulong,
     x: i32,
     y: i32,
@@ -185,11 +184,9 @@ pub extern "C" fn wr_scroll_run(w: *mut Window, run: *mut run) {
     frame.scroll(x, y, width, height, from_y, to_y, scroll_height);
 }
 
-/// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_free_pixmap(f: *mut Frame, pixmap: Emacs_Pixmap) {
-    let frame: FrameRef = f.into();
-    frame.wr().delete_image_by_pixmap(pixmap);
+pub extern "C" fn wr_free_pixmap_impl(canvas: &mut WrCanvas, pixmap: Emacs_Pixmap) {
+    canvas.delete_image_by_pixmap(pixmap);
 
     // take back ownership and RAII will drop resource.
     let _ = unsafe { Box::from_raw(pixmap as *mut WrPixmap) };
@@ -295,7 +292,7 @@ pub extern "C" fn image_sync_to_pixmaps(_frame: FrameRef, _img: *mut image) {
 
 /// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_clear_under_internal_border_impl(f: *mut Frame, canvas: &mut Canvas) {
+pub extern "C" fn wr_clear_under_internal_border_impl(f: *mut Frame, canvas: &mut WrCanvas) {
     let mut f = FrameRef::new(f);
     let border = f.internal_border_width();
     let width = f.pixel_width;
@@ -367,7 +364,7 @@ pub extern "C" fn wr_parse_color(
 
 #[no_mangle]
 pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
-    let _ = unsafe { Box::from_raw(wr_data as *mut Canvas) };
+    let _ = unsafe { Box::from_raw(wr_data as *mut WrCanvas) };
 }
 
 /// cbindgen:ignore

@@ -149,6 +149,11 @@ wr_flush_display (struct frame *f)
   wr_flush(FRAME_WR_DATA (f));
 }
 
+void
+wr_free_pixmap (struct frame *f, Emacs_Pixmap pixmap) {
+  wr_free_pixmap_impl(FRAME_WR_DATA (f), pixmap);
+}
+
 extern void
 wr_free_frame_resources (struct frame *f) {
   wr_destroy (FRAME_WR_DATA (f));

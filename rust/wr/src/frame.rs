@@ -3,7 +3,7 @@ use crate::color::pixel_to_color;
 use crate::face::WrFace;
 use crate::glyph::{GlyphStringExtWr, WrGlyph};
 use crate::image::{ImageExt, ImageRef};
-use crate::output::{Canvas, CanvasRef, FringeBitmap};
+use crate::output::{CanvasRef, FringeBitmap, WrCanvas};
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;
@@ -71,11 +71,11 @@ impl FrameExtWrCommon for FrameRef {
     fn wr(&self) -> CanvasRef {
         if !self.is_wr_data_initialized() {
             log::debug!("gl renderer data empty");
-            let data = Box::new(Canvas::build(self.clone()));
-            self.output().wr_data = Box::into_raw(data) as *mut libc::c_void;
+            let data = Box::new(WrCanvas::build(self.clone()));
+            self.output().wr_data = Box::into_raw(data) as *mut emacs_sys::bindings::wr_canvas;
         }
 
-        CanvasRef::new(self.output().wr_data as *mut Canvas)
+        CanvasRef::new(self.output().wr_data as *mut WrCanvas)
     }
 
     fn fg_color_f(&self) -> ColorF {

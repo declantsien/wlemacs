@@ -1,3 +1,4 @@
+use crate::capi::Emacs_Pixmap;
 use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::gfx::context::GLContext;
@@ -5,7 +6,6 @@ use image::GenericImageView;
 use webrender::api::euclid::Length;
 
 use super::image::cache::ImageHash;
-use emacs_sys::bindings::Emacs_Pixmap;
 use emacs_sys::gfx::context::GLContextTrait;
 use emacs_sys::lisp::ExternalPtr;
 pub use emacs_sys::output::OutputRef;
@@ -39,7 +39,7 @@ pub struct FringeBitmap {
     pub height: u32,
 }
 
-pub struct Canvas {
+pub struct WrCanvas {
     fonts: FastHashMap<FontTemplate, FontKey>,
     fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
     font_instances: FastHashMap<
@@ -67,13 +67,13 @@ pub struct Canvas {
     frame: FrameRef,
 }
 
-impl fmt::Debug for Canvas {
+impl fmt::Debug for WrCanvas {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "gl renderer data")
     }
 }
 
-impl Canvas {
+impl WrCanvas {
     pub fn build(frame: FrameRef) -> Self {
         let display_handle = frame
             .display_handle()
@@ -602,7 +602,7 @@ impl Canvas {
     }
 }
 
-pub type CanvasRef = ExternalPtr<Canvas>;
+pub type CanvasRef = ExternalPtr<WrCanvas>;
 
 struct Notifier {}
 

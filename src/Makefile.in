@@ -728,7 +728,13 @@ wr_ffi_generated.h : FORCE
 	cd ../rust/wr/ && cbindgen --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
 
 ../rust/wr/src/capi.rs : FORCE
-	bindgen wrapper.h -o $@ --allowlist-type Emacs_Color -- $(ALL_CFLAGS)
+	bindgen wrapper.h \
+	--ctypes-prefix ::libc \
+	--allowlist-type Emacs_Color \
+	--allowlist-type Emacs_Rectangle \
+	--allowlist-type Emacs_Pixmap \
+	-o $@ \
+	-- $(ALL_CFLAGS)
 
 $(LIBWR_ARCHIVE) : FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" \
