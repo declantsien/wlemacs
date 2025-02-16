@@ -1,31 +1,27 @@
-use crate::capi::{Emacs_Color, Emacs_Pixmap, Emacs_Rectangle};
-use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
+use crate::capi::{Emacs_Color, Emacs_GC, Emacs_Pixmap, Emacs_Rectangle};
+use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex, pixel_to_color};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::{CanvasRef, DeviceLength, WrCanvas};
+use crate::output::{DeviceLength, WrCanvas};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
-    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string,
-    gui_clear_cursor, image, lookup_basic_face, run, unblock_input, AREF, FACE_FROM_ID_OR_NULL,
+    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string, image,
+    lookup_basic_face, unblock_input, AREF, FACE_FROM_ID_OR_NULL,
 };
-use emacs_sys::display_traits::{FaceRef, GlyphRowArea, GlyphStringRef};
+use emacs_sys::display_traits::{FaceRef, GlyphStringRef};
 use emacs_sys::font::FontRef;
 use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
 use webrender::api::{
     AlphaType, ColorF, CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions,
-    FontKey, FontSize, FontTemplate, ImageRendering, NativeFontHandle,
+    FontSize, FontTemplate, ImageRendering, NativeFontHandle,
 };
 
 use crate::font::FontInfoRef;
-use std::ffi::CString;
 use std::ptr;
-use webrender::api::units::{
-    DeviceIntLength, DeviceIntPoint, DeviceIntRect, DeviceIntSize, DevicePoint, DeviceRect,
-    DeviceSize,
-};
+use webrender::api::units::{DeviceIntPoint, DeviceRect};
 
 #[repr(C)]
 pub struct WrVecU8 {
@@ -73,30 +69,26 @@ pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
     frame.draw_glyph_string(s);
 }
 
-/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_draw_fringe_bitmap(
-    window: *mut Window,
-    p: *mut draw_fringe_bitmap_params,
+    canvas: &mut WrCanvas,
+    which: ::libc::c_int,
+    pos_x: ::libc::c_int,
+    pos_y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    bitmap_width: ::libc::c_int,
+    bitmap_height: ::libc::c_int,
+    bits: *mut ::libc::c_ushort,
+    gc: &Emacs_GC,
     clip_bounds: &Emacs_Rectangle,
 ) {
-    let window: WindowRef = window.into();
-    let mut frame: FrameRef = window.get_frame();
-
     let clip_bounds: DeviceRect =
         (clip_bounds.x, clip_bounds.y).by(clip_bounds.width as i32, clip_bounds.height as i32);
-
-    let which = unsafe { (*p).which };
-
-    let pos_x = unsafe { (*p).x };
-    let pos_y = unsafe { (*p).y };
 
     let pos = DeviceIntPoint::new(pos_x, pos_y).to_f32();
 
     let image_clip_rect: DeviceRect = {
-        let width = unsafe { (*p).wd };
-        let height = unsafe { (*p).h };
-
         if which > 0 {
             (pos_x, pos_y).by(width, height)
         } else {
@@ -104,41 +96,31 @@ pub extern "C" fn wr_draw_fringe_bitmap(
         }
     };
 
-    let clear_rect = if unsafe { (*p).bx >= 0 && !(*p).overlay_p() } {
-        unsafe { ((*p).bx, (*p).by).by((*p).nx, (*p).ny) }
-    } else {
-        DeviceRect::zero()
-    };
+    let image =
+        canvas.get_or_create_fringe_bitmap(which, bitmap_width as u32, bitmap_height as u32, bits);
 
-    let bitmap_width = 8 as u32;
-    let bitmap_height = (unsafe { (*p).h } + unsafe { (*p).dh }) as u32;
-    let bits = unsafe { (*p).bits };
+    // Fixed image_clip_rect
+    let image_clip_rect = image_clip_rect
+        .intersection(&clip_bounds)
+        .unwrap_or_else(|| DeviceRect::zero());
 
-    let image = frame
-        .wr()
-        .get_or_create_fringe_bitmap(which, bitmap_width, bitmap_height, bits);
-
-    let face = FaceRef::new(unsafe { (*p).face });
-
-    let background_color = face.bg_color_f();
-
-    let bitmap_color = if unsafe { (*p).cursor_p() } {
-        frame.cursor_color_f()
-    } else if unsafe { (*p).overlay_p() } {
-        background_color
-    } else {
-        face.fg_color_f()
-    };
-
-    frame.draw_fringe_bitmap(
-        pos,
-        image,
-        bitmap_color,
-        background_color,
-        image_clip_rect,
-        clear_rect,
-        clip_bounds,
-    );
+    canvas.display(|builder, space_and_clip, scale| {
+        if let Some(image) = &image {
+            let image_display_rect = DeviceRect::new(
+                pos,
+                webrender::api::units::DevicePoint::new(image.width as f32, image.height as f32),
+            ) / scale;
+            // render image
+            builder.push_image(
+                &CommonItemProperties::new(image_clip_rect / scale, space_and_clip),
+                image_display_rect,
+                ImageRendering::Auto,
+                AlphaType::Alpha,
+                image.image_key,
+                pixel_to_color(gc.foreground),
+            );
+        }
+    });
 }
 
 #[no_mangle]

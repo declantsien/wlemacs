@@ -714,41 +714,45 @@ wlc_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
   struct face *face = p->face;
 
   const Emacs_Rectangle clip_bounds;
+  /* Must clip because of partially visible lines.  */
   wr_row_clip_bounds (w, row, ANY_AREA, &clip_bounds);
-  wr_draw_fringe_bitmap(w, p, &clip_bounds);
-  /* /\* Must clip because of partially visible lines.  *\/ */
-  /* pgtk_clip_to_row (w, row, ANY_AREA, cr); */
 
-  /* if (p->bx >= 0 && !p->overlay_p) */
-  /*   fill_background_by_face (f, face, p->bx, p->by, p->nx, p->ny); */
+  if (p->bx >= 0 && !p->overlay_p) {
+    const Emacs_Rectangle bounds = {p->bx, p->by, p->nx, p->ny};
+    wr_fill_background_by_face (f, face, &bounds, &clip_bounds);
+  }
 
-  /* if (p->which */
-  /*     && p->which < max_fringe_bmp */
-  /*     && p->which < max_used_fringe_bitmap) */
-  /*   { */
-  /*     Emacs_GC gcv; */
+  if (p->which
+      /* && p->which < max_fringe_bmp */
+      /* && p->which < max_used_fringe_bitmap */
+      )
+    {
+      Emacs_GC gcv;
+      int bitmap_width = 8;
+      int bitmap_height = p->h + p->dh;
 
-  /*     if (!fringe_bmp[p->which]) */
-  /* 	{ */
-  /* 	  /\* This fringe bitmap is known to fringe.c, but lacks the */
-  /* 	     cairo_pattern_t pattern which shadows that bitmap.  This */
-  /* 	     is typical to define-fringe-bitmap being called when the */
-  /* 	     selected frame was not a GUI frame, for example, when */
-  /* 	     packages that define fringe bitmaps are loaded by a */
-  /* 	     daemon Emacs.  Create the missing pattern now.  *\/ */
-  /* 	  gui_define_fringe_bitmap (f, p->which); */
-  /* 	} */
+      /* if (!fringe_bmp[p->which]) */
+      /* 	{ */
+      /* 	  /\* This fringe bitmap is known to fringe.c, but lacks the */
+      /* 	     cairo_pattern_t pattern which shadows that bitmap.  This */
+      /* 	     is typical to define-fringe-bitmap being called when the */
+      /* 	     selected frame was not a GUI frame, for example, when */
+      /* 	     packages that define fringe bitmaps are loaded by a */
+      /* 	     daemon Emacs.  Create the missing pattern now.  *\/ */
+      /* 	  gui_define_fringe_bitmap (f, p->which); */
+      /* 	} */
 
-  /*     gcv.foreground = (p->cursor_p */
-  /* 			? (p->overlay_p ? face->background */
-  /* 			   : FRAME_X_OUTPUT (f)->cursor_color) */
-  /* 			: face->foreground); */
-  /*     gcv.background = face->background; */
-  /*     pgtk_cr_draw_image (f, &gcv, fringe_bmp[p->which], 0, p->dh, */
-  /* 			  p->wd, p->h, p->x, p->y, p->overlay_p); */
-  /*   } */
+      gcv.foreground = (p->cursor_p
+			? (p->overlay_p ? face->background
+			   : FRAME_X_OUTPUT (f)->cursor_color)
+			: face->foreground);
+      gcv.background = face->background;
 
-  /* pgtk_end_cr_clip (f); */
+      wr_draw_fringe_bitmap(FRAME_WR_DATA(f), p->which, p->x, p->y, p->wd, p->h,
+			    bitmap_width, bitmap_height, p->bits,
+			    &gcv, &clip_bounds);
+    }
+
 }
 
 /* Scroll part of the display as described by RUN.  */

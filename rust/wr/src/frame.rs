@@ -39,17 +39,6 @@ pub trait FrameExtWrCommon {
     );
 
     fn draw_composite_glyph_string_foreground(&mut self, s: GlyphStringRef);
-
-    fn draw_fringe_bitmap(
-        &mut self,
-        pos: DevicePoint,
-        image: Option<FringeBitmap>,
-        bitmap_color: ColorF,
-        background_color: ColorF,
-        image_clip_rect: DeviceRect,
-        clear_rect: DeviceRect,
-        row_rect: DeviceRect,
-    );
 }
 
 impl FrameExtWrCommon for FrameRef {
@@ -352,48 +341,5 @@ impl FrameExtWrCommon for FrameRef {
                 }
             });
         }
-    }
-
-    fn draw_fringe_bitmap(
-        &mut self,
-        pos: DevicePoint,
-        image: Option<FringeBitmap>,
-        bitmap_color: ColorF,
-        background_color: ColorF,
-        image_clip_rect: DeviceRect,
-        clear_rect: DeviceRect,
-        row_rect: DeviceRect,
-    ) {
-        // Fixed clear_rect
-        let clear_rect = clear_rect
-            .union(&image_clip_rect)
-            .intersection(&row_rect)
-            .unwrap_or_else(|| DeviceRect::zero());
-
-        // Fixed image_clip_rect
-        let image_clip_rect = image_clip_rect
-            .intersection(&row_rect)
-            .unwrap_or_else(|| DeviceRect::zero());
-
-        // clear area
-        self.wr().draw_rectangle(background_color, clear_rect);
-
-        self.wr().display(|builder, space_and_clip, scale| {
-            if let Some(image) = &image {
-                let image_display_rect = DeviceRect::new(
-                    pos,
-                    DevicePoint::new(image.width as f32, image.height as f32),
-                ) / scale;
-                // render image
-                builder.push_image(
-                    &CommonItemProperties::new(image_clip_rect / scale, space_and_clip),
-                    image_display_rect,
-                    ImageRendering::Auto,
-                    AlphaType::Alpha,
-                    image.image_key,
-                    bitmap_color,
-                );
-            }
-        });
     }
 }

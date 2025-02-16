@@ -24,10 +24,6 @@ extern void wr_transform_image(struct frame *f, struct image *img, int width, in
 
 extern void wr_flush_display (struct frame *f);
 extern void
-wr_draw_fringe_bitmap (struct window *w,
-		       struct draw_fringe_bitmap_params *p,
-		       const Emacs_Rectangle * clip_bounds);
-extern void
 wr_draw_glyph_string (struct glyph_string *s);
 extern void wr_clear_frame_area (struct frame *, int, int, int, int);
 extern void
@@ -56,6 +52,10 @@ extern void
 wr_free_frame_resources (struct frame *f);
 extern void
 wr_fit_context (struct frame *f);
+extern void
+wr_fill_background_by_face (struct frame *f, struct face *face,
+			    const Emacs_Rectangle * bounds,
+			    const Emacs_Rectangle *clip_bounds);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);
