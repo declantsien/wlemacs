@@ -61,7 +61,7 @@ wr_after_update_window_line (struct window *w,
 void
 wr_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 {
-  wr_clear_area (f, x, y, width, height);
+  wr_clear_area (FRAME_WR_DATA (f), f->background_pixel, x, y, width, height);
 }
 
 void
@@ -73,7 +73,7 @@ wr_clear_frame (struct frame *f)
   mark_window_cursors_off (XWINDOW (FRAME_ROOT_WINDOW (f)));
 
   block_input ();
-  wr_clear_area (f, 0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+  wr_clear_area (FRAME_WR_DATA (f), f->background_pixel, 0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
   unblock_input ();
 }
 

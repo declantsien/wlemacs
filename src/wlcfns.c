@@ -723,7 +723,7 @@ DEFUN ("xw-color-defined-p", Fxw_color_defined_p, Sxw_color_defined_p, 1, 2, 0,
 
   CHECK_STRING (color);
 
-  if (wr_defined_color (f, SSDATA (color), &col, false, false))
+  if (wlc_defined_color (f, SSDATA (color), &col, false, false))
     return Qt;
   else
     return Qnil;
@@ -739,7 +739,7 @@ DEFUN ("xw-color-values", Fxw_color_values, Sxw_color_values, 1, 2, 0,
 
   CHECK_STRING (color);
 
-  if (wr_defined_color (f, SSDATA (color), &col, false, false))
+  if (wlc_defined_color (f, SSDATA (color), &col, false, false))
     return list3i (col.red, col.green, col.blue);
   else
     return Qnil;

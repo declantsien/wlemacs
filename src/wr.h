@@ -32,7 +32,6 @@ wr_draw_fringe_bitmap (struct window *w,
 		       const wr_rect * clip_bounds);
 extern void
 wr_draw_glyph_string (struct glyph_string *s);
-extern void wr_clear_area (struct frame *, int, int, int, int);
 extern void wr_clear_frame_area (struct frame *, int, int, int, int);
 extern void
 wr_draw_window_cursor (struct window *w, struct glyph_row *glyph_row, int x,

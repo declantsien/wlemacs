@@ -475,7 +475,7 @@ wlc_decode_color (struct frame *f, Lisp_Object color_name, int mono_color)
 
   /* wr_defined_color is responsible for coping with failures
      by looking for a near-miss.  */
-  if (wr_defined_color (f, SSDATA (color_name), &cdef, true, 0))
+  if (wlc_defined_color (f, SSDATA (color_name), &cdef, true, 0))
     return cdef.pixel;
 
   signal_error ("Undefined color", color_name);

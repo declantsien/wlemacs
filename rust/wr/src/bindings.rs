@@ -165,14 +165,19 @@ pub extern "C" fn wr_push_border(
     wr.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
-/// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_clear_area(f: *mut Frame, x: i32, y: i32, width: i32, height: i32) {
-    let frame: FrameRef = f.into();
-
-    let color = frame.background_pixel;
-
-    frame.wr().push_rect(color, (x, y).by(width, height), None);
+pub extern "C" fn wr_clear_area(
+    wr_data: *mut libc::c_void,
+    color: ::std::os::raw::c_ulong,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+) {
+    // FIXME wr_data here shouldn't be null
+    if let Some(mut wr) = WrDataRef::from_ptr(wr_data) {
+        wr.push_rect(color, (x, y).by(width, height), None);
+    };
 }
 
 /// cbindgen:ignore
@@ -327,11 +332,33 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     unsafe { block_input() };
 
     if face.is_null() {
-        wr_clear_area(f.as_mut(), 0, 0, border, height);
-        wr_clear_area(f.as_mut(), 0, margin, width, border);
-        wr_clear_area(f.as_mut(), 0, width - border, border, height);
         wr_clear_area(
-            f.as_mut(),
+            f.wr().as_mut() as *mut libc::c_void,
+            f.background_pixel,
+            0,
+            0,
+            border,
+            height,
+        );
+        wr_clear_area(
+            f.wr().as_mut() as *mut libc::c_void,
+            f.background_pixel,
+            0,
+            margin,
+            width,
+            border,
+        );
+        wr_clear_area(
+            f.wr().as_mut() as *mut libc::c_void,
+            f.background_pixel,
+            0,
+            width - border,
+            border,
+            height,
+        );
+        wr_clear_area(
+            f.wr().as_mut() as *mut libc::c_void,
+            f.background_pixel,
             0,
             height - bottom_margin - border,
             width,
