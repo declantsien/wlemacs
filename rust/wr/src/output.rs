@@ -39,7 +39,7 @@ pub struct FringeBitmap {
     pub height: u32,
 }
 
-pub struct WrData {
+pub struct Canvas {
     fonts: FastHashMap<FontTemplate, FontKey>,
     fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
     font_instances: FastHashMap<
@@ -67,13 +67,13 @@ pub struct WrData {
     frame: FrameRef,
 }
 
-impl fmt::Debug for WrData {
+impl fmt::Debug for Canvas {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "gl renderer data")
     }
 }
 
-impl WrData {
+impl Canvas {
     pub fn build(frame: FrameRef) -> Self {
         let display_handle = frame
             .display_handle()
@@ -602,7 +602,7 @@ impl WrData {
     }
 }
 
-pub type WrDataRef = ExternalPtr<WrData>;
+pub type CanvasRef = ExternalPtr<Canvas>;
 
 struct Notifier {}
 

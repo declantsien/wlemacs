@@ -6,10 +6,9 @@ typedef struct wlc_output output;
 
 #include TERM_HEADER
 #include "wr_ffi.h"
-typedef void wr_data;
 
 // defined in rust
-extern wr_data *wr_init (void);
+extern wr_canvas *wr_init (void);
 
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
@@ -29,7 +28,7 @@ extern void wr_flush_display (struct frame *f);
 extern void
 wr_draw_fringe_bitmap (struct window *w,
 		       struct draw_fringe_bitmap_params *p,
-		       const wr_rect * clip_bounds);
+		       const Emacs_Rectangle * clip_bounds);
 extern void
 wr_draw_glyph_string (struct glyph_string *s);
 extern void wr_clear_frame_area (struct frame *, int, int, int, int);
@@ -53,6 +52,8 @@ extern void wr_prepara_font (struct frame *f, struct font *font);
 
 extern void
 wr_clear_under_internal_border (struct frame *f);
+extern void
+wr_clear_under_internal_border_impl (struct frame *f, wr_canvas * wr);
 extern void
 wr_free_frame_resources (struct frame *f);
 extern void

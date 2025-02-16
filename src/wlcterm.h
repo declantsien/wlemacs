@@ -243,7 +243,7 @@ extern struct wlc_display_info *x_display_list;
 struct wlc_output
 {
   /* Inner perporty in Rust */
-  wr_data* wr_data;
+  struct wr_canvas* wr_data;
 
   bool enable_compositor;
   enum sync_mode sync_mode;

@@ -12,6 +12,7 @@ pub mod color;
 pub mod image;
 pub mod output;
 
+/// cbindgen:ignore
 mod capi;
 mod face;
 pub mod font;

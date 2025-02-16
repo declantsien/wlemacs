@@ -70,6 +70,9 @@ wr_clear_frame (struct frame *f)
   if (!FRAME_DEFAULT_FACE (f))
     return;
 
+  if (!FRAME_WR_DATA (f))
+    return;
+
   mark_window_cursors_off (XWINDOW (FRAME_ROOT_WINDOW (f)));
 
   block_input ();
@@ -87,7 +90,7 @@ wr_draw_vertical_window_border (struct window *w, int x, int y0, int y1)
 
   face = FACE_FROM_ID_OR_NULL (f, VERTICAL_BORDER_FACE_ID);
 
-  const wr_rect bounds = {x, y0, 1, y1 - y0};
+  const Emacs_Rectangle bounds = {x, y0, 1, y1 - y0};
   wr_push_rect(FRAME_WR_DATA (f), face->foreground, &bounds, NULL);
 }
 
@@ -111,31 +114,31 @@ wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
 			      ? face_last->foreground
 			      : FRAME_FOREGROUND_PIXEL (f));
 
-  static wr_rect bounds;
+  static Emacs_Rectangle bounds;
 
   if (y1 - y0 > x1 - x0 && x1 - x0 > 2)
     /* Vertical.  */
     {
-      bounds = (wr_rect){x0, y0, 1, y1 - y0};
+      bounds = (Emacs_Rectangle){x0, y0, 1, y1 - y0};
       wr_push_rect(FRAME_WR_DATA (f), color_first, &bounds, NULL);
-      bounds = (wr_rect){x0 + 1, y0, x1 - x0 - 2, y1 - y0};
+      bounds = (Emacs_Rectangle){x0 + 1, y0, x1 - x0 - 2, y1 - y0};
       wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
-      bounds = (wr_rect){x1 - 1, y0, 1, y1 - y0};
+      bounds = (Emacs_Rectangle){x1 - 1, y0, 1, y1 - y0};
       wr_push_rect(FRAME_WR_DATA (f), color_last, &bounds, NULL);
     }
   else if (x1 - x0 > y1 - y0 && y1 - y0 > 3)
     /* Horizontal.  */
     {
-      bounds = (wr_rect){x0, y0, x1 - x0, 1};
+      bounds = (Emacs_Rectangle){x0, y0, x1 - x0, 1};
       wr_push_rect(FRAME_WR_DATA (f), color_first, &bounds, NULL);
-      bounds = (wr_rect){x0, y0 + 1, x1 - x0, y1 - y0 - 2};
+      bounds = (Emacs_Rectangle){x0, y0 + 1, x1 - x0, y1 - y0 - 2};
       wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
-      bounds = (wr_rect){x0, y1 - 1, x1 - x0, 1};
+      bounds = (Emacs_Rectangle){x0, y1 - 1, x1 - x0, 1};
       wr_push_rect(FRAME_WR_DATA (f), color_last, &bounds, NULL);
     }
   else
     {
-      bounds = (wr_rect){x0, y0, x1 - x0, y1 - y0};
+      bounds = (Emacs_Rectangle){x0, y0, x1 - x0, y1 - y0};
       wr_push_rect(FRAME_WR_DATA (f), color, &bounds, NULL);
     }
 }
@@ -150,6 +153,11 @@ extern void
 wr_free_frame_resources (struct frame *f) {
   wr_destroy (FRAME_WR_DATA (f));
   FRAME_WR_DATA (f) = NULL;
+}
+
+void
+wr_clear_under_internal_border (struct frame *f) {
+  wr_clear_under_internal_border_impl(f, FRAME_WR_DATA (f));
 }
 
 void

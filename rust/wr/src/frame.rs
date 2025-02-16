@@ -3,7 +3,7 @@ use crate::color::pixel_to_color;
 use crate::face::WrFace;
 use crate::glyph::{GlyphStringExtWr, WrGlyph};
 use crate::image::{ImageExt, ImageRef};
-use crate::output::{FringeBitmap, WrData, WrDataRef};
+use crate::output::{Canvas, CanvasRef, FringeBitmap};
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;
@@ -13,7 +13,7 @@ use webrender::api::*;
 
 pub trait FrameExtWrCommon {
     fn is_wr_data_initialized(&self) -> bool;
-    fn wr(&self) -> WrDataRef;
+    fn wr(&self) -> CanvasRef;
     fn fg_color_f(&self) -> ColorF;
     fn cursor_color_f(&self) -> ColorF;
     fn cursor_foreground_color_f(&self) -> ColorF;
@@ -68,14 +68,14 @@ impl FrameExtWrCommon for FrameRef {
         !self.output().wr_data.is_null()
     }
 
-    fn wr(&self) -> WrDataRef {
+    fn wr(&self) -> CanvasRef {
         if !self.is_wr_data_initialized() {
             log::debug!("gl renderer data empty");
-            let data = Box::new(WrData::build(self.clone()));
+            let data = Box::new(Canvas::build(self.clone()));
             self.output().wr_data = Box::into_raw(data) as *mut libc::c_void;
         }
 
-        WrDataRef::new(self.output().wr_data as *mut WrData)
+        CanvasRef::new(self.output().wr_data as *mut Canvas)
     }
 
     fn fg_color_f(&self) -> ColorF {

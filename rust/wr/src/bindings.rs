@@ -1,9 +1,9 @@
-use crate::capi::Emacs_Color;
+use crate::capi::{Emacs_Color, Emacs_Rectangle};
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex};
 use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
-use crate::output::{DeviceLength, WrData, WrDataRef};
+use crate::output::{Canvas, CanvasRef, DeviceLength};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
     block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string,
@@ -37,15 +37,7 @@ pub struct WrVecU8 {
     capacity: usize,
 }
 
-#[repr(C)]
-pub struct WrRect {
-    pub x: i32,
-    pub y: i32,
-    pub width: u32,
-    pub height: u32,
-}
-
-impl Into<DeviceRect> for &WrRect {
+impl Into<DeviceRect> for &Emacs_Rectangle {
     fn into(self) -> DeviceRect {
         (self.x, self.y)
             .by(self.width as i32, self.height as i32)
@@ -59,9 +51,8 @@ pub struct WrFontKey(pub u32, pub u32);
 pub struct WrFontInstanceKey(pub u32, pub u32);
 
 #[no_mangle]
-pub extern "C" fn wr_flush(wr_data: *mut libc::c_void) {
-    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.flush();
+pub extern "C" fn wr_flush(canvas: &mut Canvas) {
+    canvas.flush();
 }
 
 /// cbindgen:ignore
@@ -80,7 +71,7 @@ pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
 pub extern "C" fn wr_draw_fringe_bitmap(
     window: *mut Window,
     p: *mut draw_fringe_bitmap_params,
-    clip_bounds: &WrRect,
+    clip_bounds: &Emacs_Rectangle,
 ) {
     let window: WindowRef = window.into();
     let mut frame: FrameRef = window.get_frame();
@@ -145,39 +136,34 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 
 #[no_mangle]
 pub extern "C" fn wr_push_rect(
-    wr_data: *mut libc::c_void,
+    canvas: &mut Canvas,
     color_pixel: ::libc::c_ulong,
-    bounds: &WrRect,
-    clip_bounds: Option<&WrRect>,
+    bounds: &Emacs_Rectangle,
+    clip_bounds: Option<&Emacs_Rectangle>,
 ) {
-    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.push_rect(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
+    canvas.push_rect(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
 #[no_mangle]
 pub extern "C" fn wr_push_border(
-    wr_data: *mut libc::c_void,
+    canvas: &mut Canvas,
     color_pixel: ::libc::c_ulong,
-    bounds: &WrRect,
-    clip_bounds: Option<&WrRect>,
+    bounds: &Emacs_Rectangle,
+    clip_bounds: Option<&Emacs_Rectangle>,
 ) {
-    let mut wr = WrDataRef::from_ptr(wr_data).unwrap();
-    wr.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
+    canvas.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(
-    wr_data: *mut libc::c_void,
+    canvas: &mut Canvas,
     color: ::std::os::raw::c_ulong,
     x: i32,
     y: i32,
     width: i32,
     height: i32,
 ) {
-    // FIXME wr_data here shouldn't be null
-    if let Some(mut wr) = WrDataRef::from_ptr(wr_data) {
-        wr.push_rect(color, (x, y).by(width, height), None);
-    };
+    canvas.push_rect(color, (x, y).by(width, height), None);
 }
 
 /// cbindgen:ignore
@@ -309,7 +295,7 @@ pub extern "C" fn image_sync_to_pixmaps(_frame: FrameRef, _img: *mut image) {
 
 /// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
+pub extern "C" fn wr_clear_under_internal_border_impl(f: *mut Frame, canvas: &mut Canvas) {
     let mut f = FrameRef::new(f);
     let border = f.internal_border_width();
     let width = f.pixel_width;
@@ -332,24 +318,10 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
     unsafe { block_input() };
 
     if face.is_null() {
+        wr_clear_area(canvas, f.background_pixel, 0, 0, border, height);
+        wr_clear_area(canvas, f.background_pixel, 0, margin, width, border);
         wr_clear_area(
-            f.wr().as_mut() as *mut libc::c_void,
-            f.background_pixel,
-            0,
-            0,
-            border,
-            height,
-        );
-        wr_clear_area(
-            f.wr().as_mut() as *mut libc::c_void,
-            f.background_pixel,
-            0,
-            margin,
-            width,
-            border,
-        );
-        wr_clear_area(
-            f.wr().as_mut() as *mut libc::c_void,
+            canvas,
             f.background_pixel,
             0,
             width - border,
@@ -357,7 +329,7 @@ pub extern "C" fn wr_clear_under_internal_border(f: *mut Frame) {
             height,
         );
         wr_clear_area(
-            f.wr().as_mut() as *mut libc::c_void,
+            canvas,
             f.background_pixel,
             0,
             height - bottom_margin - border,
@@ -395,7 +367,7 @@ pub extern "C" fn wr_parse_color(
 
 #[no_mangle]
 pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
-    let _ = unsafe { Box::from_raw(wr_data as *mut WrData) };
+    let _ = unsafe { Box::from_raw(wr_data as *mut Canvas) };
 }
 
 /// cbindgen:ignore

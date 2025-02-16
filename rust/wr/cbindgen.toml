@@ -184,7 +184,7 @@ include = ["MyOrphanStruct", "MyGreatTypeRename"]
 
 # A list of items to not include in the generated bindings
 # default: []
-exclude = ["Emacs_Color"]
+exclude = []
 
 # A prefix to add before the name of every item
 # default: no prefix is added
@@ -228,6 +228,7 @@ renaming_overrides_prefixing = true
 # Table of name conversions to apply to item names (lhs becomes rhs)
 [export.rename]
 "WrRect" = "wr_rect"
+"Canvas" = "wr_canvas"
 "my_function" = "BetterFunctionName"
 
 # Table of things to prepend to the body of any struct, union, or enum that has the
