@@ -334,6 +334,23 @@ struct wlc_output
   /* True if this frame's alpha value is the same for both the active
      and inactive states.  */
   bool_bf alpha_identical_p : 1;
+
+  /* Relief GCs, colors etc.  */
+  struct relief
+  {
+    Emacs_GC gc;
+    unsigned long pixel;
+  }
+  black_relief, white_relief;
+
+  /* The background for which the above relief GCs were set up.
+     They are changed only when a different background is involved.  */
+  unsigned long relief_background;
+
+  /* Whether or not a relief background has been computed for this
+     frame.  */
+  bool_bf relief_background_valid_p : 1;
+
 };
 
 extern struct wlc_display_info *check_wlc_display_info (Lisp_Object);

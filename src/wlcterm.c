@@ -974,6 +974,13 @@ wlc_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
   wr_dp_push_rect(FRAME_WR_DATA (f), &rect, &rect, respect_alpha_background, false, false, color);
 }
 
+static void
+wlc_draw_rectangle (struct frame *f, unsigned long color, int x, int y,
+		     int width, int height, bool respect_alpha_background)
+{
+  wr_draw_rect(FRAME_WR_DATA (f), color, x, y, width, height, respect_alpha_background);
+}
+
 
 /* Fill rectangle X, Y, W, H with background color of glyph string
    S.  */
@@ -1060,8 +1067,8 @@ wlc_draw_stretch_glyph_string (struct glyph_string *s)
 	  else
 	    color = s->face->background;
 
-	  wr_begin_define_clip (FRAME_WR_DATA (s->f));
-	  wr_set_glyph_string_clipping (s);
+	  /* wr_begin_define_clip (FRAME_WR_DATA (s->f)); */
+	  /* wr_set_glyph_string_clipping (s); */
 
 	  if (s->face->stipple)
 	    fill_background (s, x, y, w, h);
@@ -1069,7 +1076,7 @@ wlc_draw_stretch_glyph_string (struct glyph_string *s)
 	    wlc_fill_rectangle (s->f, color, x, y, w, h,
 				 true);
 
-	  wr_end_define_clip (FRAME_WR_DATA (s->f));
+	  /* wr_end_define_clip (FRAME_WR_DATA (s->f)); */
 	}
     }
   else if (!s->background_filled_p)
@@ -1093,6 +1100,24 @@ wlc_draw_stretch_glyph_string (struct glyph_string *s)
   s->background_filled_p = true;
 }
 
+/* Draw a box on frame F inside the rectangle given by LEFT_X, TOP_Y,
+   RIGHT_X, and BOTTOM_Y.  WIDTH is the thickness of the lines to
+   draw, it must be >= 0.  LEFT_P means draw a line on the
+   left side of the rectangle.  RIGHT_P means draw a line
+   on the right side of the rectangle.  CLIP_RECT is the clipping
+   rectangle to use when drawing.  */
+
+static void
+wlc_draw_box_rect (struct glyph_string *s, int left_x,
+		   int top_y, int right_x, int bottom_y, int hwidth,
+		   int vwidth, bool left_p, bool right_p,
+		   Emacs_Rectangle * clip_rect)
+{
+  wr_draw_box_rect(FRAME_WR_DATA (s->f), s->gc->foreground, left_x,
+		   top_y, right_x, bottom_y, hwidth,
+		   vwidth, left_p, right_p, clip_rect);
+}
+
 /* Draw the background of glyph_string S.  If S->background_filled_p
    is non-zero don't draw it.  FORCE_P non-zero means draw the
    background even if it wouldn't be drawn normally.  This is used
@@ -1104,31 +1129,321 @@ wlc_draw_glyph_string_background (struct glyph_string *s, bool force_p)
   /* Nothing to do if background has already been drawn or if it
      shouldn't be drawn in the first place.  */
   if (!s->background_filled_p)
-    {
-      int box_line_width = max (s->face->box_horizontal_line_width, 0);
+    return;
 
-      if (s->stippled_p)
+  int box_line_width = max (s->face->box_horizontal_line_width, 0);
+
+  if (s->stippled_p)
+    {
+      /* Fill background with a stipple pattern.  */
+      fill_background (s, s->x, s->y + box_line_width,
+		       s->background_width,
+		       s->height - 2 * box_line_width);
+      s->background_filled_p = true;
+    }
+  else if (FONT_HEIGHT (s->font) < s->height - 2 * box_line_width
+	   /* When xdisp.c ignores FONT_HEIGHT, we cannot trust
+	      font dimensions, since the actual glyphs might be
+	      much smaller.  So in that case we always clear the
+	      rectangle with background color.  */
+	   || FONT_TOO_HIGH (s->font)
+	   || s->font_not_found_p
+	   || s->extends_to_end_of_line_p || force_p)
+    {
+      wlc_clear_glyph_string_rect (s, s->x, s->y + box_line_width,
+				   s->background_width,
+				   s->height - 2 * box_line_width);
+      s->background_filled_p = true;
+    }
+
+}
+
+/* Draw the foreground of glyph string S.  */
+static void
+wlc_draw_glyph_string_foreground (struct glyph_string *s)
+{
+  int i, x;
+
+  /* If first glyph of S has a left box line, start drawing the text
+     of S to the right of that box line.  */
+  if (s->face->box != FACE_NO_BOX && s->first_glyph->left_box_line_p)
+    x = s->x + max (s->face->box_vertical_line_width, 0);
+  else
+    x = s->x;
+
+  /* Draw characters of S as rectangles if S's font could not be
+     loaded.  */
+  if (s->font_not_found_p)
+    {
+      for (i = 0; i < s->nchars; ++i)
 	{
-	  /* Fill background with a stipple pattern.  */
-	  fill_background (s, s->x, s->y + box_line_width,
-			   s->background_width,
-			   s->height - 2 * box_line_width);
-	  s->background_filled_p = true;
+	  struct glyph *g = s->first_glyph + i;
+	  wlc_draw_rectangle (s->f,
+			       s->face->foreground, x, s->y,
+			       g->pixel_width - 1, s->height - 1,
+			       false);
+	  x += g->pixel_width;
 	}
-      else if (FONT_HEIGHT (s->font) < s->height - 2 * box_line_width
-	       /* When xdisp.c ignores FONT_HEIGHT, we cannot trust
-	          font dimensions, since the actual glyphs might be
-	          much smaller.  So in that case we always clear the
-	          rectangle with background color.  */
-	       || FONT_TOO_HIGH (s->font)
-	       || s->font_not_found_p
-	       || s->extends_to_end_of_line_p || force_p)
+    }
+  else
+    {
+      struct font *font = s->font;
+      int boff = font->baseline_offset;
+      int y;
+
+      if (font->vertical_centering)
+	boff = VCENTER_BASELINE_OFFSET (font, s->f) - boff;
+
+      y = s->ybase - boff;
+      // TODO
+      /* if (s->for_overlaps || (s->background_filled_p && s->hl != DRAW_CURSOR)) */
+      /* 	font->driver->draw (s, 0, s->nchars, x, y, false); */
+      /* else */
+      /* 	font->driver->draw (s, 0, s->nchars, x, y, true); */
+      /* if (s->face->overstrike) */
+      /* 	font->driver->draw (s, 0, s->nchars, x + 1, y, false); */
+    }
+}
+
+/* On frame F, translate pixel colors to RGB values for the NCOLORS
+   colors in COLORS.  On W32, we no longer try to map colors to
+   a palette.  */
+void
+wlc_query_colors (struct frame *f, Emacs_Color * colors, int ncolors)
+{
+  int i;
+
+  for (i = 0; i < ncolors; i++)
+    {
+      unsigned long pixel = colors[i].pixel;
+      /* Convert to a 16 bit value in range 0 - 0xffff. */
+#define GetRValue(p) (((p) >> 16) & 0xff)
+#define GetGValue(p) (((p) >> 8) & 0xff)
+#define GetBValue(p) (((p) >> 0) & 0xff)
+      colors[i].red = GetRValue (pixel) * 257;
+      colors[i].green = GetGValue (pixel) * 257;
+      colors[i].blue = GetBValue (pixel) * 257;
+    }
+}
+
+void
+wlc_query_color (struct frame *f, Emacs_Color * color)
+{
+  wlc_query_colors (f, color, 1);
+}
+
+
+/* Brightness beyond which a color won't have its highlight brightness
+   boosted.
+
+   Nominally, highlight colors for `3d' faces are calculated by
+   brightening an object's color by a constant scale factor, but this
+   doesn't yield good results for dark colors, so for colors who's
+   brightness is less than this value (on a scale of 0-65535) have an
+   use an additional additive factor.
+
+   The value here is set so that the default menu-bar/mode-line color
+   (grey75) will not have its highlights changed at all.  */
+#define HIGHLIGHT_COLOR_DARK_BOOST_LIMIT 48000
+
+/* Compute a color which is lighter or darker than *PIXEL by FACTOR or
+   DELTA.  Try a color with RGB values multiplied by FACTOR first.  If
+   this produces the same color as PIXEL, try a color where all RGB
+   values have DELTA added.  Return the computed color in *PIXEL.  F
+   is the frame to act on.  */
+
+static void
+wlc_compute_lighter_color (struct frame *f, unsigned long *pixel,
+			    double factor, int delta)
+{
+  Emacs_Color color, new;
+  long bright;
+
+  /* Get RGB color values.  */
+  color.pixel = *pixel;
+  wlc_query_color (f, &color);
+
+  /* Change RGB values by specified FACTOR.  Avoid overflow!  */
+  eassert (factor >= 0);
+  new.red = min (0xffff, factor * color.red);
+  new.green = min (0xffff, factor * color.green);
+  new.blue = min (0xffff, factor * color.blue);
+
+  /* Calculate brightness of COLOR.  */
+  bright = (2 * color.red + 3 * color.green + color.blue) / 6;
+
+  /* We only boost colors that are darker than
+     HIGHLIGHT_COLOR_DARK_BOOST_LIMIT.  */
+  if (bright < HIGHLIGHT_COLOR_DARK_BOOST_LIMIT)
+    /* Make an additive adjustment to NEW, because it's dark enough so
+       that scaling by FACTOR alone isn't enough.  */
+    {
+      /* How far below the limit this color is (0 - 1, 1 being darker).  */
+      double dimness = 1 - (double) bright / HIGHLIGHT_COLOR_DARK_BOOST_LIMIT;
+      /* The additive adjustment.  */
+      int min_delta = delta * dimness * factor / 2;
+
+      if (factor < 1)
 	{
-	  wlc_clear_glyph_string_rect (s, s->x, s->y + box_line_width,
-					s->background_width,
-					s->height - 2 * box_line_width);
-	  s->background_filled_p = true;
+	  new.red = max (0, new.red - min_delta);
+	  new.green = max (0, new.green - min_delta);
+	  new.blue = max (0, new.blue - min_delta);
 	}
+      else
+	{
+	  new.red = min (0xffff, min_delta + new.red);
+	  new.green = min (0xffff, min_delta + new.green);
+	  new.blue = min (0xffff, min_delta + new.blue);
+	}
+    }
+
+  new.pixel = (new.red >> 8 << 16
+	       | new.green >> 8 << 8
+	       | new.blue >> 8);
+
+  if (new.pixel == *pixel)
+    {
+      /* If we end up with the same color as before, try adding
+	 delta to the RGB values.  */
+      new.red = min (0xffff, delta + color.red);
+      new.green = min (0xffff, delta + color.green);
+      new.blue = min (0xffff, delta + color.blue);
+      new.pixel = (new.red >> 8 << 16
+		   | new.green >> 8 << 8
+		   | new.blue >> 8);
+    }
+
+  *pixel = new.pixel;
+}
+
+static void
+wlc_setup_relief_color (struct frame *f, struct relief *relief, double factor,
+			 int delta, unsigned long default_pixel)
+{
+  Emacs_GC gc;
+  struct wlc_output *di = FRAME_OUTPUT_DATA (f);
+  unsigned long pixel;
+  unsigned long background = di->relief_background;
+
+  /* Allocate new color.  */
+  gc.foreground = default_pixel;
+  pixel = background;
+  wlc_compute_lighter_color (f, &pixel, factor, delta);
+  gc.foreground = relief->pixel = pixel;
+
+  relief->gc = gc;
+}
+
+/* Set up colors for the relief lines around glyph string S.  */
+static void
+wlc_setup_relief_colors (struct glyph_string *s)
+{
+  struct wlc_output *di = FRAME_X_OUTPUT (s->f);
+  unsigned long color;
+
+  if (s->face->use_box_color_for_shadows_p)
+    color = s->face->box_color;
+  else if (s->first_glyph->type == IMAGE_GLYPH
+	   && s->img->pixmap
+	   && !IMAGE_BACKGROUND_TRANSPARENT (s->img, s->f, 0))
+    color = IMAGE_BACKGROUND (s->img, s->f, 0);
+  else
+    {
+      /* Get the background color of the face.  */
+      color = s->gc->background;
+    }
+
+  if (!di->relief_background_valid_p
+      || di->relief_background != color)
+    {
+      di->relief_background_valid_p = true;
+      di->relief_background = color;
+      wlc_setup_relief_color (s->f, &di->white_relief, 1.2, 0x8000,
+			       WHITE_PIX_DEFAULT (s->f));
+      wlc_setup_relief_color (s->f, &di->black_relief, 0.6, 0x4000,
+			       BLACK_PIX_DEFAULT (s->f));
+    }
+}
+
+/* Draw a relief on frame F inside the rectangle given by LEFT_X,
+   TOP_Y, RIGHT_X, and BOTTOM_Y.  WIDTH is the thickness of the relief
+   to draw, it must be >= 0.  RAISED_P means draw a raised
+   relief.  LEFT_P means draw a relief on the left side of
+   the rectangle.  RIGHT_P means draw a relief on the right
+   side of the rectangle.  CLIP_RECT is the clipping rectangle to use
+   when drawing.  */
+
+static void
+wlc_draw_relief_rect (struct frame *f,
+		       int left_x, int top_y, int right_x, int bottom_y,
+		       int hwidth, int vwidth, bool raised_p, bool top_p,
+		       bool bot_p, bool left_p, bool right_p,
+		       XRectangle *clip_rect)
+{
+  unsigned long top_left_color, bottom_right_color;
+
+  if (raised_p)
+    {
+      top_left_color = FRAME_X_OUTPUT (f)->white_relief.gc.foreground;
+      bottom_right_color = FRAME_X_OUTPUT (f)->black_relief.gc.foreground;
+    }
+  else
+    {
+      top_left_color = FRAME_X_OUTPUT (f)->black_relief.gc.foreground;
+      bottom_right_color = FRAME_X_OUTPUT (f)->white_relief.gc.foreground;
+    }
+
+  wr_draw_relief_box(FRAME_WR_DATA (f), top_left_color, bottom_right_color,
+		     left_x, top_y, right_x, bottom_y,
+		     hwidth, vwidth,
+		     top_p, bot_p, left_p, right_p, clip_rect);
+
+}
+
+/* Draw a box around glyph string S.  */
+
+static void
+wlc_draw_glyph_string_box (struct glyph_string *s)
+{
+  int hwidth, vwidth, left_x, right_x, top_y, bottom_y, last_x;
+  bool raised_p, left_p, right_p;
+  struct glyph *last_glyph;
+  Emacs_Rectangle clip_rect;
+
+  last_x = ((s->row->full_width_p && !s->w->pseudo_window_p)
+	    ? WINDOW_RIGHT_EDGE_X (s->w) : window_box_right (s->w, s->area));
+
+  /* The glyph that may have a right box line.  */
+  last_glyph = (s->cmp || s->img
+		? s->first_glyph : s->first_glyph + s->nchars - 1);
+
+  vwidth = eabs (s->face->box_vertical_line_width);
+  hwidth = eabs (s->face->box_horizontal_line_width);
+  raised_p = s->face->box == FACE_RAISED_BOX;
+  left_x = s->x;
+  right_x = (s->row->full_width_p && s->extends_to_end_of_line_p
+	     ? last_x - 1 : min (last_x, s->x + s->background_width) - 1);
+  top_y = s->y;
+  bottom_y = top_y + s->height - 1;
+
+  left_p = (s->first_glyph->left_box_line_p
+	    || (s->hl == DRAW_MOUSE_FACE
+		&& (s->prev == NULL || s->prev->hl != s->hl)));
+  right_p = (last_glyph->right_box_line_p
+	     || (s->hl == DRAW_MOUSE_FACE
+		 && (s->next == NULL || s->next->hl != s->hl)));
+
+  get_glyph_string_clip_rect (s, &clip_rect);
+
+  if (s->face->box == FACE_SIMPLE_BOX)
+    wlc_draw_box_rect (s, left_x, top_y, right_x, bottom_y, hwidth,
+			vwidth, left_p, right_p, &clip_rect);
+  else
+    {
+      wlc_setup_relief_colors (s);
+      wlc_draw_relief_rect (s->f, left_x, top_y, right_x, bottom_y, hwidth,
+			     vwidth, raised_p, true, true, left_p, right_p,
+			     &clip_rect);
     }
 }
 
@@ -1154,9 +1469,8 @@ wlc_draw_glyph_string (struct glyph_string *s)
 	   width += next->width, next = next->next)
 	if (next->first_glyph->type != IMAGE_GLYPH)
 	  {
-	    // clipping is defined again in wlc_draw_stretch_glyph_string
-	    /* wr_begin_define_clip (FRAME_WR_DATA (f)); */
-	    /* wr_set_glyph_string_clipping (next); */
+	    wr_begin_define_clip (FRAME_WR_DATA (s->f));
+	    wr_set_glyph_string_clipping (next);
 	    wlc_set_glyph_string_gc (next);
 
 	    if (next->first_glyph->type == STRETCH_GLYPH)
@@ -1164,7 +1478,7 @@ wlc_draw_glyph_string (struct glyph_string *s)
 	    else
 	      wlc_draw_glyph_string_background (next, true);
 	    next->num_clips = 0;
-	    /* wr_end_define_clip (FRAME_WR_DATA (f)); */
+	    wr_end_define_clip (FRAME_WR_DATA (s->f));
 	  }
     }
 
@@ -1173,75 +1487,83 @@ wlc_draw_glyph_string (struct glyph_string *s)
   wlc_set_glyph_string_gc(s);
   /* wr_draw_glyph_string(s); */
 
-  /* cairo_t *cr = pgtk_begin_cr_clip (s->f); */
+  /* Draw relief (if any) in advance for char/composition so that the
+     glyph string can be drawn over it.  */
+  if (!s->for_overlaps
+      && s->face->box != FACE_NO_BOX
+      && (s->first_glyph->type == CHAR_GLYPH
+	  || s->first_glyph->type == COMPOSITE_GLYPH))
 
-  /* /\* Draw relief (if any) in advance for char/composition so that the */
-  /*    glyph string can be drawn over it.  *\/ */
-  /* if (!s->for_overlaps */
-  /*     && s->face->box != FACE_NO_BOX */
-  /*     && (s->first_glyph->type == CHAR_GLYPH */
-  /* 	  || s->first_glyph->type == COMPOSITE_GLYPH)) */
+    {
+      wr_begin_define_clip (FRAME_WR_DATA (s->f));
+      wr_set_glyph_string_clipping (s);
+      wlc_draw_glyph_string_background (s, true);
+      wlc_draw_glyph_string_box (s);
+      relief_drawn_p = true;
+      wr_end_define_clip (FRAME_WR_DATA (s->f));
 
-  /*   { */
-  /*     pgtk_set_glyph_string_clipping (s, cr); */
-  /*     pgtk_draw_glyph_string_background (s, true); */
-  /*     pgtk_draw_glyph_string_box (s); */
-  /*     pgtk_set_glyph_string_clipping (s, cr); */
-  /*     relief_drawn_p = true; */
-  /*   } */
-  /* else if (!s->clip_head	/\* draw_glyphs didn't specify a clip mask. *\/ */
-  /* 	   && !s->clip_tail */
-  /* 	   && ((s->prev && s->prev->hl != s->hl && s->left_overhang) */
-  /* 	       || (s->next && s->next->hl != s->hl && s->right_overhang))) */
-  /*   /\* We must clip just this glyph.  left_overhang part has already */
-  /*      drawn when s->prev was drawn, and right_overhang part will be */
-  /*      drawn later when s->next is drawn. *\/ */
-  /*   pgtk_set_glyph_string_clipping_exactly (s, s, cr); */
-  /* else */
-  /*   pgtk_set_glyph_string_clipping (s, cr); */
+      wr_begin_define_clip (FRAME_WR_DATA (s->f));
+      wr_set_glyph_string_clipping (s);
+    }
+  else if (!s->clip_head	/* draw_glyphs didn't specify a clip mask. */
+	   && !s->clip_tail
+	   && ((s->prev && s->prev->hl != s->hl && s->left_overhang)
+	       || (s->next && s->next->hl != s->hl && s->right_overhang)))
+    {
+      /* We must clip just this glyph.  left_overhang part has already
+	 drawn when s->prev was drawn, and right_overhang part will be
+	 drawn later when s->next is drawn. */
+      wr_begin_define_clip (FRAME_WR_DATA (s->f));
+      wr_set_glyph_string_clipping_exactly (s, s);
+    }
+  else
+    {
+      wr_begin_define_clip (FRAME_WR_DATA (s->f));
+      wr_set_glyph_string_clipping (s);
+    }
 
-  /* switch (s->first_glyph->type) */
-  /*   { */
-  /*   case IMAGE_GLYPH: */
-  /*     pgtk_draw_image_glyph_string (s); */
-  /*     break; */
+  switch (s->first_glyph->type)
+    {
+    case IMAGE_GLYPH:
+      /* pgtk_draw_image_glyph_string (s); */
+      break;
 
-  /*   case XWIDGET_GLYPH: */
-  /*     x_draw_xwidget_glyph_string (s); */
-  /*     break; */
+    case XWIDGET_GLYPH:
+      /* x_draw_xwidget_glyph_string (s); */
+      break;
 
-  /*   case STRETCH_GLYPH: */
-  /*     pgtk_draw_stretch_glyph_string (s); */
-  /*     break; */
+    case STRETCH_GLYPH:
+      /* pgtk_draw_stretch_glyph_string (s); */
+      break;
 
-  /*   case CHAR_GLYPH: */
-  /*     if (s->for_overlaps) */
-  /* 	s->background_filled_p = true; */
-  /*     else */
-  /* 	pgtk_draw_glyph_string_background (s, false); */
-  /*     pgtk_draw_glyph_string_foreground (s); */
-  /*     break; */
+    case CHAR_GLYPH:
+      if (s->for_overlaps)
+	s->background_filled_p = true;
+      else
+	wlc_draw_glyph_string_background (s, false);
+      wlc_draw_glyph_string_foreground (s);
+      break;
 
-  /*   case COMPOSITE_GLYPH: */
-  /*     if (s->for_overlaps || (s->cmp_from > 0 */
-  /* 			      && !s->first_glyph->u.cmp.automatic)) */
-  /* 	s->background_filled_p = true; */
-  /*     else */
-  /* 	pgtk_draw_glyph_string_background (s, true); */
-  /*     pgtk_draw_composite_glyph_string_foreground (s); */
-  /*     break; */
+    case COMPOSITE_GLYPH:
+      if (s->for_overlaps || (s->cmp_from > 0
+			      && !s->first_glyph->u.cmp.automatic))
+	s->background_filled_p = true;
+      /* else */
+      /* 	pgtk_draw_glyph_string_background (s, true); */
+      /* pgtk_draw_composite_glyph_string_foreground (s); */
+      break;
 
-  /*   case GLYPHLESS_GLYPH: */
-  /*     if (s->for_overlaps) */
-  /* 	s->background_filled_p = true; */
-  /*     else */
-  /* 	pgtk_draw_glyph_string_background (s, true); */
-  /*     pgtk_draw_glyphless_glyph_string_foreground (s); */
-  /*     break; */
+    case GLYPHLESS_GLYPH:
+      if (s->for_overlaps)
+	s->background_filled_p = true;
+      /* else */
+      /* 	pgtk_draw_glyph_string_background (s, true); */
+      /* pgtk_draw_glyphless_glyph_string_foreground (s); */
+      break;
 
-  /*   default: */
-  /*     emacs_abort (); */
-  /*   } */
+    default:
+      emacs_abort ();
+    }
 
   /* if (!s->for_overlaps) */
   /*   { */
@@ -1433,14 +1755,14 @@ wlc_draw_glyph_string (struct glyph_string *s)
   /* 	} */
   /*   } */
 
-  /* /\* TODO: figure out in which cases the stipple is actually drawn on */
-  /*    PGTK.  *\/ */
-  /* if (!s->row->stipple_p) */
-  /*   s->row->stipple_p = s->face->stipple; */
+  /* TODO: figure out in which cases the stipple is actually drawn on
+     PGTK.  */
+  if (!s->row->stipple_p)
+    s->row->stipple_p = s->face->stipple;
 
-  /* /\* Reset clipping.  *\/ */
-  /* pgtk_end_cr_clip (s->f); */
-  /* s->num_clips = 0; */
+  /* Reset clipping.  */
+  wr_end_define_clip (FRAME_WR_DATA (s->f));
+  s->num_clips = 0;
 }
 
 /* Set up use of Wayland before we make the first connection.  */
@@ -1680,27 +2002,6 @@ wlc_delete_terminal (struct terminal *terminal)
   //TODO more to cleanup
 
   unblock_input ();
-}
-
-/* On frame F, translate pixel colors to RGB values for the NCOLORS
-   colors in COLORS.  On W32, we no longer try to map colors to
-   a palette.  */
-void
-wlc_query_colors (struct frame *f, Emacs_Color * colors, int ncolors)
-{
-  int i;
-
-  for (i = 0; i < ncolors; i++)
-    {
-      unsigned long pixel = colors[i].pixel;
-      /* Convert to a 16 bit value in range 0 - 0xffff. */
-#define GetRValue(p) (((p) >> 16) & 0xff)
-#define GetGValue(p) (((p) >> 8) & 0xff)
-#define GetBValue(p) (((p) >> 0) & 0xff)
-      colors[i].red = GetRValue (pixel) * 257;
-      colors[i].green = GetGValue (pixel) * 257;
-      colors[i].blue = GetBValue (pixel) * 257;
-    }
 }
 
 /* Decide if color named COLOR_NAME is valid for use on frame F.  If

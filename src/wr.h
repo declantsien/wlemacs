@@ -59,6 +59,12 @@ wr_fill_background_by_face (struct frame *f, struct face *face,
 			    const Emacs_Rectangle *clip_bounds);
 extern void
 wr_set_glyph_string_clipping (struct glyph_string *s);
+extern void
+wr_set_glyph_string_clipping (struct glyph_string *s);
+
+extern void
+wr_set_glyph_string_clipping_exactly (struct glyph_string *src,
+				      struct glyph_string *dst);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);

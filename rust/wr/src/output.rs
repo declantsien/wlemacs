@@ -1,3 +1,4 @@
+use crate::bindings::AntialiasBorder;
 use crate::capi::Emacs_Pixmap;
 use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
@@ -675,6 +676,50 @@ impl WrCanvas {
         });
     }
 
+    pub fn dp_push_border(
+        &mut self,
+        rect: DeviceRect,
+        clip: DeviceRect,
+        is_backface_visible: bool,
+        do_aa: AntialiasBorder,
+        widths: DeviceIntSideOffsets,
+        top: BorderSide,
+        right: BorderSide,
+        bottom: BorderSide,
+        left: BorderSide,
+        radius: BorderRadius,
+    ) {
+        // debug_assert!(unsafe { is_in_main_thread() });
+
+        let border_details = BorderDetails::Normal(NormalBorder {
+            left,
+            right,
+            top,
+            bottom,
+            radius,
+            do_aa: do_aa == AntialiasBorder::Yes,
+        });
+
+        self.display(|dl_builder, space_and_clip, scale_factor| {
+            let prim_info = CommonItemProperties {
+                clip_rect: clip / scale_factor,
+                clip_chain_id: space_and_clip.clip_chain_id,
+                spatial_id: space_and_clip.spatial_id,
+                flags: prim_flags(
+                    is_backface_visible,
+                    /* prefer_compositor_surface */ false,
+                ),
+            };
+
+            dl_builder.push_border(
+                &prim_info,
+                rect / scale_factor,
+                device_int_to_layout_side_offsets(widths, scale_factor),
+                border_details,
+            );
+        });
+    }
+
     pub fn deinit(mut self) {
         self.ensure_context_is_current();
         self.renderer.deinit();
@@ -793,4 +838,16 @@ fn common_item_properties_for_rect(
             /* prefer_compositor_surface */ false,
         ),
     }
+}
+
+fn device_int_to_layout_side_offsets(
+    offsets: DeviceIntSideOffsets,
+    scale_factor: LayoutToDeviceScale,
+) -> LayoutSideOffsets {
+    LayoutSideOffsets::new(
+        offsets.top as f32 / scale_factor.get(),
+        offsets.right as f32 / scale_factor.get(),
+        offsets.bottom as f32 / scale_factor.get(),
+        offsets.left as f32 / scale_factor.get(),
+    )
 }

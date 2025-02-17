@@ -15,14 +15,22 @@ use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
 use webrender::api::{
-    AlphaType, ClipChainId, ClipId, ColorF, CommonItemProperties, FontInstanceOptions,
-    FontInstancePlatformOptions, FontSize, FontTemplate, ImageRendering, NativeFontHandle,
-    PipelineId,
+    AlphaType, BorderRadius, BorderSide, BorderStyle, ClipChainId, ClipId, ColorF,
+    CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions, FontSize, FontTemplate,
+    ImageRendering, NativeFontHandle, PipelineId,
 };
 
 use crate::font::FontInfoRef;
 use std::{mem, ptr};
-use webrender::api::units::{DeviceIntPoint, DeviceRect};
+use webrender::api::units::{DeviceIntPoint, DeviceIntSideOffsets, DeviceRect};
+
+/// Whether a border should be antialiased.
+#[repr(C)]
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum AntialiasBorder {
+    No = 0,
+    Yes,
+}
 
 #[repr(C)]
 pub struct WrVecU8 {
@@ -208,6 +216,142 @@ pub extern "C" fn wr_define_clip_rect(canvas: &mut WrCanvas, rect: &Emacs_Rectan
 }
 
 #[no_mangle]
+pub extern "C" fn wr_draw_box_rect(
+    canvas: &mut WrCanvas,
+    color: ::libc::c_ulong,
+    left_x: ::libc::c_int,
+    top_y: ::libc::c_int,
+    right_x: ::libc::c_int,
+    bottom_y: ::libc::c_int,
+    hwidth: ::libc::c_int,
+    vwidth: ::libc::c_int,
+    left_p: bool,
+    right_p: bool,
+    clip_rect: &Emacs_Rectangle,
+) {
+    let color = pixel_to_color(color);
+    let clip_rect: DeviceRect = clip_rect.into();
+    let rect = (left_x, top_y).to(right_x, bottom_y);
+    let border_widths = DeviceIntSideOffsets::new(hwidth, vwidth, hwidth, vwidth);
+
+    let default_border_side: BorderSide = BorderSide {
+        color,
+        style: BorderStyle::Solid,
+    };
+    let none_border_side: BorderSide = BorderSide {
+        color,
+        style: BorderStyle::None,
+    };
+
+    let left = if left_p {
+        default_border_side
+    } else {
+        none_border_side
+    };
+    let right = if right_p {
+        default_border_side
+    } else {
+        none_border_side
+    };
+
+    canvas.dp_push_border(
+        rect,
+        clip_rect,
+        true,
+        AntialiasBorder::Yes,
+        border_widths,
+        default_border_side,
+        right,
+        default_border_side,
+        left,
+        BorderRadius::default(),
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wr_draw_relief_box(
+    canvas: &mut WrCanvas,
+    top_left_color: ::libc::c_ulong,
+    bottom_right_color: ::libc::c_ulong,
+    left_x: ::libc::c_int,
+    top_y: ::libc::c_int,
+    right_x: ::libc::c_int,
+    bottom_y: ::libc::c_int,
+    hwidth: ::libc::c_int,
+    vwidth: ::libc::c_int,
+    top_p: bool,
+    bot_p: bool,
+    left_p: bool,
+    right_p: bool,
+    clip_rect: &Emacs_Rectangle,
+) {
+    let top_left_color = pixel_to_color(top_left_color);
+    let bottom_right_color = pixel_to_color(bottom_right_color);
+    let clip_rect: DeviceRect = clip_rect.into();
+    let rect = (left_x, top_y).to(right_x, bottom_y);
+    let border_widths = DeviceIntSideOffsets::new(hwidth, vwidth, hwidth, vwidth);
+
+    let top = if top_p {
+        BorderSide {
+            color: top_left_color,
+            style: BorderStyle::Solid,
+        }
+    } else {
+        BorderSide {
+            color: top_left_color,
+            style: BorderStyle::None,
+        }
+    };
+    let bottom = if bot_p {
+        BorderSide {
+            color: bottom_right_color,
+            style: BorderStyle::Solid,
+        }
+    } else {
+        BorderSide {
+            color: bottom_right_color,
+            style: BorderStyle::None,
+        }
+    };
+
+    let left = if left_p {
+        BorderSide {
+            color: top_left_color,
+            style: BorderStyle::Solid,
+        }
+    } else {
+        BorderSide {
+            color: top_left_color,
+            style: BorderStyle::None,
+        }
+    };
+    let right = if right_p {
+        BorderSide {
+            color: bottom_right_color,
+            style: BorderStyle::Solid,
+        }
+    } else {
+        BorderSide {
+            color: bottom_right_color,
+            style: BorderStyle::None,
+        }
+    };
+
+    canvas.dp_push_border(
+        rect,
+        clip_rect,
+        true,
+        AntialiasBorder::Yes,
+        border_widths,
+        top,
+        right,
+        bottom,
+        left,
+        BorderRadius::default(),
+    )
+}
+
+#[no_mangle]
 pub extern "C" fn wr_push_border(
     canvas: &mut WrCanvas,
     color_pixel: ::libc::c_ulong,
@@ -215,6 +359,39 @@ pub extern "C" fn wr_push_border(
     clip_bounds: Option<&Emacs_Rectangle>,
 ) {
     canvas.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
+}
+
+#[no_mangle]
+pub extern "C" fn wr_draw_rect(
+    canvas: &mut WrCanvas,
+    color_pixel: ::libc::c_ulong,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    respect_alpha_background: bool,
+) {
+    let color = pixel_to_color(color_pixel);
+    let rect = (x, y).by(width, height);
+    let border_widths = DeviceIntSideOffsets::new_all_same(1);
+
+    let default_border_side: BorderSide = BorderSide {
+        color,
+        style: BorderStyle::Solid,
+    };
+
+    canvas.dp_push_border(
+        rect,
+        rect,
+        respect_alpha_background,
+        AntialiasBorder::Yes,
+        border_widths,
+        default_border_side,
+        default_border_side,
+        default_border_side,
+        default_border_side,
+        BorderRadius::default(),
+    )
 }
 
 #[no_mangle]

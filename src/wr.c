@@ -184,6 +184,25 @@ wr_set_glyph_string_clipping (struct glyph_string *s)
   s->num_clips = n;
 }
 
+
+/* Set SRC's clipping for output of glyph string DST.  This is called
+   when we are drawing DST's left_overhang or right_overhang only in
+   the area of SRC.  */
+
+void
+wr_set_glyph_string_clipping_exactly (struct glyph_string *src,
+					struct glyph_string *dst)
+{
+  dst->clip[0].x = src->x;
+  dst->clip[0].y = src->y;
+  dst->clip[0].width = src->width;
+  dst->clip[0].height = src->height;
+  dst->num_clips = 1;
+
+  Emacs_Rectangle clip = {src->x, src->y, src->width, src->height};
+  wr_define_clip_rect (FRAME_WR_DATA (src->f), &clip);
+}
+
 void
 syms_of_webrender (void)
 {
