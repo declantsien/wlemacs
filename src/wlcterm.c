@@ -807,6 +807,495 @@ wlc_scroll_run (struct window *w, struct run *run)
   unblock_input ();
 }
 
+
+/* Set S->gc to a suitable GC for drawing glyph string S in cursor
+   face.  */
+
+static void
+wlc_set_cursor_gc (struct glyph_string *s)
+{
+  if (s->font == FRAME_FONT (s->f)
+      && s->face->background == FRAME_BACKGROUND_PIXEL (s->f)
+      && s->face->foreground == FRAME_FOREGROUND_PIXEL (s->f)
+      && !s->cmp)
+    s->gc = &FRAME_OUTPUT_DATA (s->f)->cursor_gc;
+  else
+    {
+      /* Cursor on non-default face: must merge.  */
+      Emacs_GC xgcv;
+
+      xgcv.background = FRAME_OUTPUT_DATA (s->f)->cursor_pixel;
+      xgcv.foreground = s->face->background;
+
+      /* If the glyph would be invisible, try a different foreground.  */
+      if (xgcv.foreground == xgcv.background)
+	xgcv.foreground = s->face->foreground;
+      if (xgcv.foreground == xgcv.background)
+	xgcv.foreground = FRAME_OUTPUT_DATA (s->f)->cursor_foreground_pixel;
+      if (xgcv.foreground == xgcv.background)
+	xgcv.foreground = s->face->foreground;
+
+      /* Make sure the cursor is distinct from text in this face.  */
+      if (xgcv.background == s->face->background
+	  && xgcv.foreground == s->face->foreground)
+	{
+	  xgcv.background = s->face->foreground;
+	  xgcv.foreground = s->face->background;
+	}
+
+      FRAME_DISPLAY_INFO (s->f)->scratch_cursor_gc = &xgcv;
+      s->gc = FRAME_DISPLAY_INFO (s->f)->scratch_cursor_gc;
+    }
+}
+
+
+/* Set up S->gc of glyph string S for drawing text in mouse face.  */
+
+static void
+wlc_set_mouse_face_gc (struct glyph_string *s)
+{
+  if (s->font == s->face->font)
+    s->gc = s->face->gc;
+  else
+    {
+      /* Otherwise construct scratch_cursor_gc with values from FACE
+	 except for FONT.  */
+      Emacs_GC xgcv;
+
+      xgcv.background = s->face->background;
+      xgcv.foreground = s->face->foreground;
+      FRAME_DISPLAY_INFO (s->f)->scratch_cursor_gc = &xgcv;
+      s->gc = FRAME_DISPLAY_INFO (s->f)->scratch_cursor_gc;
+
+    }
+  eassert (s->gc != 0);
+}
+
+
+/* Set S->gc of glyph string S to a GC suitable for drawing a mode line.
+   Faces to use in the mode line have already been computed when the
+   matrix was built, so there isn't much to do, here.  */
+
+static void
+wlc_set_mode_line_face_gc (struct glyph_string *s)
+{
+  s->gc = s->face->gc;
+}
+
+
+/* Set S->gc of glyph string S for drawing that glyph string.  Set
+   S->stippled_p to a non-zero value if the face of S has a stipple
+   pattern.  */
+
+static void
+wlc_set_glyph_string_gc (struct glyph_string *s)
+{
+  prepare_face_for_display (s->f, s->face);
+
+  if (s->hl == DRAW_NORMAL_TEXT)
+    {
+      s->gc = s->face->gc;
+      s->stippled_p = s->face->stipple != 0;
+    }
+  else if (s->hl == DRAW_INVERSE_VIDEO)
+    {
+      wlc_set_mode_line_face_gc (s);
+      s->stippled_p = s->face->stipple != 0;
+    }
+  else if (s->hl == DRAW_CURSOR)
+    {
+      wlc_set_cursor_gc (s);
+      s->stippled_p = false;
+    }
+  else if (s->hl == DRAW_MOUSE_FACE)
+    {
+      wlc_set_mouse_face_gc (s);
+      s->stippled_p = s->face->stipple != 0;
+    }
+  else if (s->hl == DRAW_IMAGE_RAISED
+	   || s->hl == DRAW_IMAGE_SUNKEN)
+    {
+      s->gc = s->face->gc;
+      s->stippled_p = s->face->stipple != 0;
+    }
+  else
+    emacs_abort ();
+
+  /* GC must have been set.  */
+  eassert (s->gc != 0);
+}
+
+/* Draw glyph string S.  */
+
+static void
+wlc_draw_glyph_string (struct glyph_string *s)
+{
+
+  bool relief_drawn_p = false;
+
+  /* If S draws into the background of its successors, draw the
+     background of the successors first so that S can draw into it.
+     This makes S->next use XDrawString instead of XDrawImageString.  */
+  if (s->next && s->right_overhang && !s->for_overlaps)
+    {
+      int width;
+      struct glyph_string *next;
+
+      for (width = 0, next = s->next;
+	   next && width < s->right_overhang;
+	   width += next->width, next = next->next)
+	if (next->first_glyph->type != IMAGE_GLYPH)
+	  {
+	    wlc_set_glyph_string_gc (next);
+	    /* x_set_glyph_string_clipping (next); */
+	    /* if (next->first_glyph->type == STRETCH_GLYPH) */
+	    /*   x_draw_stretch_glyph_string (next); */
+	    /* else */
+	    /*   x_draw_glyph_string_background (next, true); */
+	    next->num_clips = 0;
+	  }
+    }
+
+  /* Set up S->gc, set clipping and draw S.  */
+  wlc_set_glyph_string_gc(s);
+  wr_draw_glyph_string(s);
+
+  /* /\* Draw relief (if any) in advance for char/composition so that the */
+  /*    glyph string can be drawn over it.  *\/ */
+  /* if (!s->for_overlaps */
+  /*     && s->face->box != FACE_NO_BOX */
+  /*     && (s->first_glyph->type == CHAR_GLYPH */
+  /* 	  || s->first_glyph->type == COMPOSITE_GLYPH)) */
+
+  /*   { */
+  /*     x_set_glyph_string_clipping (s); */
+  /*     x_draw_glyph_string_background (s, true); */
+  /*     x_draw_glyph_string_box (s); */
+  /*     x_set_glyph_string_clipping (s); */
+  /*     relief_drawn_p = true; */
+  /*   } */
+  /* else if (!s->clip_head /\* draw_glyphs didn't specify a clip mask. *\/ */
+  /* 	   && !s->clip_tail */
+  /* 	   && ((s->prev && s->prev->hl != s->hl && s->left_overhang) */
+  /* 	       || (s->next && s->next->hl != s->hl && s->right_overhang))) */
+  /*   /\* We must clip just this glyph.  left_overhang part has already */
+  /*      drawn when s->prev was drawn, and right_overhang part will be */
+  /*      drawn later when s->next is drawn. *\/ */
+  /*   x_set_glyph_string_clipping_exactly (s, s); */
+  /* else */
+  /*   x_set_glyph_string_clipping (s); */
+
+  /* switch (s->first_glyph->type) */
+  /*   { */
+  /*   case IMAGE_GLYPH: */
+  /*     x_draw_image_glyph_string (s); */
+  /*     break; */
+
+  /*   case XWIDGET_GLYPH: */
+  /*     x_draw_xwidget_glyph_string (s); */
+  /*     break; */
+
+  /*   case STRETCH_GLYPH: */
+  /*     x_draw_stretch_glyph_string (s); */
+  /*     break; */
+
+  /*   case CHAR_GLYPH: */
+  /*     if (s->for_overlaps) */
+  /* 	s->background_filled_p = true; */
+  /*     else */
+  /* 	x_draw_glyph_string_background (s, false); */
+  /*     x_draw_glyph_string_foreground (s); */
+  /*     break; */
+
+  /*   case COMPOSITE_GLYPH: */
+  /*     if (s->for_overlaps || (s->cmp_from > 0 */
+  /* 			      && ! s->first_glyph->u.cmp.automatic)) */
+  /* 	s->background_filled_p = true; */
+  /*     else */
+  /* 	x_draw_glyph_string_background (s, true); */
+  /*     x_draw_composite_glyph_string_foreground (s); */
+  /*     break; */
+
+  /*   case GLYPHLESS_GLYPH: */
+  /*     if (s->for_overlaps) */
+  /* 	s->background_filled_p = true; */
+  /*     else */
+  /* 	x_draw_glyph_string_background (s, true); */
+  /*     x_draw_glyphless_glyph_string_foreground (s); */
+  /*     break; */
+
+  /*   default: */
+  /*     emacs_abort (); */
+  /*   } */
+
+  /* if (!s->for_overlaps) */
+  /*   { */
+  /*     int area_x, area_y, area_width, area_height; */
+  /*     int area_max_x, decoration_width; */
+
+  /*     /\* Prevent the underline from overwriting surrounding areas */
+  /* 	 and the fringe.  *\/ */
+  /*     window_box (s->w, s->area, &area_x, &area_y, */
+  /* 		  &area_width, &area_height); */
+  /*     area_max_x = area_x + area_width - 1; */
+
+  /*     decoration_width = s->width; */
+  /*     if (!s->row->mode_line_p */
+  /* 	  && !s->row->tab_line_p */
+  /* 	  && area_max_x < (s->x + decoration_width - 1)) */
+  /* 	decoration_width -= (s->x + decoration_width - 1) - area_max_x; */
+
+  /*     /\* Draw relief if not yet drawn.  *\/ */
+  /*     if (!relief_drawn_p && s->face->box != FACE_NO_BOX) */
+  /* 	x_draw_glyph_string_box (s); */
+
+  /*     /\* Draw underline.  *\/ */
+  /*     if (s->face->underline) */
+  /*       { */
+  /*         if (s->face->underline == FACE_UNDERLINE_WAVE) */
+  /*           { */
+  /*             if (s->face->underline_defaulted_p) */
+  /*               x_draw_underwave (s, decoration_width); */
+  /*             else */
+  /*               { */
+  /*                 Display *display = FRAME_X_DISPLAY (s->f); */
+  /*                 XGCValues xgcv; */
+  /*                 XGetGCValues (display, s->gc, GCForeground, &xgcv); */
+  /*                 XSetForeground (display, s->gc, s->face->underline_color); */
+  /*                 x_draw_underwave (s, decoration_width); */
+  /*                 XSetForeground (display, s->gc, xgcv.foreground); */
+  /*               } */
+  /*           } */
+  /*         else if (s->face->underline >= FACE_UNDERLINE_SINGLE) */
+  /*           { */
+  /*             unsigned long thickness, position; */
+
+  /*             if (s->prev */
+  /* 		  && (s->prev->face->underline != FACE_UNDERLINE_WAVE */
+  /* 		      && s->prev->face->underline >= FACE_UNDERLINE_SINGLE) */
+  /* 		  && (s->prev->face->underline_at_descent_line_p */
+  /* 		      == s->face->underline_at_descent_line_p) */
+  /* 		  && (s->prev->face->underline_pixels_above_descent_line */
+  /* 		      == s->face->underline_pixels_above_descent_line)) */
+  /*               { */
+  /*                 /\* We use the same underline style as the previous one.  *\/ */
+  /*                 thickness = s->prev->underline_thickness; */
+  /*                 position = s->prev->underline_position; */
+  /*               } */
+  /*             else */
+  /*               { */
+  /* 		  struct font *font = font_for_underline_metrics (s); */
+  /* 		  unsigned long minimum_offset; */
+  /* 		  bool underline_at_descent_line; */
+  /* 		  bool use_underline_position_properties; */
+  /* 		  Lisp_Object val = (WINDOW_BUFFER_LOCAL_VALUE */
+  /* 				     (Qunderline_minimum_offset, s->w)); */
+
+  /* 		  if (FIXNUMP (val)) */
+  /* 		    minimum_offset = max (0, XFIXNUM (val)); */
+  /* 		  else */
+  /* 		    minimum_offset = 1; */
+
+  /* 		  val = (WINDOW_BUFFER_LOCAL_VALUE */
+  /* 			 (Qx_underline_at_descent_line, s->w)); */
+  /* 		  underline_at_descent_line */
+  /* 		    = (!(NILP (val) || BASE_EQ (val, Qunbound)) */
+  /* 		       || s->face->underline_at_descent_line_p); */
+
+  /* 		  val = (WINDOW_BUFFER_LOCAL_VALUE */
+  /* 			 (Qx_use_underline_position_properties, s->w)); */
+  /* 		  use_underline_position_properties */
+  /* 		    = !(NILP (val) || BASE_EQ (val, Qunbound)); */
+
+  /*                 /\* Get the underline thickness.  Default is 1 pixel.  *\/ */
+  /*                 if (font && font->underline_thickness > 0) */
+  /*                   thickness = font->underline_thickness; */
+  /*                 else */
+  /*                   thickness = 1; */
+  /*                 if (underline_at_descent_line) */
+  /* 		    position = ((s->height - thickness) */
+  /* 				- (s->ybase - s->y) */
+  /* 				- s->face->underline_pixels_above_descent_line); */
+  /*                 else */
+  /*                   { */
+  /*                     /\* Get the underline position.  This is the */
+  /*                        recommended vertical offset in pixels from */
+  /*                        the baseline to the top of the underline. */
+  /*                        This is a signed value according to the */
+  /*                        specs, and its default is */
+
+  /*                        ROUND ((maximum descent) / 2), with */
+  /*                        ROUND(x) = floor (x + 0.5)  *\/ */
+
+  /*                     if (use_underline_position_properties */
+  /*                         && font && font->underline_position >= 0) */
+  /*                       position = font->underline_position; */
+  /*                     else if (font) */
+  /*                       position = (font->descent + 1) / 2; */
+  /*                     else */
+  /*                       position = minimum_offset; */
+  /*                   } */
+
+  /* 		  /\* Ignore minimum_offset if the amount of pixels was */
+  /* 		     explicitly specified.  *\/ */
+  /* 		  if (!s->face->underline_pixels_above_descent_line) */
+  /* 		    position = max (position, minimum_offset); */
+  /*               } */
+  /*             /\* Check the sanity of thickness and position.  We should */
+  /*                avoid drawing underline out of the current line area.  *\/ */
+  /* 	      if (s->y + s->height <= s->ybase + position) */
+  /* 		position = (s->height - 1) - (s->ybase - s->y); */
+  /*             if (s->y + s->height < s->ybase + position + thickness) */
+  /*               thickness = (s->y + s->height) - (s->ybase + position); */
+  /*             s->underline_thickness = thickness; */
+  /*             s->underline_position = position; */
+
+  /* 	      { */
+  /* 		Display *display = FRAME_X_DISPLAY (s->f); */
+  /* 		XGCValues xgcv; */
+
+  /* 		if (!s->face->underline_defaulted_p) */
+  /* 		  { */
+  /* 		    XGetGCValues (display, s->gc, GCForeground, &xgcv); */
+  /* 		    XSetForeground (display, s->gc, s->face->underline_color); */
+  /* 		  } */
+
+  /* 		x_fill_underline (s->f, s, s->face->underline, */
+  /* 				  position, decoration_width, */
+  /* 				  thickness); */
+
+  /* 		/\* Place a second underline above the first if this was */
+  /* 		   requested in the face specification.  *\/ */
+
+  /* 		if (s->face->underline == FACE_UNDERLINE_DOUBLE_LINE) */
+  /* 		  { */
+  /* 		    /\* Compute the position of the second underline.  *\/ */
+  /* 		    position = position - thickness - 1; */
+  /* 		    x_fill_underline (s->f, s, s->face->underline, */
+  /* 				      position, decoration_width, */
+  /* 				      thickness); */
+  /* 		  } */
+
+  /* 		if (!s->face->underline_defaulted_p) */
+  /* 		  XSetForeground (display, s->gc, xgcv.foreground); */
+  /* 	      } */
+  /*           } */
+  /*       } */
+  /*     /\* Draw overline.  *\/ */
+  /*     if (s->face->overline_p) */
+  /* 	{ */
+  /* 	  unsigned long dy = 0, h = 1; */
+
+  /* 	  if (s->face->overline_color_defaulted_p) */
+  /* 	    x_fill_rectangle (s->f, s->gc, s->x, s->y + dy, */
+  /* 			      decoration_width, h, false); */
+  /* 	  else */
+  /* 	    { */
+  /*             Display *display = FRAME_X_DISPLAY (s->f); */
+  /* 	      XGCValues xgcv; */
+  /* 	      XGetGCValues (display, s->gc, GCForeground, &xgcv); */
+  /* 	      XSetForeground (display, s->gc, s->face->overline_color); */
+  /* 	      x_fill_rectangle (s->f, s->gc, s->x, s->y + dy, */
+  /* 				decoration_width, h, false); */
+  /* 	      XSetForeground (display, s->gc, xgcv.foreground); */
+  /* 	    } */
+  /* 	} */
+
+  /*     /\* Draw strike-through.  *\/ */
+  /*     if (s->face->strike_through_p) */
+  /* 	{ */
+  /* 	  /\* Y-coordinate and height of the glyph string's first */
+  /* 	     glyph.  We cannot use s->y and s->height because those */
+  /* 	     could be larger if there are taller display elements */
+  /* 	     (e.g., characters displayed with a larger font) in the */
+  /* 	     same glyph row.  *\/ */
+  /* 	  int glyph_y = s->ybase - s->first_glyph->ascent; */
+  /* 	  int glyph_height = s->first_glyph->ascent + s->first_glyph->descent; */
+  /* 	  /\* Strike-through width and offset from the glyph string's */
+  /* 	     top edge.  *\/ */
+  /*         unsigned long h = 1; */
+  /*         unsigned long dy = (glyph_height - h) / 2; */
+
+  /* 	  if (s->face->strike_through_color_defaulted_p) */
+  /* 	    x_fill_rectangle (s->f, s->gc, s->x, glyph_y + dy, */
+  /* 			      s->width, h, false); */
+  /* 	  else */
+  /* 	    { */
+  /*             Display *display = FRAME_X_DISPLAY (s->f); */
+  /* 	      XGCValues xgcv; */
+  /* 	      XGetGCValues (display, s->gc, GCForeground, &xgcv); */
+  /* 	      XSetForeground (display, s->gc, s->face->strike_through_color); */
+  /* 	      x_fill_rectangle (s->f, s->gc, s->x, glyph_y + dy, */
+  /* 				decoration_width, h, false); */
+  /* 	      XSetForeground (display, s->gc, xgcv.foreground); */
+  /* 	    } */
+  /* 	} */
+
+  /*     if (s->prev) */
+  /* 	{ */
+  /* 	  struct glyph_string *prev; */
+
+  /* 	  for (prev = s->prev; prev; prev = prev->prev) */
+  /* 	    if (prev->hl != s->hl */
+  /* 		&& prev->x + prev->width + prev->right_overhang > s->x) */
+  /* 	      { */
+  /* 		/\* As prev was drawn while clipped to its own area, we */
+  /* 		   must draw the right_overhang part using s->hl now.  *\/ */
+  /* 		enum draw_glyphs_face save = prev->hl; */
+
+  /* 		prev->hl = s->hl; */
+  /* 		x_set_glyph_string_gc (prev); */
+  /* 		x_set_glyph_string_clipping_exactly (s, prev); */
+  /* 		if (prev->first_glyph->type == CHAR_GLYPH) */
+  /* 		  x_draw_glyph_string_foreground (prev); */
+  /* 		else */
+  /* 		  x_draw_composite_glyph_string_foreground (prev); */
+  /* 		x_reset_clip_rectangles (prev->f, prev->gc); */
+  /* 		prev->hl = save; */
+  /* 		prev->num_clips = 0; */
+  /* 	      } */
+  /* 	} */
+
+  /*     if (s->next) */
+  /* 	{ */
+  /* 	  struct glyph_string *next; */
+
+  /* 	  for (next = s->next; next; next = next->next) */
+  /* 	    if (next->hl != s->hl */
+  /* 		&& next->x - next->left_overhang < s->x + s->width) */
+  /* 	      { */
+  /* 		/\* As next will be drawn while clipped to its own area, */
+  /* 		   we must draw the left_overhang part using s->hl now.  *\/ */
+  /* 		enum draw_glyphs_face save = next->hl; */
+
+  /* 		next->hl = s->hl; */
+  /* 		x_set_glyph_string_gc (next); */
+  /* 		x_set_glyph_string_clipping_exactly (s, next); */
+  /* 		if (next->first_glyph->type == CHAR_GLYPH) */
+  /* 		  x_draw_glyph_string_foreground (next); */
+  /* 		else */
+  /* 		  x_draw_composite_glyph_string_foreground (next); */
+  /* 		x_reset_clip_rectangles (next->f, next->gc); */
+  /* 		next->hl = save; */
+  /* 		next->num_clips = 0; */
+  /* 		next->clip_head = s->next; */
+  /* 	      } */
+  /* 	} */
+  /*   } */
+
+  /* /\* Reset clipping.  *\/ */
+  /* x_reset_clip_rectangles (s->f, s->gc); */
+  /* s->num_clips = 0; */
+
+  /* /\* Set the stippled flag that tells redisplay whether or not a */
+  /*    stipple was actually draw.  *\/ */
+
+  /* if (s->first_glyph->type != STRETCH_GLYPH */
+  /*     && s->first_glyph->type != IMAGE_GLYPH */
+  /*     && !s->row->stipple_p) */
+  /*   s->row->stipple_p = s->stippled_p; */
+}
+
 /* Set up use of Wayland before we make the first connection.  */
 
 static struct redisplay_interface wlc_redisplay_interface = {
@@ -827,7 +1316,7 @@ static struct redisplay_interface wlc_redisplay_interface = {
   0, /* define_fringe_bitmap */
   0, /* destroy_fringe_bitmap */
   0, /* compute_glyph_string_overhangs */
-  wr_draw_glyph_string,
+  wlc_draw_glyph_string,
   0, /* wl_define_frame_cursor, */
   wr_clear_frame_area,
   wr_clear_under_internal_border,

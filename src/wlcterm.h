@@ -155,6 +155,9 @@ struct wlc_display_info
   /* Minimum font height over all fonts in font_table.  */
   int smallest_font_height;
 
+  /* Reusable Graphics Context for drawing a cursor in a non-default face. */
+  GC scratch_cursor_gc;
+
   /* Information about the range of text currently shown in
      mouse-face.  */
   Mouse_HLInfo mouse_highlight;

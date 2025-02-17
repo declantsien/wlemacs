@@ -79,7 +79,7 @@ impl FrameExtWrCommon for FrameRef {
 
     fn draw_glyph_string(&mut self, mut s: GlyphStringRef) {
         // wip
-        s.set_gc();
+        // s.set_gc();
 
         match s.glyph_type() {
             glyph_type::CHAR_GLYPH => {

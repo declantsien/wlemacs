@@ -57,6 +57,8 @@ pub struct WrCanvas {
     pub render_api: RenderApi,
     pub document_id: DocumentId,
     pipeline_id: PipelineId,
+    root_space_and_clip: SpaceAndClipInfo,
+    clip_chain_id: Option<ClipChainId>,
     epoch: Epoch,
     display_list_builder: Option<DisplayListBuilder>,
     previous_frame_image: Option<ImageKey>,
@@ -111,6 +113,7 @@ impl WrCanvas {
 
         let epoch = Epoch(0);
         let pipeline_id = PipelineId(0, 0);
+        let root_space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
 
         // Some thing to do with Wayland?
         let mut txn = Transaction::new();
@@ -131,6 +134,8 @@ impl WrCanvas {
             render_api: api,
             document_id,
             pipeline_id,
+            root_space_and_clip,
+            clip_chain_id: None,
             epoch,
             display_list_builder: None,
             previous_frame_image: None,
@@ -204,12 +209,10 @@ impl WrCanvas {
         builder.begin();
 
         if let Some((image_key, image_rect)) = image {
-            let space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
-
             let bounds = LayoutRect::from_size(layout_size);
 
             builder.push_image(
-                &CommonItemProperties::new(bounds, space_and_clip),
+                &CommonItemProperties::new(bounds, self.root_space_and_clip),
                 image_rect,
                 ImageRendering::Auto,
                 AlphaType::PremultipliedAlpha,
@@ -245,7 +248,7 @@ impl WrCanvas {
         let scale_factor = self.layout_to_device_scale_factor();
 
         if let Some(builder) = &mut self.display_list_builder {
-            let space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
+            let space_and_clip = self.root_space_and_clip;
 
             f(builder, space_and_clip, scale_factor);
         }
