@@ -228,6 +228,8 @@ renaming_overrides_prefixing = true
 # Table of name conversions to apply to item names (lhs becomes rhs)
 [export.rename]
 "WrRect" = "wr_rect"
+"WrVecU8" = "wr_vec_u8"
+"WrVecU32" = "wr_vec_u32"
 "WrCanvas" = "wr_canvas"
 "my_function" = "BetterFunctionName"
 

@@ -186,10 +186,9 @@ impl WrGlyph for GlyphStringRef {
     fn font_instance_key(&self) -> FontInstanceKey {
         let font_key = self.font_key();
         let f = self.frame();
-        let scale = f.wr().layout_to_device_scale_factor();
         f.wr().wr_add_font_instance(
             font_key,
-            FontSize::from_f32_px((DeviceLength::new(self.font().pixel_size as f32) / scale).get()),
+            DeviceLength::new(self.font().pixel_size as f32),
             Some(FontInstanceOptions::default()),
             Some(FontInstancePlatformOptions::default()),
             Vec::new(),

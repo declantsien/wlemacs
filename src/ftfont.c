@@ -2990,6 +2990,12 @@ ftfont_variation_glyphs (struct font *font, int c, unsigned variations[256])
 }
 #endif /* HAVE_OTF_GET_VARIATION_GLYPHS || HAVE_FT_FACE_GETCHARVARIANTINDEX */
 
+#ifdef USE_WEBRENDER
+extern int
+ftwrfont_draw (struct glyph_string *s,
+               int from, int to, int x, int y, bool with_background);
+#endif /* USE_WEBRENDER */
+
 #ifdef HAVE_HARFBUZZ
 
 hb_font_t *
@@ -3169,6 +3175,9 @@ static struct font_driver const ftfont_driver =
   .has_char = ftfont_has_char,
   .encode_char = ftfont_encode_char,
   .text_extents = ftfont_text_extents,
+#ifdef USE_WEBRENDER
+  .draw = ftwrfont_draw,
+#endif
   .get_bitmap = ftfont_get_bitmap,
   .anchor_point = ftfont_anchor_point,
 #ifdef HAVE_LIBOTF

@@ -14,10 +14,13 @@ use emacs_sys::font::FontRef;
 use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
+use std::ffi::OsString;
+use std::os::unix::ffi::OsStringExt;
+use std::{env, slice};
 use webrender::api::{
     AlphaType, BorderRadius, BorderSide, BorderStyle, ClipChainId, ClipId, ColorF,
     CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions, FontSize, FontTemplate,
-    ImageRendering, NativeFontHandle, PipelineId,
+    GlyphInstance, ImageRendering, NativeFontHandle, PipelineId,
 };
 
 use crate::font::FontInfoRef;
@@ -33,6 +36,69 @@ pub enum AntialiasBorder {
 }
 
 #[repr(C)]
+pub struct WrVecU32 {
+    /// `data` must always be valid for passing to Vec::from_raw_parts.
+    /// In particular, it must be non-null even if capacity is zero.
+    data: *mut u32,
+    length: usize,
+    capacity: usize,
+}
+
+impl WrVecU32 {
+    fn into_vec(mut self) -> Vec<u32> {
+        // Clear self and then drop self.
+        self.flush_into_vec()
+    }
+
+    // Clears self without consuming self.
+    fn flush_into_vec(&mut self) -> Vec<u32> {
+        // Create a Vec using Vec::from_raw_parts.
+        //
+        // Here are the safety requirements, verbatim from the documentation of `from_raw_parts`:
+        //
+        // > * `ptr` must have been allocated using the global allocator, such as via
+        // >   the [`alloc::alloc`] function.
+        // > * `T` needs to have the same alignment as what `ptr` was allocated with.
+        // >   (`T` having a less strict alignment is not sufficient, the alignment really
+        // >   needs to be equal to satisfy the [`dealloc`] requirement that memory must be
+        // >   allocated and deallocated with the same layout.)
+        // > * The size of `T` times the `capacity` (ie. the allocated size in bytes) needs
+        // >   to be the same size as the pointer was allocated with. (Because similar to
+        // >   alignment, [`dealloc`] must be called with the same layout `size`.)
+        // > * `length` needs to be less than or equal to `capacity`.
+        // > * The first `length` values must be properly initialized values of type `T`.
+        // > * `capacity` needs to be the capacity that the pointer was allocated with.
+        // > * The allocated size in bytes must be no larger than `isize::MAX`.
+        // >   See the safety documentation of [`pointer::offset`].
+        //
+        // These comments don't say what to do for zero-capacity vecs which don't have
+        // an allocation. In particular, the requirement "`ptr` must have been allocated"
+        // is not met for such vecs.
+        //
+        // However, the safety requirements of `slice::from_raw_parts` are more explicit
+        // about the empty case:
+        //
+        // > * `data` must be non-null and aligned even for zero-length slices. One
+        // >   reason for this is that enum layout optimizations may rely on references
+        // >   (including slices of any length) being aligned and non-null to distinguish
+        // >   them from other data. You can obtain a pointer that is usable as `data`
+        // >   for zero-length slices using [`NonNull::dangling()`].
+        //
+        // For the empty case we follow this requirement rather than the more stringent
+        // requirement from the `Vec::from_raw_parts` docs.
+        let vec = unsafe { Vec::from_raw_parts(self.data, self.length, self.capacity) };
+        self.data = ptr::NonNull::dangling().as_ptr();
+        self.length = 0;
+        self.capacity = 0;
+        vec
+    }
+
+    pub fn as_slice(&self) -> &[u32] {
+        unsafe { core::slice::from_raw_parts(self.data, self.length) }
+    }
+}
+
+#[repr(C)]
 pub struct WrVecU8 {
     /// `data` must always be valid for passing to Vec::from_raw_parts.
     /// In particular, it must be non-null even if capacity is zero.
@@ -40,6 +106,190 @@ pub struct WrVecU8 {
     length: usize,
     capacity: usize,
 }
+
+impl WrVecU8 {
+    fn into_vec(mut self) -> Vec<u8> {
+        // Clear self and then drop self.
+        self.flush_into_vec()
+    }
+
+    // Clears self without consuming self.
+    fn flush_into_vec(&mut self) -> Vec<u8> {
+        // Create a Vec using Vec::from_raw_parts.
+        //
+        // Here are the safety requirements, verbatim from the documentation of `from_raw_parts`:
+        //
+        // > * `ptr` must have been allocated using the global allocator, such as via
+        // >   the [`alloc::alloc`] function.
+        // > * `T` needs to have the same alignment as what `ptr` was allocated with.
+        // >   (`T` having a less strict alignment is not sufficient, the alignment really
+        // >   needs to be equal to satisfy the [`dealloc`] requirement that memory must be
+        // >   allocated and deallocated with the same layout.)
+        // > * The size of `T` times the `capacity` (ie. the allocated size in bytes) needs
+        // >   to be the same size as the pointer was allocated with. (Because similar to
+        // >   alignment, [`dealloc`] must be called with the same layout `size`.)
+        // > * `length` needs to be less than or equal to `capacity`.
+        // > * The first `length` values must be properly initialized values of type `T`.
+        // > * `capacity` needs to be the capacity that the pointer was allocated with.
+        // > * The allocated size in bytes must be no larger than `isize::MAX`.
+        // >   See the safety documentation of [`pointer::offset`].
+        //
+        // These comments don't say what to do for zero-capacity vecs which don't have
+        // an allocation. In particular, the requirement "`ptr` must have been allocated"
+        // is not met for such vecs.
+        //
+        // However, the safety requirements of `slice::from_raw_parts` are more explicit
+        // about the empty case:
+        //
+        // > * `data` must be non-null and aligned even for zero-length slices. One
+        // >   reason for this is that enum layout optimizations may rely on references
+        // >   (including slices of any length) being aligned and non-null to distinguish
+        // >   them from other data. You can obtain a pointer that is usable as `data`
+        // >   for zero-length slices using [`NonNull::dangling()`].
+        //
+        // For the empty case we follow this requirement rather than the more stringent
+        // requirement from the `Vec::from_raw_parts` docs.
+        let vec = unsafe { Vec::from_raw_parts(self.data, self.length, self.capacity) };
+        self.data = ptr::NonNull::dangling().as_ptr();
+        self.length = 0;
+        self.capacity = 0;
+        vec
+    }
+
+    pub fn as_slice(&self) -> &[u8] {
+        unsafe { core::slice::from_raw_parts(self.data, self.length) }
+    }
+
+    fn from_vec(mut v: Vec<u8>) -> WrVecU8 {
+        let w = WrVecU8 {
+            data: v.as_mut_ptr(),
+            length: v.len(),
+            capacity: v.capacity(),
+        };
+        mem::forget(v);
+        w
+    }
+
+    fn reserve(&mut self, len: usize) {
+        let mut vec = self.flush_into_vec();
+        vec.reserve(len);
+        *self = Self::from_vec(vec);
+    }
+
+    fn push_bytes(&mut self, bytes: &[u8]) {
+        let mut vec = self.flush_into_vec();
+        vec.extend_from_slice(bytes);
+        *self = Self::from_vec(vec);
+    }
+}
+
+#[repr(C)]
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum WrFontTemplate {
+    Raw = 0,
+    Native,
+}
+
+#[cfg(target_os = "windows")]
+fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
+    let wchars: Vec<u16> = bytes
+        .as_slice()
+        .chunks_exact(2)
+        .map(|c| u16::from_ne_bytes([c[0], c[1]]))
+        .collect();
+    NativeFontHandle {
+        path: PathBuf::from(OsString::from_wide(&wchars)),
+        index,
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
+    // On macOS, the descriptor string is a concatenation of the PostScript name
+    // and the font file path (to disambiguate cases where there are multiple
+    // faces with the same psname present). The index is the length of the psname
+    // portion of the descriptor (= starting offset of the path).
+    // Here, we split the descriptor into its two components for further use.
+    let chars = bytes.flush_into_vec();
+    NativeFontHandle {
+        name: String::from_utf8(chars[..index as usize].to_vec()).unwrap_or("".to_string()),
+        path: String::from_utf8(chars[index as usize..].to_vec()).unwrap_or("".to_string()),
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
+    let chars = bytes.flush_into_vec();
+    NativeFontHandle {
+        path: std::path::PathBuf::from(
+            <std::ffi::OsString as std::os::unix::ffi::OsStringExt>::from_vec(chars),
+        ),
+        index,
+    }
+}
+
+// #[no_mangle]
+// pub extern "C" fn wr_vec_u8_push_bytes(v: &mut WrVecU8, bytes: ByteSlice) {
+//     v.push_bytes(bytes.as_slice());
+// }
+
+// #[no_mangle]
+// pub extern "C" fn wr_vec_u8_reserve(v: &mut WrVecU8, len: usize) {
+//     v.reserve(len);
+// }
+
+#[no_mangle]
+pub extern "C" fn wr_vec_u8_free(v: WrVecU8) {
+    v.into_vec();
+}
+
+#[no_mangle]
+pub extern "C" fn wr_vec_u32_free(v: WrVecU32) {
+    v.into_vec();
+}
+
+// #[repr(C)]
+// pub struct ByteSlice<'a> {
+//     buffer: *const u8,
+//     len: usize,
+//     _phantom: PhantomData<&'a ()>,
+// }
+
+// impl<'a> ByteSlice<'a> {
+//     pub fn new(slice: &'a [u8]) -> ByteSlice<'a> {
+//         ByteSlice {
+//             buffer: slice.as_ptr(),
+//             len: slice.len(),
+//             _phantom: PhantomData,
+//         }
+//     }
+
+//     pub fn as_slice(&self) -> &'a [u8] {
+//         unsafe { make_slice(self.buffer, self.len) }
+//     }
+// }
+
+// #[repr(C)]
+// pub struct MutByteSlice<'a> {
+//     buffer: *mut u8,
+//     len: usize,
+//     _phantom: PhantomData<&'a ()>,
+// }
+
+// impl<'a> MutByteSlice<'a> {
+//     pub fn new(slice: &'a mut [u8]) -> MutByteSlice<'a> {
+//         let len = slice.len();
+//         MutByteSlice {
+//             buffer: slice.as_mut_ptr(),
+//             len,
+//             _phantom: PhantomData,
+//         }
+//     }
+
+//     pub fn as_mut_slice(&mut self) -> &'a mut [u8] {
+//         unsafe { make_slice_mut(self.buffer, self.len) }
+//     }
+// }
 
 impl Into<DeviceRect> for &Emacs_Rectangle {
     fn into(self) -> DeviceRect {
@@ -361,6 +611,7 @@ pub extern "C" fn wr_push_border(
     canvas.push_border(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
 }
 
+// pgtk_draw_rectangle
 #[no_mangle]
 pub extern "C" fn wr_draw_rect(
     canvas: &mut WrCanvas,
@@ -502,10 +753,9 @@ pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
         .wr()
         .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
 
-    let scale = f.wr().layout_to_device_scale_factor();
     let wr_font_instance_key = f.wr().wr_add_font_instance(
         wr_font_key,
-        FontSize::from_f32_px((DeviceLength::new(font.pixel_size as f32) / scale).get()),
+        DeviceLength::new(font.pixel_size as f32),
         Some(FontInstanceOptions::default()),
         Some(FontInstancePlatformOptions::default()),
         Vec::new(),
@@ -643,6 +893,95 @@ pub extern "C" fn wr_fit_context(f: *mut Frame) {
     frame.wr().update();
 }
 
+// #[no_mangle]
+// pub extern "C" fn wr_resource_updates_add_raw_font(
+//     txn: &mut Transaction,
+//     key: WrFontKey,
+//     bytes: &mut WrVecU8,
+//     index: u32,
+// ) {
+//     txn.add_raw_font(key, bytes.flush_into_vec(), index);
+// }
+
+#[no_mangle]
+pub extern "C" fn wr_font_draw(
+    canvas: &mut WrCanvas,
+    color_pixel: ::libc::c_ulong,
+    data: &mut WrVecU8,
+    index: u32,
+    char2b: &mut WrVecU32,
+    from: ::libc::c_int,
+    to: ::libc::c_int,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    glyph_size: ::libc::c_int,
+    padding_p: bool,
+) {
+    let font_tpl = FontTemplate::Native(read_font_descriptor(data, index));
+    // println!("{:?}", font_tpl);
+    let font_key = canvas.wr_add_font(font_tpl);
+    let font_instance_key = canvas.wr_add_font_instance(
+        font_key,
+        DeviceLength::new(glyph_size as f32),
+        Some(FontInstanceOptions::default()),
+        Some(FontInstancePlatformOptions::default()),
+        Vec::new(),
+    );
+    let glyph_indices = char2b.as_slice();
+    // println!("{:?}", glyph_indices);
+    let glyph_dimensions = canvas.glyph_dimensions(font_instance_key, glyph_indices.to_vec());
+    // println!("{:?}", glyph_dimensions);
+    let glyph_dimensions = glyph_dimensions.as_slice();
+    let scale_factor = canvas.layout_to_device_scale_factor();
+    let visible_rect = (x, y).by(width, height);
+    println!("visible_rect {visible_rect:?}");
+    // FIXME visible_rect set above is not correct here, hard code it for now
+    let visible_rect = (0, 0).by(10000, 10000);
+    let mut x = x;
+    let mut glyph_instances: Vec<GlyphInstance> = vec![];
+    (from..to).for_each(|i| {
+        let index = glyph_indices[i as usize];
+        // wr get_glyph_dimensions return none for ‘empty’ textures (height or width = 0)
+        // spaces (’ ’) will mostly be None
+        // glyphinstance type is using layoutpixel
+        let glyph_instance = GlyphInstance {
+            index,
+            point: DeviceIntPoint::new(x, y).to_f32() / scale_factor,
+        };
+        // scale back to device pixel
+        let advance_width = glyph_dimensions[i as usize]
+            .map(|d| d.advance)
+            .unwrap_or(0.0)
+            * scale_factor.get();
+        if padding_p {
+            x += 1;
+        } else {
+            x += advance_width as i32;
+        }
+        glyph_instances.push(glyph_instance);
+    });
+
+    canvas.display(|builder, space_and_clip, scale| {
+        let foreground_color = pixel_to_color(color_pixel);
+
+        // draw foreground
+        if !glyph_instances.is_empty() {
+            let visible_rect = visible_rect / scale;
+
+            builder.push_text(
+                &CommonItemProperties::new(visible_rect, space_and_clip),
+                visible_rect,
+                &glyph_instances,
+                font_instance_key,
+                foreground_color,
+                None,
+            );
+        }
+    });
+}
+
 // /// Capture the contents of the current WebRender frame and
 // /// save them to a folder relative to the current working directory.
 // ///
@@ -735,4 +1074,20 @@ pub extern "C" fn wr_log_init() {
         .init();
 
     log::trace!("Emacs WR");
+}
+
+unsafe fn make_slice<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
+    if ptr.is_null() {
+        &[]
+    } else {
+        slice::from_raw_parts(ptr, len)
+    }
+}
+
+unsafe fn make_slice_mut<'a, T>(ptr: *mut T, len: usize) -> &'a mut [T] {
+    if ptr.is_null() {
+        &mut []
+    } else {
+        slice::from_raw_parts_mut(ptr, len)
+    }
 }

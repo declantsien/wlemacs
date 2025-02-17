@@ -201,7 +201,7 @@ impl WrCanvas {
         LayoutToDeviceScale::new(1.0 / (self.frame.scale_factor() as f32))
     }
 
-    fn layout_size(&self) -> LayoutSize {
+    pub fn layout_size(&self) -> LayoutSize {
         let device_size = self.device_size();
         LayoutSize::new(device_size.width as f32, device_size.height as f32)
     }
@@ -342,16 +342,18 @@ impl WrCanvas {
     pub fn wr_add_font_instance(
         &mut self,
         font_key: FontKey,
-        size: FontSize,
+        glyph_size: DeviceLength,
         options: Option<FontInstanceOptions>,
         platform_options: Option<FontInstancePlatformOptions>,
         variations: Vec<FontVariation>,
     ) -> FontInstanceKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
+        let glyph_size = glyph_size / self.layout_to_device_scale_factor();
+        let glyph_size = glyph_size.get();
         let hash_map_key = (
             font_key,
-            size,
+            FontSize::from_f32_px(glyph_size),
             options,
             platform_options,
             variations.clone(),
@@ -365,7 +367,7 @@ impl WrCanvas {
         txn.add_font_instance(
             key,
             font_key,
-            size.to_f32_px(),
+            glyph_size,
             options,
             platform_options,
             variations,

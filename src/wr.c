@@ -25,6 +25,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "lisp.h"
 #include "blockinput.h"
 #include "frame.h"
+#include "font.h"
+#ifdef HAVE_FREETYPE
+#include "ftfont.h"
+#endif
 #include TERM_HEADER
 
 void
@@ -202,6 +206,110 @@ wr_set_glyph_string_clipping_exactly (struct glyph_string *src,
   Emacs_Rectangle clip = {src->x, src->y, src->width, src->height};
   wr_define_clip_rect (FRAME_WR_DATA (src->f), &clip);
 }
+
+#ifdef HAVE_FREETYPE
+int
+ftwrfont_draw (struct glyph_string *s,
+               int from, int to, int x, int y, bool with_background)
+{
+  struct frame *f = s->f;
+  char *filename = SSDATA(s->font->props[FONT_FILE_INDEX]);
+  struct font_info *font_info = (struct font_info *) s->font;
+  unsigned *glyphs;
+  int len = to - from;
+  int i;
+  const wr_vec_u8 filename_data = { filename, strlen (filename), 0};
+  const wr_vec_u32 char2b  = { s->char2b, s->nchars, 0};
+
+  /* printf("%s", SSDATA (filename)); */
+
+  block_input ();
+
+  if (with_background)
+    {
+      const Emacs_Rectangle rect = {x, y - FONT_BASE (s->font),
+				    s->width, FONT_HEIGHT (s->font)};
+      wr_dp_push_rect(FRAME_WR_DATA (f), &rect, &rect, s->hl != DRAW_CURSOR, false, false, s->gc->background);
+    }
+
+  wr_font_draw (FRAME_WR_DATA (s->f),
+		s->gc->foreground,
+		&filename_data, font_info->index, &char2b, from, to,
+		x, y, s->width, (s->row->mode_line_p ? s->row->height : s->row->visible_height),
+		s->font->pixel_size, s->padding_p);
+
+
+
+  /* glyphs = alloca (sizeof (unsigned) * len); */
+  /* for (i = 0; i < len; i++) */
+  /*   { */
+  /*     glyphs[i].index = s->char2b[from + i]; */
+  /*     glyphs[i].x = x; */
+  /*     glyphs[i].y = y; */
+  /*     x += (s->padding_p ? 1 : ftcrfont_glyph_extents (s->font, */
+  /*                                                      glyphs[i].index, */
+  /*                                                      NULL)); */
+  /*   } */
+  /* pgtk_set_cr_source_with_color (f, s->xgcv.foreground, false); */
+  /* cairo_set_scaled_font (cr, ftcrfont_info->cr_scaled_font); */
+  /* cairo_show_glyphs (cr, glyphs, len); */
+
+  unblock_input ();
+
+  wr_vec_u8_free(filename_data);
+  wr_vec_u32_free(char2b);
+
+  return len;
+}
+#endif
+
+/* int */
+/* wr_font_draw (struct glyph_string *s, */
+/*                int from, int to, int x, int y, bool with_background) */
+/* { */
+/*   struct frame *f = s->f; */
+/*   Lisp_Object filename = s->font->props[FONT_FILE_INDEX]; */
+/*   struct font_info *font_info = (struct font_info *) s->font; */
+/*   cairo_t *cr; */
+/*   cairo_glyph_t *glyphs; */
+/*   int len = to - from; */
+/*   int i; */
+
+/*   printf("%s", SSDATA (filename)); */
+
+/*   /\* /\\* As ENCODE_UTF_8 may cause GC and relocation of string data, *\/ */
+/*   /\*    we use it before x_encode_text that may return string data.  *\\/ *\/ */
+/*   /\* encoded_name = ENCODE_UTF_8 (name); *\/ */
+
+/*   gtk_window_set_title (GTK_WINDOW (FRAME_GTK_OUTER_WIDGET (f)), */
+/* 			SSDATA (encoded_name)); */
+
+/*   block_input (); */
+
+/*   if (with_background) */
+/*     { */
+/*       const Emacs_Rectangle rect = {x, y - FONT_BASE (s->font), */
+/* 				    s->width, FONT_HEIGHT (s->font)}; */
+/*       wr_dp_push_rect(FRAME_WR_DATA (f), &rect, &rect, false, false, false, color); */
+/*     } */
+
+/*   /\* glyphs = alloca (sizeof (cairo_glyph_t) * len); *\/ */
+/*   /\* for (i = 0; i < len; i++) *\/ */
+/*   /\*   { *\/ */
+/*   /\*     glyphs[i].index = s->char2b[from + i]; *\/ */
+/*   /\*     glyphs[i].x = x; *\/ */
+/*   /\*     glyphs[i].y = y; *\/ */
+/*   /\*     x += (s->padding_p ? 1 : ftcrfont_glyph_extents (s->font, *\/ */
+/*   /\*                                                      glyphs[i].index, *\/ */
+/*   /\*                                                      NULL)); *\/ */
+/*   /\*   } *\/ */
+/*   /\* pgtk_set_cr_source_with_color (f, s->xgcv.foreground, false); *\/ */
+/*   /\* cairo_set_scaled_font (cr, ftcrfont_info->cr_scaled_font); *\/ */
+/*   /\* cairo_show_glyphs (cr, glyphs, len); *\/ */
+/*   /\* unblock_input (); *\/ */
+
+/*   return len; */
+/* } */
 
 void
 syms_of_webrender (void)

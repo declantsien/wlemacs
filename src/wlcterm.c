@@ -1195,13 +1195,13 @@ wlc_draw_glyph_string_foreground (struct glyph_string *s)
 	boff = VCENTER_BASELINE_OFFSET (font, s->f) - boff;
 
       y = s->ybase - boff;
-      // TODO
-      /* if (s->for_overlaps || (s->background_filled_p && s->hl != DRAW_CURSOR)) */
-      /* 	font->driver->draw (s, 0, s->nchars, x, y, false); */
-      /* else */
-      /* 	font->driver->draw (s, 0, s->nchars, x, y, true); */
-      /* if (s->face->overstrike) */
-      /* 	font->driver->draw (s, 0, s->nchars, x + 1, y, false); */
+
+      if (s->for_overlaps || (s->background_filled_p && s->hl != DRAW_CURSOR))
+	font->driver->draw (s, 0, s->nchars, x, y, false);
+      else
+	font->driver->draw (s, 0, s->nchars, x, y, true);
+      if (s->face->overstrike)
+	font->driver->draw (s, 0, s->nchars, x + 1, y, false);
     }
 }
 
@@ -1224,6 +1224,185 @@ wlc_query_colors (struct frame *f, Emacs_Color * colors, int ncolors)
       colors[i].green = GetGValue (pixel) * 257;
       colors[i].blue = GetBValue (pixel) * 257;
     }
+}
+
+/* Draw the foreground of composite glyph string S.  */
+static void
+wlc_draw_composite_glyph_string_foreground (struct glyph_string *s)
+{
+  int i, j, x;
+  struct font *font = s->font;
+
+  /* If first glyph of S has a left box line, start drawing the text
+     of S to the right of that box line.  */
+  if (s->face && s->face->box != FACE_NO_BOX
+      && s->first_glyph->left_box_line_p)
+    x = s->x + max (s->face->box_vertical_line_width, 0);
+  else
+    x = s->x;
+
+  /* S is a glyph string for a composition.  S->cmp_from is the index
+     of the first character drawn for glyphs of this composition.
+     S->cmp_from == 0 means we are drawing the very first character of
+     this composition.  */
+
+  /* Draw a rectangle for the composition if the font for the very
+     first character of the composition could not be loaded.  */
+  if (s->font_not_found_p)
+    {
+      if (s->cmp_from == 0)
+	wlc_draw_rectangle (s->f, s->face->foreground, x, s->y,
+			     s->width - 1, s->height - 1, false);
+    }
+  else if (!s->first_glyph->u.cmp.automatic)
+    {
+      int y = s->ybase;
+
+      for (i = 0, j = s->cmp_from; i < s->nchars; i++, j++)
+	/* TAB in a composition means display glyphs with padding
+	   space on the left or right.  */
+	if (COMPOSITION_GLYPH (s->cmp, j) != '\t')
+	  {
+	    int xx = x + s->cmp->offsets[j * 2];
+	    int yy = y - s->cmp->offsets[j * 2 + 1];
+
+	    font->driver->draw (s, j, j + 1, xx, yy, false);
+	    if (s->face->overstrike)
+	      font->driver->draw (s, j, j + 1, xx + 1, yy, false);
+	  }
+    }
+  else
+    {
+      Lisp_Object gstring = composition_gstring_from_id (s->cmp_id);
+      Lisp_Object glyph;
+      int y = s->ybase;
+      int width = 0;
+
+      for (i = j = s->cmp_from; i < s->cmp_to; i++)
+	{
+	  glyph = LGSTRING_GLYPH (gstring, i);
+	  if (NILP (LGLYPH_ADJUSTMENT (glyph)))
+	    width += LGLYPH_WIDTH (glyph);
+	  else
+	    {
+	      int xoff, yoff, wadjust;
+
+	      if (j < i)
+		{
+		  font->driver->draw (s, j, i, x, y, false);
+		  if (s->face->overstrike)
+		    font->driver->draw (s, j, i, x + 1, y, false);
+		  x += width;
+		}
+	      xoff = LGLYPH_XOFF (glyph);
+	      yoff = LGLYPH_YOFF (glyph);
+	      wadjust = LGLYPH_WADJUST (glyph);
+	      font->driver->draw (s, i, i + 1, x + xoff, y + yoff, false);
+	      if (s->face->overstrike)
+		font->driver->draw (s, i, i + 1, x + xoff + 1, y + yoff,
+				    false);
+	      x += wadjust;
+	      j = i + 1;
+	      width = 0;
+	    }
+	}
+      if (j < i)
+	{
+	  font->driver->draw (s, j, i, x, y, false);
+	  if (s->face->overstrike)
+	    font->driver->draw (s, j, i, x + 1, y, false);
+	}
+    }
+}
+
+
+/* Draw the foreground of glyph string S for glyphless characters.  */
+static void
+wlc_draw_glyphless_glyph_string_foreground (struct glyph_string *s)
+{
+  struct glyph *glyph = s->first_glyph;
+  unsigned char2b[8];
+  int x, i, j;
+
+  /* If first glyph of S has a left box line, start drawing the text
+     of S to the right of that box line.  */
+  if (s->face && s->face->box != FACE_NO_BOX
+      && s->first_glyph->left_box_line_p)
+    x = s->x + max (s->face->box_vertical_line_width, 0);
+  else
+    x = s->x;
+
+  s->char2b = char2b;
+
+  for (i = 0; i < s->nchars; i++, glyph++)
+    {
+#ifdef GCC_LINT
+      enum
+      { PACIFY_GCC_BUG_81401 = 1 };
+#else
+      enum
+      { PACIFY_GCC_BUG_81401 = 0 };
+#endif
+      char buf[7 + PACIFY_GCC_BUG_81401];
+      char *str = NULL;
+      int len = glyph->u.glyphless.len;
+
+      if (glyph->u.glyphless.method == GLYPHLESS_DISPLAY_ACRONYM)
+	{
+	  if (len > 0
+	      && CHAR_TABLE_P (Vglyphless_char_display)
+	      &&
+	      (CHAR_TABLE_EXTRA_SLOTS (XCHAR_TABLE (Vglyphless_char_display))
+	       >= 1))
+	    {
+	      Lisp_Object acronym
+		= (!glyph->u.glyphless.for_no_font
+		   ? CHAR_TABLE_REF (Vglyphless_char_display,
+				     glyph->u.glyphless.ch)
+		   : XCHAR_TABLE (Vglyphless_char_display)->extras[0]);
+	      if (CONSP (acronym))
+		acronym = XCAR (acronym);
+	      if (STRINGP (acronym))
+		str = SSDATA (acronym);
+	    }
+	}
+      else if (glyph->u.glyphless.method == GLYPHLESS_DISPLAY_HEX_CODE)
+	{
+	  unsigned int ch = glyph->u.glyphless.ch;
+	  eassume (ch <= MAX_CHAR);
+	  sprintf (buf, "%0*X", ch < 0x10000 ? 4 : 6, ch);
+	  str = buf;
+	}
+
+      if (str)
+	{
+	  int upper_len = (len + 1) / 2;
+
+	  /* It is assured that all LEN characters in STR is ASCII.  */
+	  for (j = 0; j < len; j++)
+	    char2b[j]
+	      = s->font->driver->encode_char (s->font, str[j]) & 0xFFFF;
+	  s->font->driver->draw (s, 0, upper_len,
+				 x + glyph->slice.glyphless.upper_xoff,
+				 s->ybase + glyph->slice.glyphless.upper_yoff,
+				 false);
+	  s->font->driver->draw (s, upper_len, len,
+				 x + glyph->slice.glyphless.lower_xoff,
+				 s->ybase + glyph->slice.glyphless.lower_yoff,
+				 false);
+	}
+      if (glyph->u.glyphless.method != GLYPHLESS_DISPLAY_THIN_SPACE)
+	wlc_draw_rectangle (s->f, s->face->foreground,
+			     x, s->ybase - glyph->ascent,
+			     glyph->pixel_width - 1,
+			     glyph->ascent + glyph->descent - 1,
+			     false);
+      x += glyph->pixel_width;
+    }
+
+  /* Pacify GCC 12 even though s->char2b is not used after this
+     function returns.  */
+  s->char2b = NULL;
 }
 
 void
@@ -1521,6 +1700,7 @@ wlc_draw_glyph_string (struct glyph_string *s)
       wr_begin_define_clip (FRAME_WR_DATA (s->f));
       wr_set_glyph_string_clipping (s);
     }
+  printf("%s", SSDATA (s->font->props[FONT_FILE_INDEX]));
 
   switch (s->first_glyph->type)
     {
@@ -1548,17 +1728,17 @@ wlc_draw_glyph_string (struct glyph_string *s)
       if (s->for_overlaps || (s->cmp_from > 0
 			      && !s->first_glyph->u.cmp.automatic))
 	s->background_filled_p = true;
-      /* else */
-      /* 	pgtk_draw_glyph_string_background (s, true); */
-      /* pgtk_draw_composite_glyph_string_foreground (s); */
+      else
+	wlc_draw_glyph_string_background (s, true);
+      wlc_draw_composite_glyph_string_foreground (s);
       break;
 
     case GLYPHLESS_GLYPH:
       if (s->for_overlaps)
 	s->background_filled_p = true;
-      /* else */
-      /* 	pgtk_draw_glyph_string_background (s, true); */
-      /* pgtk_draw_glyphless_glyph_string_foreground (s); */
+      else
+	wlc_draw_glyph_string_background (s, true);
+      wlc_draw_glyphless_glyph_string_foreground (s);
       break;
 
     default:
