@@ -356,8 +356,8 @@ pub extern "C" fn wr_parse_color(
 // }
 
 #[no_mangle]
-pub extern "C" fn wr_destroy(wr_data: *mut libc::c_void) {
-    let _ = unsafe { Box::from_raw(wr_data as *mut WrCanvas) };
+pub unsafe extern "C" fn wr_destroy(canvas: *mut WrCanvas) {
+    mem::drop(Box::from_raw(canvas));
 }
 
 /// cbindgen:ignore
