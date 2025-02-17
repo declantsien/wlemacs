@@ -15,12 +15,13 @@ use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
 use emacs_sys::window::{Window, WindowRef};
 use webrender::api::{
-    AlphaType, ColorF, CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions,
-    FontSize, FontTemplate, ImageRendering, NativeFontHandle,
+    AlphaType, ClipChainId, ClipId, ColorF, CommonItemProperties, FontInstanceOptions,
+    FontInstancePlatformOptions, FontSize, FontTemplate, ImageRendering, NativeFontHandle,
+    PipelineId,
 };
 
 use crate::font::FontInfoRef;
-use std::ptr;
+use std::{mem, ptr};
 use webrender::api::units::{DeviceIntPoint, DeviceRect};
 
 #[repr(C)]
@@ -49,9 +50,40 @@ impl Into<DeviceRect> for &Emacs_Rectangle {
 // }
 
 #[repr(C)]
-pub struct WrFontKey(pub u32, pub u32);
-#[repr(C)]
-pub struct WrFontInstanceKey(pub u32, pub u32);
+#[derive(Clone, Copy)]
+pub struct WrClipId {
+    id: usize,
+}
+
+impl WrClipId {
+    fn to_webrender(&self, pipeline_id: PipelineId) -> ClipId {
+        ClipId(self.id, pipeline_id)
+    }
+
+    fn from_webrender(clip_id: ClipId) -> Self {
+        WrClipId { id: clip_id.0 }
+    }
+}
+
+// #[repr(C)]
+// pub struct WrFontKey(pub u32, pub u32);
+// #[repr(C)]
+// pub struct WrFontInstanceKey(pub u32, pub u32);
+// #[repr(C)]
+// pub struct WrClipChainId(pub u32, pub u32, pub u32); // clipchain, pipelinesource, pipeline in that order
+
+// impl Into<ClipChainId> for &WrClipChainId {
+//     fn into(self) -> ClipChainId {
+//         let pipeline_id = PipelineId(self.1, self.2);
+//         ClipChainId(self.0, pipeline_id)
+//     }
+// }
+
+// impl From<ClipChainId> for WrClipChainId {
+//     fn from(clip_chain_id: ClipChainId) -> WrClipChainId {
+//         WrClipChainId(clip_chain_id.0, clip_chain_id.1.0, clip_chain_id.1.1)
+//     }
+// }
 
 #[no_mangle]
 pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
@@ -123,6 +155,12 @@ pub extern "C" fn wr_draw_fringe_bitmap(
     });
 }
 
+// #[no_mangle]
+// pub extern "C" fn wr_clip_chain(
+// ) -> WrClipChainId {
+//     todo!()
+// }
+
 #[no_mangle]
 pub extern "C" fn wr_push_rect(
     canvas: &mut WrCanvas,
@@ -131,6 +169,42 @@ pub extern "C" fn wr_push_rect(
     clip_bounds: Option<&Emacs_Rectangle>,
 ) {
     canvas.push_rect(color_pixel, bounds.into(), clip_bounds.map(|b| b.into()));
+}
+
+#[no_mangle]
+pub extern "C" fn wr_dp_push_rect(
+    canvas: &mut WrCanvas,
+    rect: &Emacs_Rectangle,
+    clip: &Emacs_Rectangle,
+    is_backface_visible: bool,
+    force_antialiasing: bool,
+    is_checkerboard: bool,
+    color_pixel: ::libc::c_ulong,
+) {
+    // debug_assert!(unsafe { !is_in_render_thread() });
+    canvas.dp_push_rect(
+        rect.into(),
+        clip.into(),
+        is_backface_visible,
+        force_antialiasing,
+        is_checkerboard,
+        color_pixel,
+    );
+}
+
+#[no_mangle]
+pub extern "C" fn wr_begin_define_clip(canvas: &mut WrCanvas) {
+    canvas.begin_define_clip();
+}
+
+#[no_mangle]
+pub extern "C" fn wr_end_define_clip(canvas: &mut WrCanvas) {
+    canvas.end_define_clip();
+}
+
+#[no_mangle]
+pub extern "C" fn wr_define_clip_rect(canvas: &mut WrCanvas, rect: &Emacs_Rectangle) {
+    canvas.define_clip_rect(rect.into());
 }
 
 #[no_mangle]
@@ -358,6 +432,27 @@ pub extern "C" fn wr_parse_color(
 #[no_mangle]
 pub unsafe extern "C" fn wr_destroy(canvas: *mut WrCanvas) {
     mem::drop(Box::from_raw(canvas));
+}
+
+// TODO
+// may use wrstate from webrender_bindings
+
+// FIXME remove frame from function args
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn wr_init(f: *mut Frame) -> *mut WrCanvas {
+    // assert!(unsafe { !is_in_render_thread() });
+    let f: FrameRef = f.into();
+
+    //     let state = Box::new(WrState {
+    //     pipeline_id,
+    //     frame_builder: WebRenderFrameBuilder::new(pipeline_id),
+    // });
+
+    // Box::into_raw(state)
+
+    let data = Box::new(WrCanvas::build(f));
+    Box::into_raw(data)
 }
 
 /// cbindgen:ignore

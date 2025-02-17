@@ -1471,6 +1471,8 @@ This function is an internal primitive--use `make-frame' instead.  */)
   f->output_method = output_wlc;
   FRAME_OUTPUT_DATA (f) = xzalloc (sizeof *FRAME_OUTPUT_DATA (f));
   FRAME_FONTSET (f) = -1;
+  // initialize wr need native wiget like wl_surface
+  /* FRAME_WR_DATA (f) = wr_init (f); */
   /* FRAME_OUTPUT_DATA (f)->white_relief.pixel = -1; */
   /* FRAME_OUTPUT_DATA (f)->black_relief.pixel = -1; */
 
@@ -1701,6 +1703,8 @@ This function is an internal primitive--use `make-frame' instead.  */)
   f->no_split = minibuffer_only || EQ (tem, Qt);
 
   wlc_window (f, window_prompting);
+
+  FRAME_WR_DATA (f) = wr_init (f);
 
   /* Now consider the frame official.  */
   f->terminal->reference_count++;

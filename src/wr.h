@@ -8,7 +8,8 @@ typedef struct wlc_output output;
 #include "wr_ffi.h"
 
 // defined in rust
-extern wr_canvas *wr_init (void);
+// FIXME takes gl directly or rawwindowhandle
+extern wr_canvas *wr_init (struct frame *f);
 
 extern void wr_after_update_window_line (struct window *w,
 					 struct glyph_row *desired_row);
@@ -56,6 +57,8 @@ extern void
 wr_fill_background_by_face (struct frame *f, struct face *face,
 			    const Emacs_Rectangle * bounds,
 			    const Emacs_Rectangle *clip_bounds);
+extern void
+wr_set_glyph_string_clipping (struct glyph_string *s);
 
 extern void emacs_rust_init_syms(void);
 extern void syms_of_webrender(void);

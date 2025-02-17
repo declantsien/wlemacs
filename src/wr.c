@@ -144,42 +144,6 @@ wr_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
 }
 
 void
-wr_fill_background_by_face (struct frame *f, struct face *face,
-			    const Emacs_Rectangle * bounds,
-			    const Emacs_Rectangle *clip_bounds)
-{
-  wr_push_rect(FRAME_WR_DATA (f), face->background, bounds, clip_bounds);
-  /* TODO */
-  /* cairo_t *cr = pgtk_begin_cr_clip (f); */
-  /* double r, g, b, a; */
-
-  /* cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE); */
-  /* cairo_rectangle (cr, x, y, width, height); */
-  /* cairo_clip (cr); */
-
-  /* r = ((face->background >> 16) & 0xff) / 255.0; */
-  /* g = ((face->background >> 8) & 0xff) / 255.0; */
-  /* b = ((face->background >> 0) & 0xff) / 255.0; */
-  /* a = f->alpha_background; */
-  /* cairo_set_source_rgba (cr, r, g, b, a); */
-  /* cairo_paint (cr); */
-
-  /* if (face->stipple != 0) */
-  /*   { */
-  /*     cairo_pattern_t *mask */
-  /* 	= FRAME_DISPLAY_INFO (f)->bitmaps[face->stipple - 1].pattern; */
-
-  /*     r = ((face->foreground >> 16) & 0xff) / 255.0; */
-  /*     g = ((face->foreground >> 8) & 0xff) / 255.0; */
-  /*     b = ((face->foreground >> 0) & 0xff) / 255.0; */
-  /*     cairo_set_source_rgba (cr, r, g, b, a); */
-  /*     cairo_mask (cr, mask); */
-  /*   } */
-
-  /* pgtk_end_cr_clip (f); */
-}
-
-void
 wr_flush_display (struct frame *f)
 {
   wr_flush(FRAME_WR_DATA (f));
@@ -199,6 +163,25 @@ wr_free_frame_resources (struct frame *f) {
 void
 wr_clear_under_internal_border (struct frame *f) {
   wr_clear_under_internal_border_impl(f, FRAME_WR_DATA (f));
+}
+
+/* Set clipping for output of glyph string S.  S may be part of a mode
+   line or menu if we don't have X toolkit support.  */
+
+void
+wr_set_glyph_string_clipping (struct glyph_string *s)
+{
+  Emacs_Rectangle r[2];
+  int n = get_glyph_string_clip_rects (s, r, 2);
+
+  if (n > 0)
+    {
+      for (int i = 0; i < n; i++)
+	{
+	  wr_define_clip_rect (FRAME_WR_DATA (s->f), &r[i]);
+	}
+    }
+  s->num_clips = n;
 }
 
 void

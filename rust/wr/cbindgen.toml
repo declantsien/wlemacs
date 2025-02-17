@@ -642,6 +642,7 @@ parse_deps = true
 #
 # default: there is no whitelist (NOTE: this is the opposite of [])
 include = []
+# include = ["log", "euclid", "webrender", "webrender_api"]
 
 # A black list of crate names that are not allowed to be parsed.
 # default: []
@@ -657,7 +658,8 @@ clean = false
 # bindings for.
 #
 # default: []
-extra_bindings = ["my_awesome_dep"]
+# extra_bindings = ["webrender_api"]
+extra_bindings = []
 
 [parse.expand]
 # A list of crate names that should be run through `cargo expand` before

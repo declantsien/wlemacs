@@ -58,7 +58,10 @@ pub struct WrCanvas {
     pub document_id: DocumentId,
     pipeline_id: PipelineId,
     root_space_and_clip: SpaceAndClipInfo,
-    clip_chain_id: Option<ClipChainId>,
+    // When is in between of define clipchain_id
+    is_defining_clipinfo: bool,
+    // state of defined clip_ids
+    clip_ids: Vec<ClipId>,
     epoch: Epoch,
     display_list_builder: Option<DisplayListBuilder>,
     previous_frame_image: Option<ImageKey>,
@@ -135,7 +138,8 @@ impl WrCanvas {
             document_id,
             pipeline_id,
             root_space_and_clip,
-            clip_chain_id: None,
+            is_defining_clipinfo: false,
+            clip_ids: Vec::new(),
             epoch,
             display_list_builder: None,
             previous_frame_image: None,
@@ -230,9 +234,9 @@ impl WrCanvas {
             .cast_unit::<webrender::api::units::DevicePixel>()
     }
 
-    pub fn display<F>(&mut self, f: F)
+    pub fn with_display_list_builder<F, T>(&mut self, f: F) -> Option<T>
     where
-        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, LayoutToDeviceScale),
+        F: Fn(&mut DisplayListBuilder) -> T,
     {
         if self.display_list_builder.is_none() {
             let layout_size = self.layout_size();
@@ -244,14 +248,35 @@ impl WrCanvas {
             self.display_list_builder = Some(self.new_builder(image_and_pos));
         }
 
-        let pipeline_id = PipelineId(0, 0);
-        let scale_factor = self.layout_to_device_scale_factor();
-
         if let Some(builder) = &mut self.display_list_builder {
-            let space_and_clip = self.root_space_and_clip;
-
-            f(builder, space_and_clip, scale_factor);
+            Some(f(builder));
         }
+        None
+    }
+
+    pub fn display<F>(&mut self, f: F)
+    where
+        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, LayoutToDeviceScale),
+    {
+        let scale_factor = self.layout_to_device_scale_factor();
+        let spatial_id = self.root_space_and_clip.spatial_id;
+        // TBD where these clones
+        let clip_ids = self.clip_ids.clone();
+        let clip_chain_id = self
+            .with_display_list_builder(|builder| builder.define_clip_chain(None, clip_ids.clone()));
+
+        let space_and_clip = if let Some(clip_chain_id) = clip_chain_id {
+            SpaceAndClipInfo {
+                spatial_id,
+                clip_chain_id,
+            }
+        } else {
+            self.root_space_and_clip
+        };
+
+        self.with_display_list_builder(|builder| {
+            f(builder, space_and_clip, scale_factor);
+        });
 
         self.assert_no_gl_error();
     }
@@ -495,6 +520,29 @@ impl WrCanvas {
         return Some(bitmap);
     }
 
+    pub fn begin_define_clip(&mut self) {
+        assert_eq!(self.is_defining_clipinfo, false);
+        assert_eq!(self.clip_ids.is_empty(), true);
+        self.is_defining_clipinfo = true;
+    }
+
+    pub fn end_define_clip(&mut self) {
+        assert_eq!(self.is_defining_clipinfo, true);
+        self.is_defining_clipinfo = false;
+        self.clip_ids = Vec::new();
+    }
+
+    pub fn define_clip_rect(&mut self, rect: DeviceRect) {
+        assert_eq!(self.is_defining_clipinfo, true);
+        let spatial_id = self.root_space_and_clip.spatial_id;
+        let rect = rect / self.layout_to_device_scale_factor();
+        let clip_id =
+            self.with_display_list_builder(|builder| builder.define_clip_rect(spatial_id, rect));
+        if let Some(clip_id) = clip_id {
+            self.clip_ids.push(clip_id);
+        }
+    }
+
     fn create_fringe_bitmap(
         &mut self,
         bitmap_width: u32,
@@ -560,6 +608,34 @@ impl WrCanvas {
                 rect / scale_factor,
                 clear_color,
             );
+        });
+    }
+
+    pub fn dp_push_rect(
+        &mut self,
+        rect: DeviceRect,
+        clip: DeviceRect,
+        is_backface_visible: bool,
+        force_antialiasing: bool,
+        is_checkerboard: bool,
+        color: libc::c_ulong,
+    ) {
+        // debug_assert!(unsafe { !is_in_render_thread() });
+
+        self.display(|dl_builder, space_and_clip, scale_factor| {
+            let mut prim_info = common_item_properties_for_rect(
+                clip / scale_factor,
+                is_backface_visible,
+                &space_and_clip,
+            );
+            if force_antialiasing {
+                prim_info.flags |= PrimitiveFlags::ANTIALISED;
+            }
+            if is_checkerboard {
+                prim_info.flags |= PrimitiveFlags::CHECKERBOARD_BACKGROUND;
+            }
+
+            dl_builder.push_rect(&prim_info, rect / scale_factor, pixel_to_color(color));
         });
     }
 
@@ -669,4 +745,52 @@ fn create_fringe_bitmap_image_buffer(
     });
 
     image::DynamicImage::ImageRgba8(image_buffer)
+}
+
+// A helper fn to construct a PrimitiveFlags
+fn prim_flags(is_backface_visible: bool, prefer_compositor_surface: bool) -> PrimitiveFlags {
+    let mut flags = PrimitiveFlags::empty();
+
+    if is_backface_visible {
+        flags |= PrimitiveFlags::IS_BACKFACE_VISIBLE;
+    }
+
+    if prefer_compositor_surface {
+        flags |= PrimitiveFlags::PREFER_COMPOSITOR_SURFACE;
+    }
+
+    flags
+}
+
+fn prim_flags2(
+    is_backface_visible: bool,
+    prefer_compositor_surface: bool,
+    supports_external_compositing: bool,
+) -> PrimitiveFlags {
+    let mut flags = PrimitiveFlags::empty();
+
+    if supports_external_compositing {
+        flags |= PrimitiveFlags::SUPPORTS_EXTERNAL_COMPOSITOR_SURFACE;
+    }
+
+    flags | prim_flags(is_backface_visible, prefer_compositor_surface)
+}
+
+fn common_item_properties_for_rect(
+    clip_rect: LayoutRect,
+    is_backface_visible: bool,
+    space_and_clip: &SpaceAndClipInfo,
+) -> CommonItemProperties {
+    CommonItemProperties {
+        // NB: the damp-e10s talos-test will frequently crash on startup if we
+        // early-return here for empty rects. I couldn't figure out why, but
+        // it's pretty harmless to feed these through, so, uh, we do?
+        clip_rect,
+        clip_chain_id: space_and_clip.clip_chain_id,
+        spatial_id: space_and_clip.spatial_id,
+        flags: prim_flags(
+            is_backface_visible,
+            /* prefer_compositor_surface */ false,
+        ),
+    }
 }
