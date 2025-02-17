@@ -6,16 +6,15 @@ use crate::output::{DeviceLength, LayoutLength};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
 use emacs_sys::bindings::{
-    face_underline_type, font_info, globals, glyph_type, Emacs_GC,
-    Emacs_Rectangle as NativeRectangle,
+    face_underline_type, font_info, globals, glyph_type, Emacs_Rectangle as NativeRectangle,
 };
-use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
+use emacs_sys::display_traits::GlyphStringRef;
 use emacs_sys::lisp::LispObject;
 use emacs_sys::number::LNumber;
 use std::cmp::max;
 use webrender::api::units::*;
 use webrender::api::{
-    FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontSize, *,
+    FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, *,
 };
 use webrender::{self};
 // TODO: maybe configurable from lisp world
@@ -374,9 +373,6 @@ impl WrGlyph for GlyphStringRef {
 }
 
 pub trait GlyphStringExtWr {
-    fn set_gc(&mut self);
-    fn set_cursor_gc(&mut self);
-    fn set_mouse_gc(&mut self);
     fn clip_rect(&mut self) -> NativeRectangle;
     fn draw_line(
         &self,
@@ -391,86 +387,6 @@ pub trait GlyphStringExtWr {
 }
 
 impl GlyphStringExtWr for GlyphStringRef {
-    // Set S->gc of glyph string S to a GC suitable for drawing a mode line.
-    // Faces to use in the mode line have already been computed when the
-    // matrix was built, so there isn't much to do, here.
-    fn set_gc(&mut self) {
-        self.prepare_face_for_display();
-        match self.hl() {
-            DrawGlyphsFace::Cursor => self.set_cursor_gc(),
-            DrawGlyphsFace::Mouse => self.set_mouse_gc(),
-            DrawGlyphsFace::NormalText
-            | DrawGlyphsFace::InverseVideo
-            | DrawGlyphsFace::ImageRaised
-            | DrawGlyphsFace::ImageSunken => {
-                self.gc = self.face().gc;
-                let is_stippled = self.face().stipple != 0;
-                self.set_stippled_p(is_stippled);
-            }
-        }
-    }
-
-    fn set_cursor_gc(&mut self) {
-        let face = self.face();
-        let f = self.frame();
-        if self.font() == f.font()
-            && face.background == f.background_pixel
-            && face.foreground == f.foreground_pixel
-            && !self.cmp.is_null()
-        {
-            // winit specific
-            // self.frame().winit_data().map(|d| {
-            //     self.gc().background = color_to_pixel(d.cursor_color);
-            //     self.gc().foreground = color_to_pixel(d.cursor_foreground_color);
-            // });
-        } else {
-            /* Cursor on non-default face: must merge.  */
-            // FIXME not sure the logic below is aligned with x_set_cursor_gc
-            // needs to check
-            let mut foreground = face.background;
-            let mut background = f.cursor_color();
-
-            // If the glyph would be invisible, try a different foreground.
-            if foreground == background {
-                foreground = face.foreground;
-            }
-
-            if foreground == background {
-                foreground = f.cursor_foreground_color();
-            }
-
-            if foreground == background {
-                foreground = face.foreground;
-            }
-
-            // Make sure the cursor is distinct from text in this face.
-            if foreground == face.foreground && background == face.background {
-                foreground = face.background;
-                background = face.foreground;
-            }
-
-            self.gc = &mut Emacs_GC {
-                foreground,
-                background,
-            };
-
-            self.set_stippled_p(false);
-        }
-    }
-    fn set_mouse_gc(&mut self) {
-        self.prepare_face_for_display();
-        if self.font() == self.face().font() {
-            self.gc = self.face().gc;
-        } else {
-            let gc = Box::new(Emacs_GC {
-                background: self.face().background,
-                foreground: self.face().foreground,
-            });
-            let gc = Box::into_raw(gc);
-            self.gc = gc as *mut Emacs_GC;
-        }
-    }
-
     fn clip_rect(&mut self) -> NativeRectangle {
         use emacs_sys::bindings::get_glyph_string_clip_rect;
         let mut clip_rect = NativeRectangle {

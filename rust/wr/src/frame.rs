@@ -3,7 +3,7 @@ use crate::color::pixel_to_color;
 use crate::face::WrFace;
 use crate::glyph::{GlyphStringExtWr, WrGlyph};
 use crate::image::{ImageExt, ImageRef};
-use crate::output::{CanvasRef, FringeBitmap, WrCanvas};
+use crate::output::{CanvasRef, WrCanvas};
 use emacs_sys::bindings::glyph_type;
 use emacs_sys::display_traits::{DrawGlyphsFace, GlyphStringRef};
 use emacs_sys::frame::FrameRef;

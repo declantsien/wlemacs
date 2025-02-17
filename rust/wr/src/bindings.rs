@@ -1,29 +1,21 @@
 use crate::capi::{Emacs_Color, Emacs_GC, Emacs_Pixmap, Emacs_Rectangle};
 use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex, pixel_to_color};
-use crate::face::WrFace;
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
 use crate::output::{DeviceLength, WrCanvas};
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::bindings::{
-    block_input, draw_fringe_bitmap_params, face_id, font_info, globals, glyph_string, image,
-    lookup_basic_face, unblock_input, AREF, FACE_FROM_ID_OR_NULL,
+    block_input, face_id, globals, image, lookup_basic_face, unblock_input, FACE_FROM_ID_OR_NULL,
 };
-use emacs_sys::display_traits::{FaceRef, GlyphStringRef};
-use emacs_sys::font::FontRef;
 use emacs_sys::frame::{Frame, FrameRef};
 use emacs_sys::lisp::LispObject;
-use emacs_sys::window::{Window, WindowRef};
-use std::ffi::OsString;
-use std::os::unix::ffi::OsStringExt;
-use std::{env, slice};
+use std::slice;
 use webrender::api::{
-    AlphaType, BorderRadius, BorderSide, BorderStyle, ClipChainId, ClipId, ColorF,
-    CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions, FontSize, FontTemplate,
-    GlyphInstance, ImageRendering, NativeFontHandle, PipelineId,
+    AlphaType, BorderRadius, BorderSide, BorderStyle, ColorF, CommonItemProperties,
+    FontInstanceOptions, FontInstancePlatformOptions, FontTemplate, GlyphInstance, ImageRendering,
+    NativeFontHandle,
 };
 
-use crate::font::FontInfoRef;
 use std::{mem, ptr};
 use webrender::api::units::{DeviceIntPoint, DeviceIntSideOffsets, DeviceRect};
 
@@ -228,16 +220,6 @@ fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
     }
 }
 
-// #[no_mangle]
-// pub extern "C" fn wr_vec_u8_push_bytes(v: &mut WrVecU8, bytes: ByteSlice) {
-//     v.push_bytes(bytes.as_slice());
-// }
-
-// #[no_mangle]
-// pub extern "C" fn wr_vec_u8_reserve(v: &mut WrVecU8, len: usize) {
-//     v.reserve(len);
-// }
-
 #[no_mangle]
 pub extern "C" fn wr_vec_u8_free(v: WrVecU8) {
     v.into_vec();
@@ -248,49 +230,6 @@ pub extern "C" fn wr_vec_u32_free(v: WrVecU32) {
     v.into_vec();
 }
 
-// #[repr(C)]
-// pub struct ByteSlice<'a> {
-//     buffer: *const u8,
-//     len: usize,
-//     _phantom: PhantomData<&'a ()>,
-// }
-
-// impl<'a> ByteSlice<'a> {
-//     pub fn new(slice: &'a [u8]) -> ByteSlice<'a> {
-//         ByteSlice {
-//             buffer: slice.as_ptr(),
-//             len: slice.len(),
-//             _phantom: PhantomData,
-//         }
-//     }
-
-//     pub fn as_slice(&self) -> &'a [u8] {
-//         unsafe { make_slice(self.buffer, self.len) }
-//     }
-// }
-
-// #[repr(C)]
-// pub struct MutByteSlice<'a> {
-//     buffer: *mut u8,
-//     len: usize,
-//     _phantom: PhantomData<&'a ()>,
-// }
-
-// impl<'a> MutByteSlice<'a> {
-//     pub fn new(slice: &'a mut [u8]) -> MutByteSlice<'a> {
-//         let len = slice.len();
-//         MutByteSlice {
-//             buffer: slice.as_mut_ptr(),
-//             len,
-//             _phantom: PhantomData,
-//         }
-//     }
-
-//     pub fn as_mut_slice(&mut self) -> &'a mut [u8] {
-//         unsafe { make_slice_mut(self.buffer, self.len) }
-//     }
-// }
-
 impl Into<DeviceRect> for &Emacs_Rectangle {
     fn into(self) -> DeviceRect {
         (self.x, self.y)
@@ -299,64 +238,9 @@ impl Into<DeviceRect> for &Emacs_Rectangle {
     }
 }
 
-// impl From<&Emacs_Rectangle> for DeviceRect {
-//     fn from(rect: &Emacs_Rectangle) -> Self {
-//         (rect.x, rect.y)
-//             .by(rect.width as i32, rect.height as i32)
-//             .to_f32()
-//     }
-// }
-
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct WrClipId {
-    id: usize,
-}
-
-impl WrClipId {
-    fn to_webrender(&self, pipeline_id: PipelineId) -> ClipId {
-        ClipId(self.id, pipeline_id)
-    }
-
-    fn from_webrender(clip_id: ClipId) -> Self {
-        WrClipId { id: clip_id.0 }
-    }
-}
-
-// #[repr(C)]
-// pub struct WrFontKey(pub u32, pub u32);
-// #[repr(C)]
-// pub struct WrFontInstanceKey(pub u32, pub u32);
-// #[repr(C)]
-// pub struct WrClipChainId(pub u32, pub u32, pub u32); // clipchain, pipelinesource, pipeline in that order
-
-// impl Into<ClipChainId> for &WrClipChainId {
-//     fn into(self) -> ClipChainId {
-//         let pipeline_id = PipelineId(self.1, self.2);
-//         ClipChainId(self.0, pipeline_id)
-//     }
-// }
-
-// impl From<ClipChainId> for WrClipChainId {
-//     fn from(clip_chain_id: ClipChainId) -> WrClipChainId {
-//         WrClipChainId(clip_chain_id.0, clip_chain_id.1.0, clip_chain_id.1.1)
-//     }
-// }
-
 #[no_mangle]
 pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
     canvas.flush();
-}
-
-/// cbindgen:ignore
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern "C" fn wr_draw_glyph_string(s: *mut glyph_string) {
-    let s: GlyphStringRef = s.into();
-
-    let mut frame: FrameRef = s.f.into();
-
-    frame.draw_glyph_string(s);
 }
 
 #[no_mangle]
@@ -734,38 +618,6 @@ pub extern "C" fn wr_transform_image(
 
 /// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn wr_add_font(frame: *mut Frame, font_object: LispObject) {
-    let f = FrameRef::new(frame);
-    let filename = unsafe {
-        AREF(
-            font_object,
-            emacs_sys::bindings::font_property_index::FONT_FILE_INDEX
-                .try_into()
-                .unwrap(),
-        )
-    };
-    let path = std::path::PathBuf::from(String::from(filename));
-    let mut font = FontRef::new(unsafe { emacs_sys::bindings::XFONT_OBJECT(font_object) });
-    let mut font_info = FontInfoRef::new(font.as_mut() as *mut font_info);
-    let index = font_info.index as u32;
-
-    let wr_font_key = f
-        .wr()
-        .wr_add_font(FontTemplate::Native(NativeFontHandle { path, index }));
-
-    let wr_font_instance_key = f.wr().wr_add_font_instance(
-        wr_font_key,
-        DeviceLength::new(font.pixel_size as f32),
-        Some(FontInstanceOptions::default()),
-        Some(FontInstancePlatformOptions::default()),
-        Vec::new(),
-    );
-    // font_info.font_key = wr_font_key;
-    // font_info.font_instance_key = wr_font_instance_key;
-}
-
-/// cbindgen:ignore
-#[no_mangle]
 pub extern "C" fn image_pixmap_draw_cross(
     _frame: FrameRef,
     _pixmap: Emacs_Pixmap,
@@ -849,12 +701,6 @@ pub extern "C" fn wr_parse_color(
         0
     }
 }
-
-// #[no_mangle]
-// pub extern "C" fn wr_init() -> *mut libc::c_void {
-//     let data = Box::new(WrData::build(self.clone()));
-//     Box::into_raw(data) as *mut libc::c_void
-// }
 
 #[no_mangle]
 pub unsafe extern "C" fn wr_destroy(canvas: *mut WrCanvas) {

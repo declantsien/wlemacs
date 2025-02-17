@@ -24,8 +24,6 @@ extern bool wr_can_use_native_image_api (Lisp_Object type);
 extern void wr_transform_image(struct frame *f, struct image *img, int width, int height, double rotation);
 
 extern void wr_flush_display (struct frame *f);
-extern void
-wr_draw_glyph_string (struct glyph_string *s);
 extern void wr_clear_frame_area (struct frame *, int, int, int, int);
 extern void
 wr_draw_window_cursor (struct window *w, struct glyph_row *glyph_row, int x,
