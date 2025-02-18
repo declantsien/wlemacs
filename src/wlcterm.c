@@ -1626,6 +1626,19 @@ wlc_draw_glyph_string_box (struct glyph_string *s)
     }
 }
 
+static void
+wlc_draw_underwave (struct glyph_string *s, unsigned long color)
+{
+  int wave_height = 3, wave_thickness = 2;
+
+  // Note! we use s->underline_thickness here, pgtk has a fixed value
+  const Emacs_Rectangle bounds = {s->x, s->ybase - wave_height + 3,
+				  s->width, wave_height};
+
+  wr_draw_horizontal_wave (s->f, &bounds, color, wave_thickness);
+}
+
+
 /* Draw glyph string S.  */
 
 static void
@@ -1745,195 +1758,195 @@ wlc_draw_glyph_string (struct glyph_string *s)
       emacs_abort ();
     }
 
-  /* if (!s->for_overlaps) */
-  /*   { */
-  /*     /\* Draw relief if not yet drawn.  *\/ */
-  /*     if (!relief_drawn_p && s->face->box != FACE_NO_BOX) */
-  /* 	pgtk_draw_glyph_string_box (s); */
+  if (!s->for_overlaps)
+    {
+      /* Draw relief if not yet drawn.  */
+      if (!relief_drawn_p && s->face->box != FACE_NO_BOX)
+	wlc_draw_glyph_string_box (s);
 
-  /*     /\* Draw underline.  *\/ */
-  /*     if (s->face->underline) */
-  /* 	{ */
-  /* 	  if (s->face->underline == FACE_UNDERLINE_WAVE) */
-  /* 	    { */
-  /* 	      if (s->face->underline_defaulted_p) */
-  /* 		pgtk_draw_underwave (s, s->xgcv.foreground); */
-  /* 	      else */
-  /* 		pgtk_draw_underwave (s, s->face->underline_color); */
-  /* 	    } */
-  /* 	  else if (s->face->underline >= FACE_UNDERLINE_SINGLE) */
-  /* 	    { */
-  /* 	      unsigned long thickness, position; */
-  /* 	      unsigned long foreground; */
+      /* Draw underline.  */
+      if (s->face->underline)
+	{
+	  if (s->face->underline == FACE_UNDERLINE_WAVE)
+	    {
+	      if (s->face->underline_defaulted_p)
+		wlc_draw_underwave (s, s->gc->foreground);
+	      else
+		wlc_draw_underwave (s, s->face->underline_color);
+	    }
+	  /* else if (s->face->underline >= FACE_UNDERLINE_SINGLE) */
+	  /*   { */
+	  /*     unsigned long thickness, position; */
+	  /*     unsigned long foreground; */
 
-  /* 	      if (s->prev */
-  /* 		  && (s->prev->face->underline != FACE_UNDERLINE_WAVE */
-  /* 		      && s->prev->face->underline >= FACE_UNDERLINE_SINGLE) */
-  /* 		  && (s->prev->face->underline_at_descent_line_p */
-  /* 		      == s->face->underline_at_descent_line_p) */
-  /* 		  && (s->prev->face->underline_pixels_above_descent_line */
-  /* 		      == s->face->underline_pixels_above_descent_line)) */
-  /* 		{ */
-  /* 		  /\* We use the same underline style as the previous one.  *\/ */
-  /* 		  thickness = s->prev->underline_thickness; */
-  /* 		  position = s->prev->underline_position; */
-  /* 		} */
-  /* 	      else */
-  /* 		{ */
-  /* 		  struct font *font = font_for_underline_metrics (s); */
+	  /*     if (s->prev */
+	  /* 	  && (s->prev->face->underline != FACE_UNDERLINE_WAVE */
+	  /* 	      && s->prev->face->underline >= FACE_UNDERLINE_SINGLE) */
+	  /* 	  && (s->prev->face->underline_at_descent_line_p */
+	  /* 	      == s->face->underline_at_descent_line_p) */
+	  /* 	  && (s->prev->face->underline_pixels_above_descent_line */
+	  /* 	      == s->face->underline_pixels_above_descent_line)) */
+	  /* 	{ */
+	  /* 	  /\* We use the same underline style as the previous one.  *\/ */
+	  /* 	  thickness = s->prev->underline_thickness; */
+	  /* 	  position = s->prev->underline_position; */
+	  /* 	} */
+	  /*     else */
+	  /* 	{ */
+	  /* 	  struct font *font = font_for_underline_metrics (s); */
 
-  /* 		  /\* Get the underline thickness.  Default is 1 pixel.  *\/ */
-  /* 		  if (font && font->underline_thickness > 0) */
-  /* 		    thickness = font->underline_thickness; */
-  /* 		  else */
-  /* 		    thickness = 1; */
-  /* 		  if ((x_underline_at_descent_line */
-  /* 		       || s->face->underline_at_descent_line_p)) */
-  /* 		    position = ((s->height - thickness) */
-  /* 				- (s->ybase - s->y) */
-  /* 				- s->face->underline_pixels_above_descent_line); */
-  /* 		  else */
-  /* 		    { */
-  /* 		      /\* Get the underline position.  This is the recommended */
-  /* 		         vertical offset in pixels from the baseline to the top of */
-  /* 		         the underline.  This is a signed value according to the */
-  /* 		         specs, and its default is */
+	  /* 	  /\* Get the underline thickness.  Default is 1 pixel.  *\/ */
+	  /* 	  if (font && font->underline_thickness > 0) */
+	  /* 	    thickness = font->underline_thickness; */
+	  /* 	  else */
+	  /* 	    thickness = 1; */
+	  /* 	  if ((x_underline_at_descent_line */
+	  /* 	       || s->face->underline_at_descent_line_p)) */
+	  /* 	    position = ((s->height - thickness) */
+	  /* 			- (s->ybase - s->y) */
+	  /* 			- s->face->underline_pixels_above_descent_line); */
+	  /* 	  else */
+	  /* 	    { */
+	  /* 	      /\* Get the underline position.  This is the recommended */
+	  /* 	         vertical offset in pixels from the baseline to the top of */
+	  /* 	         the underline.  This is a signed value according to the */
+	  /* 	         specs, and its default is */
 
-  /* 		         ROUND ((maximum descent) / 2), with */
-  /* 		         ROUND(x) = floor (x + 0.5)  *\/ */
+	  /* 	         ROUND ((maximum descent) / 2), with */
+	  /* 	         ROUND(x) = floor (x + 0.5)  *\/ */
 
-  /* 		      if (x_use_underline_position_properties */
-  /* 			  && font && font->underline_position >= 0) */
-  /* 			position = font->underline_position; */
-  /* 		      else if (font) */
-  /* 			position = (font->descent + 1) / 2; */
-  /* 		      else */
-  /* 			position = underline_minimum_offset; */
-  /* 		    } */
+	  /* 	      if (x_use_underline_position_properties */
+	  /* 		  && font && font->underline_position >= 0) */
+	  /* 		position = font->underline_position; */
+	  /* 	      else if (font) */
+	  /* 		position = (font->descent + 1) / 2; */
+	  /* 	      else */
+	  /* 		position = underline_minimum_offset; */
+	  /* 	    } */
 
-  /* 		  /\* Ignore minimum_offset if the amount of pixels was */
-  /* 		     explicitly specified.  *\/ */
-  /* 		  if (!s->face->underline_pixels_above_descent_line) */
-  /* 		    position = max (position, underline_minimum_offset); */
-  /* 		} */
-  /* 	      /\* Check the sanity of thickness and position.  We should */
-  /* 	         avoid drawing underline out of the current line area.  *\/ */
-  /* 	      if (s->y + s->height <= s->ybase + position) */
-  /* 		position = (s->height - 1) - (s->ybase - s->y); */
-  /* 	      if (s->y + s->height < s->ybase + position + thickness) */
-  /* 		thickness = (s->y + s->height) - (s->ybase + position); */
-  /* 	      s->underline_thickness = thickness; */
-  /* 	      s->underline_position = position; */
+	  /* 	  /\* Ignore minimum_offset if the amount of pixels was */
+	  /* 	     explicitly specified.  *\/ */
+	  /* 	  if (!s->face->underline_pixels_above_descent_line) */
+	  /* 	    position = max (position, underline_minimum_offset); */
+	  /* 	} */
+	  /*     /\* Check the sanity of thickness and position.  We should */
+	  /*        avoid drawing underline out of the current line area.  *\/ */
+	  /*     if (s->y + s->height <= s->ybase + position) */
+	  /* 	position = (s->height - 1) - (s->ybase - s->y); */
+	  /*     if (s->y + s->height < s->ybase + position + thickness) */
+	  /* 	thickness = (s->y + s->height) - (s->ybase + position); */
+	  /*     s->underline_thickness = thickness; */
+	  /*     s->underline_position = position; */
 
-  /* 	      if (s->face->underline_defaulted_p) */
-  /* 		foreground = s->xgcv.foreground; */
-  /* 	      else */
-  /* 		foreground = s->face->underline_color; */
+	  /*     if (s->face->underline_defaulted_p) */
+	  /* 	foreground = s->gc->foreground; */
+	  /*     else */
+	  /* 	foreground = s->face->underline_color; */
 
-  /* 	      pgtk_fill_underline (s->f, s, foreground, s->face->underline, */
-  /* 				   position, s->width, thickness); */
+	  /*     pgtk_fill_underline (s->f, s, foreground, s->face->underline, */
+	  /* 			   position, s->width, thickness); */
 
-  /* 	      /\* Place a second underline above the first if this was */
-  /* 		 requested in the face specification.  *\/ */
+	  /*     /\* Place a second underline above the first if this was */
+	  /* 	 requested in the face specification.  *\/ */
 
-  /* 	      if (s->face->underline == FACE_UNDERLINE_DOUBLE_LINE) */
-  /* 		{ */
-  /* 		  /\* Compute the position of the second underline.  *\/ */
-  /* 		  position = position - thickness - 1; */
-  /* 		  pgtk_fill_underline (s->f, s, foreground, s->face->underline, */
-  /* 				       position, s->width, thickness); */
-  /* 		} */
-  /* 	    } */
-  /* 	} */
-  /*     /\* Draw overline.  *\/ */
-  /*     if (s->face->overline_p) */
-  /* 	{ */
-  /* 	  unsigned long dy = 0, h = 1; */
+	  /*     if (s->face->underline == FACE_UNDERLINE_DOUBLE_LINE) */
+	  /* 	{ */
+	  /* 	  /\* Compute the position of the second underline.  *\/ */
+	  /* 	  position = position - thickness - 1; */
+	  /* 	  pgtk_fill_underline (s->f, s, foreground, s->face->underline, */
+	  /* 			       position, s->width, thickness); */
+	  /* 	} */
+	  /*   } */
+	}
+      /* /\* Draw overline.  *\/ */
+      /* if (s->face->overline_p) */
+      /* 	{ */
+      /* 	  unsigned long dy = 0, h = 1; */
 
-  /* 	  if (s->face->overline_color_defaulted_p) */
-  /* 	    pgtk_fill_rectangle (s->f, s->xgcv.foreground, s->x, s->y + dy, */
-  /* 				 s->width, h, false); */
-  /* 	  else */
-  /* 	    pgtk_fill_rectangle (s->f, s->face->overline_color, s->x, */
-  /* 				 s->y + dy, s->width, h, false); */
-  /* 	} */
+      /* 	  if (s->face->overline_color_defaulted_p) */
+      /* 	    pgtk_fill_rectangle (s->f, s->xgcv.foreground, s->x, s->y + dy, */
+      /* 				 s->width, h, false); */
+      /* 	  else */
+      /* 	    pgtk_fill_rectangle (s->f, s->face->overline_color, s->x, */
+      /* 				 s->y + dy, s->width, h, false); */
+      /* 	} */
 
-  /*     /\* Draw strike-through.  *\/ */
-  /*     if (s->face->strike_through_p) */
-  /* 	{ */
-  /* 	  /\* Y-coordinate and height of the glyph string's first */
-  /* 	     glyph.  We cannot use s->y and s->height because those */
-  /* 	     could be larger if there are taller display elements */
-  /* 	     (e.g., characters displayed with a larger font) in the */
-  /* 	     same glyph row.  *\/ */
-  /* 	  int glyph_y = s->ybase - s->first_glyph->ascent; */
-  /* 	  int glyph_height = s->first_glyph->ascent + s->first_glyph->descent; */
-  /* 	  /\* Strike-through width and offset from the glyph string's */
-  /* 	     top edge.  *\/ */
-  /*         unsigned long h = 1; */
-  /*         unsigned long dy = (glyph_height - h) / 2; */
+      /* /\* Draw strike-through.  *\/ */
+      /* if (s->face->strike_through_p) */
+      /* 	{ */
+      /* 	  /\* Y-coordinate and height of the glyph string's first */
+      /* 	     glyph.  We cannot use s->y and s->height because those */
+      /* 	     could be larger if there are taller display elements */
+      /* 	     (e.g., characters displayed with a larger font) in the */
+      /* 	     same glyph row.  *\/ */
+      /* 	  int glyph_y = s->ybase - s->first_glyph->ascent; */
+      /* 	  int glyph_height = s->first_glyph->ascent + s->first_glyph->descent; */
+      /* 	  /\* Strike-through width and offset from the glyph string's */
+      /* 	     top edge.  *\/ */
+      /*     unsigned long h = 1; */
+      /*     unsigned long dy = (glyph_height - h) / 2; */
 
-  /* 	  if (s->face->strike_through_color_defaulted_p) */
-  /* 	    pgtk_fill_rectangle (s->f, s->xgcv.foreground, s->x, glyph_y + dy, */
-  /* 				 s->width, h, false); */
-  /* 	  else */
-  /* 	    pgtk_fill_rectangle (s->f, s->face->strike_through_color, s->x, */
-  /* 				 glyph_y + dy, s->width, h, false); */
-  /* 	} */
+      /* 	  if (s->face->strike_through_color_defaulted_p) */
+      /* 	    pgtk_fill_rectangle (s->f, s->xgcv.foreground, s->x, glyph_y + dy, */
+      /* 				 s->width, h, false); */
+      /* 	  else */
+      /* 	    pgtk_fill_rectangle (s->f, s->face->strike_through_color, s->x, */
+      /* 				 glyph_y + dy, s->width, h, false); */
+      /* 	} */
 
-  /*     if (s->prev) */
-  /* 	{ */
-  /* 	  struct glyph_string *prev; */
+      /* if (s->prev) */
+      /* 	{ */
+      /* 	  struct glyph_string *prev; */
 
-  /* 	  for (prev = s->prev; prev; prev = prev->prev) */
-  /* 	    if (prev->hl != s->hl */
-  /* 		&& prev->x + prev->width + prev->right_overhang > s->x) */
-  /* 	      { */
-  /* 		/\* As prev was drawn while clipped to its own area, we */
-  /* 		   must draw the right_overhang part using s->hl now.  *\/ */
-  /* 		enum draw_glyphs_face save = prev->hl; */
+      /* 	  for (prev = s->prev; prev; prev = prev->prev) */
+      /* 	    if (prev->hl != s->hl */
+      /* 		&& prev->x + prev->width + prev->right_overhang > s->x) */
+      /* 	      { */
+      /* 		/\* As prev was drawn while clipped to its own area, we */
+      /* 		   must draw the right_overhang part using s->hl now.  *\/ */
+      /* 		enum draw_glyphs_face save = prev->hl; */
 
-  /* 		prev->hl = s->hl; */
-  /* 		pgtk_set_glyph_string_gc (prev); */
-  /* 		cairo_save (cr); */
-  /* 		pgtk_set_glyph_string_clipping_exactly (s, prev, cr); */
-  /* 		if (prev->first_glyph->type == CHAR_GLYPH) */
-  /* 		  pgtk_draw_glyph_string_foreground (prev); */
-  /* 		else */
-  /* 		  pgtk_draw_composite_glyph_string_foreground (prev); */
-  /* 		prev->hl = save; */
-  /* 		prev->num_clips = 0; */
-  /* 		cairo_restore (cr); */
-  /* 	      } */
-  /* 	} */
+      /* 		prev->hl = s->hl; */
+      /* 		pgtk_set_glyph_string_gc (prev); */
+      /* 		cairo_save (cr); */
+      /* 		pgtk_set_glyph_string_clipping_exactly (s, prev, cr); */
+      /* 		if (prev->first_glyph->type == CHAR_GLYPH) */
+      /* 		  pgtk_draw_glyph_string_foreground (prev); */
+      /* 		else */
+      /* 		  pgtk_draw_composite_glyph_string_foreground (prev); */
+      /* 		prev->hl = save; */
+      /* 		prev->num_clips = 0; */
+      /* 		cairo_restore (cr); */
+      /* 	      } */
+      /* 	} */
 
-  /*     if (s->next) */
-  /* 	{ */
-  /* 	  struct glyph_string *next; */
+      /* if (s->next) */
+      /* 	{ */
+      /* 	  struct glyph_string *next; */
 
-  /* 	  for (next = s->next; next; next = next->next) */
-  /* 	    if (next->hl != s->hl */
-  /* 		&& next->x - next->left_overhang < s->x + s->width) */
-  /* 	      { */
-  /* 		/\* As next will be drawn while clipped to its own area, */
-  /* 		   we must draw the left_overhang part using s->hl now.  *\/ */
-  /* 		enum draw_glyphs_face save = next->hl; */
+      /* 	  for (next = s->next; next; next = next->next) */
+      /* 	    if (next->hl != s->hl */
+      /* 		&& next->x - next->left_overhang < s->x + s->width) */
+      /* 	      { */
+      /* 		/\* As next will be drawn while clipped to its own area, */
+      /* 		   we must draw the left_overhang part using s->hl now.  *\/ */
+      /* 		enum draw_glyphs_face save = next->hl; */
 
-  /* 		next->hl = s->hl; */
-  /* 		pgtk_set_glyph_string_gc (next); */
-  /* 		cairo_save (cr); */
-  /* 		pgtk_set_glyph_string_clipping_exactly (s, next, cr); */
-  /* 		if (next->first_glyph->type == CHAR_GLYPH) */
-  /* 		  pgtk_draw_glyph_string_foreground (next); */
-  /* 		else */
-  /* 		  pgtk_draw_composite_glyph_string_foreground (next); */
-  /* 		cairo_restore (cr); */
-  /* 		next->hl = save; */
-  /* 		next->num_clips = 0; */
-  /* 		next->clip_head = s->next; */
-  /* 	      } */
-  /* 	} */
-  /*   } */
+      /* 		next->hl = s->hl; */
+      /* 		pgtk_set_glyph_string_gc (next); */
+      /* 		cairo_save (cr); */
+      /* 		pgtk_set_glyph_string_clipping_exactly (s, next, cr); */
+      /* 		if (next->first_glyph->type == CHAR_GLYPH) */
+      /* 		  pgtk_draw_glyph_string_foreground (next); */
+      /* 		else */
+      /* 		  pgtk_draw_composite_glyph_string_foreground (next); */
+      /* 		cairo_restore (cr); */
+      /* 		next->hl = save; */
+      /* 		next->num_clips = 0; */
+      /* 		next->clip_head = s->next; */
+      /* 	      } */
+      /* 	} */
+    }
 
   /* TODO: figure out in which cases the stipple is actually drawn on
      PGTK.  */

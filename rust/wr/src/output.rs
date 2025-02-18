@@ -262,9 +262,13 @@ impl WrCanvas {
         let scale_factor = self.layout_to_device_scale_factor();
         let spatial_id = self.root_space_and_clip.spatial_id;
         // TBD where these clones
+        let mut clip_chain_id = None;
         let clip_ids = self.clip_ids.clone();
-        let clip_chain_id = self
-            .with_display_list_builder(|builder| builder.define_clip_chain(None, clip_ids.clone()));
+        if !clip_ids.is_empty() {
+            clip_chain_id = self.with_display_list_builder(|builder| {
+                builder.define_clip_chain(None, clip_ids.clone())
+            });
+        }
 
         let space_and_clip = if let Some(clip_chain_id) = clip_chain_id {
             SpaceAndClipInfo {
@@ -722,6 +726,40 @@ impl WrCanvas {
         });
     }
 
+    pub fn dp_push_line(
+        &mut self,
+        bounds: DeviceRect,
+        clip: DeviceRect,
+        color: &ColorF,
+        style: LineStyle,
+        wavy_line_thickness: DeviceIntLength,
+        is_backface_visible: bool,
+        orientation: LineOrientation,
+    ) {
+        // debug_assert!(unsafe { is_in_main_thread() });
+
+        self.display(|dl_builder, space_and_clip, scale_factor| {
+            let prim_info = CommonItemProperties {
+                clip_rect: clip / scale_factor,
+                clip_chain_id: space_and_clip.clip_chain_id,
+                spatial_id: space_and_clip.spatial_id,
+                flags: prim_flags(
+                    is_backface_visible,
+                    /* prefer_compositor_surface */ false,
+                ),
+            };
+
+            dl_builder.push_line(
+                &prim_info,
+                &(bounds / scale_factor),
+                device_int_to_layout_length(wavy_line_thickness, scale_factor).get(),
+                orientation,
+                color,
+                style,
+            );
+        });
+    }
+
     pub fn deinit(mut self) {
         self.ensure_context_is_current();
         self.renderer.deinit();
@@ -852,4 +890,11 @@ fn device_int_to_layout_side_offsets(
         offsets.bottom as f32 / scale_factor.get(),
         offsets.left as f32 / scale_factor.get(),
     )
+}
+
+fn device_int_to_layout_length(
+    length: DeviceIntLength,
+    scale_factor: LayoutToDeviceScale,
+) -> LayoutLength {
+    LayoutLength::new(length.get() as f32 / scale_factor.get())
 }

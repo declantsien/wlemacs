@@ -13,11 +13,11 @@ use std::slice;
 use webrender::api::{
     AlphaType, BorderRadius, BorderSide, BorderStyle, ColorF, CommonItemProperties,
     FontInstanceOptions, FontInstancePlatformOptions, FontTemplate, GlyphInstance, ImageRendering,
-    NativeFontHandle,
+    LineOrientation, LineStyle, NativeFontHandle,
 };
 
 use std::{mem, ptr};
-use webrender::api::units::{DeviceIntPoint, DeviceIntSideOffsets, DeviceRect};
+use webrender::api::units::{DeviceIntLength, DeviceIntPoint, DeviceIntSideOffsets, DeviceRect};
 
 /// Whether a border should be antialiased.
 #[repr(C)]
@@ -331,6 +331,25 @@ pub extern "C" fn wr_dp_push_rect(
         force_antialiasing,
         is_checkerboard,
         color_pixel,
+    );
+}
+
+#[no_mangle]
+pub extern "C" fn wr_draw_horizontal_wave(
+    canvas: &mut WrCanvas,
+    rect: &Emacs_Rectangle,
+    color_pixel: ::libc::c_ulong,
+    thickness: ::libc::c_int,
+) {
+    // debug_assert!(unsafe { !is_in_render_thread() });
+    canvas.dp_push_line(
+        rect.into(),
+        rect.into(),
+        &pixel_to_color(color_pixel),
+        LineStyle::Wavy,
+        DeviceIntLength::new(thickness),
+        false,
+        LineOrientation::Horizontal,
     );
 }
 
