@@ -142,7 +142,7 @@
                 libXpm
                 libXext
                 libXxf86vm
-                alsaLib
+                alsa-lib
                 libxkbcommon
                 wayland
                 fontconfig
@@ -222,7 +222,8 @@
                 "--with-dbus"
               ]
               ++ lib.optionals stdenv.cc.isClang [
-                "RUSTFLAGS=-l${stdenv.cc.libcxx.cxxabi.libName}"
+                # https://github.com/NixOS/nixpkgs/pull/292043
+                # "RUSTFLAGS=-l${stdenv.cc.libcxx.cxxabi.libName}"
               ];
 
             postPatch =
