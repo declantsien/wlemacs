@@ -2,20 +2,23 @@
 #![feature(concat_idents)]
 #![allow(non_upper_case_globals)]
 
-#[macro_use]
-extern crate emacs_sys;
+// pub mod frame;
 
-pub mod frame;
+// pub mod bindings;
+// pub mod color;
+// pub mod image;
+// pub mod output;
 
-pub mod bindings;
-pub mod color;
-pub mod image;
-pub mod output;
-
-/// cbindgen:ignore
-mod capi;
-mod face;
+// /// cbindgen:ignore
+// mod capi;
+// mod face;
 pub mod font;
-mod glyph;
-mod texture;
-mod util;
+pub mod types;
+// mod glyph;
+// mod texture;
+// mod util;
+
+#[no_mangle]
+pub extern "C" fn test() {
+    todo!()
+}

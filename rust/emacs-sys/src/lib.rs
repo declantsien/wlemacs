@@ -62,23 +62,23 @@ mod window_system;
 pub mod xdisp;
 #[cfg(all(any(have_pgtk, have_wayland_client), use_webrender))]
 pub use window_system::*;
-#[cfg(any(glutin, surfman, gtk3))]
-pub mod gfx {
-    pub mod context;
+// #[cfg(any(glutin, surfman, gtk3))]
+// pub mod gfx {
+//     pub mod context;
 
-    pub mod context_impl {
-        #[cfg(glutin)]
-        pub use crate::gfx::context_impl::glutin::*;
-        #[cfg(gtk3)]
-        pub use crate::gfx::context_impl::gtk3::*;
-        #[cfg(surfman)]
-        pub use crate::gfx::context_impl::surfman::*;
+//     pub mod context_impl {
+//         #[cfg(glutin)]
+//         pub use crate::gfx::context_impl::glutin::*;
+//         #[cfg(gtk3)]
+//         pub use crate::gfx::context_impl::gtk3::*;
+//         #[cfg(surfman)]
+//         pub use crate::gfx::context_impl::surfman::*;
 
-        #[cfg(glutin)]
-        pub mod glutin;
-        #[cfg(gtk3)]
-        pub mod gtk3;
-        #[cfg(surfman)]
-        pub mod surfman;
-    }
-}
+//         #[cfg(glutin)]
+//         pub mod glutin;
+//         #[cfg(gtk3)]
+//         pub mod gtk3;
+//         #[cfg(surfman)]
+//         pub mod surfman;
+//     }
+// }

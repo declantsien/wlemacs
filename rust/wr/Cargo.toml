@@ -1,3 +1,4 @@
+
 [package]
 name = "wr"
 description = "Emacs draw api using Rust crate webrender"
@@ -10,19 +11,35 @@ crate-type = ["staticlib"]
 path = "src/lib.rs"
 
 [dependencies]
-emacs-sys = { path = "../emacs-sys", features = ["webrender"] }
-log.workspace = true
-libc.workspace = true
-gleam.workspace = true
-image.workspace = true
+# emacs-sys = { path = "../emacs-sys", features = ["webrender"] }
+log = "0.4"
+libc = "0.2.154"
+gleam = "0.15"
+image = "0.24"
 bit-vec = "0.6.3"
-raw-window-handle.workspace = true
-euclid.workspace = true
-parking_lot.workspace = true
-webrender = { workspace = true }
-wr_glyph_rasterizer.workspace = true
+raw-window-handle = "0.6"
+euclid = "0.22"
+parking_lot = "0.12"
 rayon = "1"
 tracing = "0.1"
+
+[dependencies.webrender]
+# git = "https://github.com/declantsien/webrender.git"
+# rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
+path = "../../../webrender/webrender"
+default-features = false
+
+[dependencies.webrender_api]
+# git = "https://github.com/declantsien/webrender.git"
+# rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
+path = "../../../webrender/webrender_api"
+default-features = false
+
+[dependencies.wr_glyph_rasterizer]
+# git = "https://github.com/declantsien/webrender.git"
+# rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
+path = "../../../webrender/wr_glyph_rasterizer"
+default-features = false
 
 [dependencies.tracing-subscriber]
 version = "0.3"
@@ -38,18 +55,20 @@ features = [
 
 [build-dependencies]
 anyhow = "1"
-cfg_aliases.workspace = true
-
+cfg_aliases = "0.2"
+# cbindgen = "0.28.0"
+  
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.9"
 
 [features]
-default=["window-system-wlc", "glutin"]
-window-system-pgtk=["emacs-sys/window-system-pgtk", "gtk3", "emacs-sys/webrender"]
-window-system-wlc=["emacs-sys/window-system-wlc", "emacs-sys/webrender", "glutin"]
-glutin=["emacs-sys/glutin"]
-surfman=["emacs-sys/surfman"]
-gtk3=["emacs-sys/gtk3"]
+default=["window-system-nextstep"]
+window-system-pgtk=["gtk3"]
+window-system-wlc=["glutin"]
+window-system-nextstep=[]
+glutin=[]
+surfman=[]
+gtk3=[]
 capture=["webrender/capture", "webrender/serialize_program"]
 profiling=["webrender/profiler"]
 sw_compositor=["webrender/sw_compositor"]

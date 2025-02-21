@@ -152,8 +152,10 @@ typedef HDC Emacs_Pix_Context;
 #include "nsgui.h"
 /* Following typedef needed to accommodate the MSDOS port, believe it or not.  */
 typedef struct ns_display_info Display_Info;
+#ifndef USE_WEBRENDER
 typedef Emacs_Pixmap Emacs_Pix_Container;
 typedef Emacs_Pixmap Emacs_Pix_Context;
+#endif /* USE_WEBRENDER_ */
 #endif
 
 #ifdef HAVE_PGTK

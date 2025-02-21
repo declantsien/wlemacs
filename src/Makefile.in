@@ -725,7 +725,7 @@ globals.h: gl-stamp; @true
 HEADERS=$(wildcard $(srcdir)/*.h)
 
 wr_ffi_generated.h : FORCE
-	cd ../rust/wr/ && cbindgen --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
+	cd ../rust/wr/ && cbindgen -i --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
 
 ../rust/wr/src/capi.rs : FORCE
 	bindgen wrapper.h \

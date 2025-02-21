@@ -6,6 +6,7 @@ use emacs_sys::gfx::context::GLContext;
 use image::GenericImageView;
 use webrender::api::euclid::Length;
 
+
 use super::image::cache::ImageHash;
 use emacs_sys::gfx::context::GLContextTrait;
 use emacs_sys::lisp::ExternalPtr;

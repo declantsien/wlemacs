@@ -33,6 +33,10 @@ Author: Adrian Robert (arobert@cogsci.ucsd.edu)
 #include "window.h"
 #include "fontset.h"
 #include "nsterm.h"
+#include "nsterm.h"
+#ifdef USE_WEBRENDER
+#include "wr_ffi_generated.h"
+#endif // USE_WEBRENDER
 #include "character.h"
 #include "font.h"
 #include "termchar.h"

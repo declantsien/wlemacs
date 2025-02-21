@@ -25,6 +25,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "font.h"
 #include "sysselect.h"
 #include "sysstdio.h"
+#ifdef USE_WEBRENDER
+#include "wr.h"
+#endif
 
 #ifdef HAVE_NS
 #ifdef __OBJC__
@@ -926,6 +929,11 @@ extern long context_menu_value;
 
 struct ns_output
 {
+#ifdef USE_WEBRENDER
+  /* Inner perporty in Rust */
+  struct wr_canvas* wr_data;
+#endif  /*USE_WEBRENDER*/
+
 #ifdef __OBJC__
   EmacsView *view;
   id miniimage;
@@ -1086,8 +1094,10 @@ struct x_output
 #define FRAME_FONTSET(f) ((f)->output_data.ns->fontset)
 
 #define FRAME_BASELINE_OFFSET(f) ((f)->output_data.ns->baseline_offset)
+#ifndef USE_WEBRENDER
 #define BLACK_PIX_DEFAULT(f) 0x000000
 #define WHITE_PIX_DEFAULT(f) 0xFFFFFF
+#endif  /* USE_WEBRENDER */
 
 /* First position where characters can be shown (instead of scrollbar, if
    it is on left.  */

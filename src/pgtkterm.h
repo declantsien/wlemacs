@@ -292,7 +292,7 @@ struct pgtk_output
 
 #ifdef USE_WEBRENDER
   /* Inner perporty in Rust */
-  wr_data* wr_data;
+  struct wr_canvas* wr_data;  
 #endif  /*USE_WEBRENDER*/
 
   unsigned long foreground_color;

@@ -69,25 +69,25 @@ typedef struct
   unsigned width, height;
 } XRectangle;
 
-#define NativeRectangle Emacs_Rectangle
+/* #define NativeRectangle Emacs_Rectangle */
 
-#define CONVERT_TO_EMACS_RECT(xr,nr)            \
-  ((xr).x = (nr).x,				\
-   (xr).y = (nr).y,				\
-   (xr).width = (nr).width,	\
-   (xr).height = (nr).height)
+/* #define CONVERT_TO_EMACS_RECT(xr,nr)            \ */
+/*   ((xr).x = (nr).x,				\ */
+/*    (xr).y = (nr).y,				\ */
+/*    (xr).width = (nr).width,	\ */
+/*    (xr).height = (nr).height) */
 
-#define CONVERT_FROM_EMACS_RECT(xr,nr)		\
-  ((nr).x = (xr).x,				\
-   (nr).y = (xr).y,				\
-   (nr).width = (xr).width,	\
-   (nr).height = (xr).height)
+/* #define CONVERT_FROM_EMACS_RECT(xr,nr)		\ */
+/*   ((nr).x = (xr).x,				\ */
+/*    (nr).y = (xr).y,				\ */
+/*    (nr).width = (xr).width,	\ */
+/*    (nr).height = (xr).height) */
 
-#define STORE_NATIVE_RECT(nr,x_v,y_v,width_v,height_v)	\
-  ((nr).x = (x_v),				\
-   (nr).y = (y_v),				\
-   (nr).width = (width_v),	\
-   (nr).height = (height_v))
+/* #define STORE_NATIVE_RECT(nr,x_v,y_v,width_v,height_v)	\ */
+/*   ((nr).x = (x_v),				\ */
+/*    (nr).y = (y_v),				\ */
+/*    (nr).width = (width_v),	\ */
+/*    (nr).height = (height_v)) */
 
 #define STORE_XCHAR2B(chp, b1, b2) \
   (*(chp) = ((XChar2b)((((b1) & 0x00ff) << 8) | ((b2) & 0x00ff))))

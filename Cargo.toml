@@ -2,6 +2,7 @@
 [workspace]
 members = ["rust/*"]
 exclude = [
+	"rust/wr"
 ]
 resolver = "2"
 
@@ -32,19 +33,19 @@ proc-macro2 = "1.0"
 [workspace.dependencies.webrender]
 # git = "https://github.com/declantsien/webrender.git"
 # rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
-path = "/home/declan/src/webrender/webrender"
+path = "../webrender/webrender"
 default-features = false
 
 [workspace.dependencies.webrender_api]
 # git = "https://github.com/declantsien/webrender.git"
 # rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
-path = "/home/declan/src/webrender/webrender_api"
+path = "../webrender/webrender_api"
 default-features = false
 
 [workspace.dependencies.wr_glyph_rasterizer]
 # git = "https://github.com/declantsien/webrender.git"
 # rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
-path = "/home/declan/src/webrender/wr_glyph_rasterizer"
+path = "../webrender/wr_glyph_rasterizer"
 default-features = false
 
 # Allow unwinding in functions called from C. See
@@ -62,7 +63,7 @@ opt-level = 'z' # Optimize for size
 
 ### Patches
 
-# glutin raw-window-handle 0.6
-[patch.crates-io.glutin]
-git = "https://github.com/declantsien/glutin.git"
-rev = "92a5ab0cc907ab3e1095ec6a09356aff8d93ade8"
+# # glutin raw-window-handle 0.6
+# [patch.crates-io.glutin]
+# git = "https://github.com/declantsien/glutin.git"
+# rev = "92a5ab0cc907ab3e1095ec6a09356aff8d93ade8"

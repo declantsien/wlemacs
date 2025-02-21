@@ -7211,8 +7211,9 @@ if test "${with_webrender}" = "yes" ; then
 
   WR_OBJ="wr.o"
 
-  if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc"; then
-     AC_MSG_ERROR(Webrender currently only supports wlc and pgtk window system.
+  if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc" \
+     && test "${window_system}" != "nextstep"; then
+     AC_MSG_ERROR(Webrender currently only supports wlc, pgtk and nextstep window system.
      Current window system detection is $window_system. Please explicitly
      provide --with-wayland.)
   fi
@@ -7716,7 +7717,7 @@ optsep=
 if test $window_system = pgtk && test "${with_webrender}" = "yes"; then
     pgtk_use_wr=yes
 fi
-for opt in pgtk glyph-debug profiling wlc; do
+for opt in pgtk glyph-debug profiling wlc nextstep; do
     tmp=no
     if test "${window_system}" = "$opt"; then
 	tmp=yes
