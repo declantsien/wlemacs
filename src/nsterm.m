@@ -73,6 +73,10 @@ GNUstep port and post-20 update by Adrian Robert (arobert@cogsci.ucsd.edu)
 #include <IOSurface/IOSurface.h>
 #endif
 
+#ifdef USE_WEBRENDER
+#include "wr_ffi_generated.h"
+#endif
+
 static EmacsMenu *dockMenu;
 #ifdef NS_IMPL_COCOA
 static EmacsMenu *mainMenu;
@@ -2605,6 +2609,10 @@ ns_clear_frame (struct frame *f)
       External (hook): Erase the entire frame
    -------------------------------------------------------------------------- */
 {
+#ifdef USE_WEBRENDER
+  // TODO
+  wr_clear_area (  f->output_data.ns->wr_data, f->background_pixel, 0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+#else  
   NSView *view = FRAME_NS_VIEW (f);
   NSRect r;
 
@@ -2629,6 +2637,7 @@ ns_clear_frame (struct frame *f)
   ns_redraw_scroll_bars (f);
 #endif
   unblock_input ();
+#endif  
 }
 
 
@@ -2704,6 +2713,8 @@ ns_scroll_run (struct window *w, struct run *run)
 
   gui_clear_cursor (w);
 
+#ifdef USE_WEBRENDER
+#else    
   {
     NSRect srcRect = NSMakeRect (x, from_y, width, height);
     NSPoint dest = NSMakePoint (x, to_y);
@@ -2714,6 +2725,7 @@ ns_scroll_run (struct window *w, struct run *run)
     [view setNeedsDisplayInRect:srcRect];
 #endif
   }
+#endif  
 
   unblock_input ();
 }
@@ -5427,6 +5439,10 @@ ns_flush_display (struct frame *f)
 
   EVENT_INIT (ie);
   ns_read_socket_1 (FRAME_TERMINAL (f), &ie, YES);
+
+  #ifdef USE_WEBRENDER
+  wr_flush (f->output_data.ns->wr_data );
+  #endif
 }
 
 /* This and next define (many of the) public functions in this
@@ -8812,23 +8828,27 @@ ns_in_echo_area (void)
 
 - (void)lockFocus
 {
-  NSTRACE ("[EmacsView lockFocus]");
-
+  NSTRACE ("[EmacsView lockFocus]");  
+#ifdef USE_WEBRENDER
+#else  
   CGContextRef context = [(EmacsLayer*)[self layer] getContext];
 
   [NSGraphicsContext
         setCurrentContext:[NSGraphicsContext
                             graphicsContextWithCGContext:context
                                                  flipped:YES]];
+#endif  
 }
 
 
 - (void)unlockFocus
 {
   NSTRACE ("[EmacsView unlockFocus]");
-
+#ifdef USE_WEBRENDER
+#else  
   [NSGraphicsContext setCurrentContext:nil];
   [self setNeedsDisplay:YES];
+#endif  
 }
 
 

@@ -18,6 +18,7 @@ gleam = "0.15"
 image = "0.24"
 bit-vec = "0.6.3"
 raw-window-handle = "0.6"
+surfman = { version = "0.9.8", features = ["chains", "sm-angle", "sm-angle-default", "sm-raw-window-handle-06"] , optional = true }
 euclid = "0.22"
 parking_lot = "0.12"
 rayon = "1"
@@ -53,6 +54,25 @@ features = [
   "env-filter"
 ]
 
+[target.'cfg(any(target_os = "android", all(unix, not(any(target_os = "macos", target_os = "ios")))))'.dependencies]
+freetype = { version = "0.7", default-features = false }
+libc = "0.2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+dwrote = "0.11"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+core-foundation = "0.9.2"
+core-graphics = "0.23"
+core-text = { version = "20.1", default-features = false }
+objc = "0.2"
+
+# AppKit or UIKit
+[target.'cfg(target_vendor = "apple")'.dependencies]
+block2 = "0.6.0"
+dispatch2 = { version = "0.2.0", default-features = false, features = ["std", "objc2"] }
+objc2 = "0.6.0"
+
 [build-dependencies]
 anyhow = "1"
 cfg_aliases = "0.2"
@@ -60,14 +80,48 @@ cfg_aliases = "0.2"
   
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.9"
+# # AppKit
+# objc2-app-kit = { version = "0.3.0", default-features = false, features = [
+#     "std",
+#     "objc2-core-foundation",
+#     "NSAppearance",
+#     "NSApplication",
+#     "NSBitmapImageRep",
+#     "NSButton",
+#     "NSColor",
+#     "NSControl",
+#     "NSCursor",
+#     "NSDragging",
+#     "NSEvent",
+#     "NSGraphics",
+#     "NSGraphicsContext",
+#     "NSImage",
+#     "NSImageRep",
+#     "NSMenu",
+#     "NSMenuItem",
+#     "NSOpenGLView",
+#     "NSPanel",
+#     "NSPasteboard",
+#     "NSResponder",
+#     # "NSRunningApplication",
+#     # "NSScreen",
+#     # "NSTextInputClient",
+#     # "NSTextInputContext",
+#     # "NSToolbar",
+#     "NSView",
+#     # "NSWindow",
+#     # "NSWindowScripting",
+#     # "NSWindowTabGroup",
+# ] }
+
 
 [features]
 default=["window-system-nextstep"]
 window-system-pgtk=["gtk3"]
 window-system-wlc=["glutin"]
-window-system-nextstep=[]
+window-system-nextstep=["surfman"]
 glutin=[]
-surfman=[]
+surfman=["dep:surfman"]
 gtk3=[]
 capture=["webrender/capture", "webrender/serialize_program"]
 profiling=["webrender/profiler"]

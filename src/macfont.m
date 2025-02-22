@@ -36,9 +36,10 @@ Original author: YAMAMOTO Mitsuharu
 #include "macfont.h"
 #include "macuvs.h"
 #include "pdumper.h"
+// #include "wr_ffi_generated.h"
 
 #include <libkern/OSByteOrder.h>
-
+extern void wr_add_ctfont(CTFontRef font);
 /* Values for `dir' argument to shaper functions.  */
 enum lgstring_direction
   {
@@ -2693,6 +2694,10 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
   unblock_input ();
   if (! macfont)
     return Qnil;
+
+  int fontsize = (int) [((NSFont *) macfont) pointSize];
+  wr_add_ctfont(macfont);
+  // wr_get_font_metrics_by_descriptor(font_name, 0);
 
   font_object = font_build_object (VECSIZE (struct macfont_info),
                                    Qmac_ct, entity, size);

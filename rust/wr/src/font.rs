@@ -1,9 +1,12 @@
-use crate::types::{DeviceLength, FontMetrics, GlyphSize, WrFontTemplate, WrVecU8};
+use crate::types::{DeviceLength, GlyphSize, WrFontMetrics, WrFontTemplate, WrVecU8};
 use webrender::api::units::LayoutToDeviceScale;
 use webrender::api::{
     FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontTemplate,
     FontVariation, IdNamespace, NativeFontHandle,
 };
+
+use core_foundation::base::TCFType;
+use core_text::font::{CTFont, CTFontRef};
 
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -121,17 +124,41 @@ fn wr_font_instance(
     instance.clone()
 }
 
+/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn wr_font_metrics(
-    font_template: WrFontTemplate,
-    data: &mut WrVecU8,
-    index: u32,
+pub extern "C" fn wr_add_ctfont(font: CTFontRef) {
+    let ct_font = unsafe { CTFont::wrap_under_get_rule(font) };
+    let point_size = ct_font.pt_size();
+    let descriptor = ct_font.copy_descriptor();
+    let font_path = descriptor.font_path();
+    let mut font_metrics = WrFontMetrics::default();
+    let font_tpl = FontTemplate::Native(NativeFontHandle {
+        name: ct_font.postscript_name(),
+        path: font_path
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or("".to_string()),
+    });
+    wr_font_metrics_impl(
+        font_tpl,
+        point_size as ::libc::c_int,
+        1.0,
+        &mut font_metrics,
+    );
+    // println!("cf_name: {:?}, path: {:?}, size: {:?}",
+    //     ct_font.postscript_name(), font_path, point_size);
+}
+
+/// cbindgen:ignore
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "C" fn wr_font_metrics_impl(
+    font_tpl: FontTemplate,
     glyph_size: ::libc::c_int,
     scale_factor: f64,
-    font_metrics: &mut FontMetrics,
+    font_metrics: &mut WrFontMetrics,
 ) {
-    let font_tpl = read_font_tpl(font_template, data, index);
+    // let font_tpl = read_font_tpl(font_template, data, index);
     let mut rasterizer = WR_GLYPH_RASTERIZER.lock();
     let key = wr_font_key(font_tpl, Some(&mut rasterizer));
     let scale_factor = LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
@@ -161,7 +188,7 @@ pub extern "C" fn wr_font_metrics(
                 font_metrics.average_width += this_width;
             }
             n += 1;
-            println!("ch: {ch:?}, dimensions: {dimensions:?}");
+            // println!("ch: {ch:?}, dimensions: {dimensions:?}");
         }
     });
 
@@ -199,54 +226,3 @@ pub extern "C" fn wr_font_metrics(
 //         // descent: top,
 //     }
 // }
-
-pub fn read_font_tpl(
-    font_template: WrFontTemplate,
-    bytes: &mut WrVecU8,
-    index: u32,
-) -> FontTemplate {
-    match font_template {
-        WrFontTemplate::Raw => {
-            FontTemplate::Raw(std::sync::Arc::new(bytes.flush_into_vec()), index)
-        }
-        WrFontTemplate::Native => FontTemplate::Native(read_font_descriptor(bytes, index)),
-    }
-}
-
-pub fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
-    #[cfg(target_os = "windows")]
-    {
-        let wchars: Vec<u16> = bytes
-            .as_slice()
-            .chunks_exact(2)
-            .map(|c| u16::from_ne_bytes([c[0], c[1]]))
-            .collect();
-        NativeFontHandle {
-            path: PathBuf::from(OsString::from_wide(&wchars)),
-            index,
-        }
-    }
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    {
-        // On macOS, the descriptor string is a concatenation of the PostScript name
-        // and the font file path (to disambiguate cases where there are multiple
-        // faces with the same psname present). The index is the length of the psname
-        // portion of the descriptor (= starting offset of the path).
-        // Here, we split the descriptor into its two components for further use.
-        let chars = bytes.flush_into_vec();
-        NativeFontHandle {
-            name: String::from_utf8(chars[..index as usize].to_vec()).unwrap_or("".to_string()),
-            path: String::from_utf8(chars[index as usize..].to_vec()).unwrap_or("".to_string()),
-        }
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
-    {
-        let chars = bytes.flush_into_vec();
-        NativeFontHandle {
-            path: std::path::PathBuf::from(
-                <std::ffi::OsString as std::os::unix::ffi::OsStringExt>::from_vec(chars),
-            ),
-            index,
-        }
-    }
-}

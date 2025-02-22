@@ -231,6 +231,8 @@ renaming_overrides_prefixing = true
 "WrVecU8" = "wr_vec_u8"
 "WrVecU32" = "wr_vec_u32"
 "WrCanvas" = "wr_canvas"
+"WrFontTemplate" = "wr_font_template"
+"WrFontMetrics" = "wr_font_metrics"
 "my_function" = "BetterFunctionName"
 
 # Table of things to prepend to the body of any struct, union, or enum that has the
@@ -475,7 +477,7 @@ rename_fields = "SnakeCase"
 # * "GeckoCase": apply no renaming
 #
 # default: "None"
-# rename_variants = "None"
+rename_variants = "QualifiedScreamingSnakeCase"
 
 # Whether an extra "sentinel" enum variant should be added to all generated enums.
 # Firefox uses this for their IPC serialization library.

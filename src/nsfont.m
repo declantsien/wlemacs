@@ -987,6 +987,14 @@ nsfont_open (struct frame *f, Lisp_Object font_entity, int pixel_size)
 
   {
     const char *fontName = [[nsfont fontName] UTF8String];
+    wr_font_metrics wr_font_metrics;
+    const wr_vec_u8 data = { fontName, strlen (fontName), 0};
+    const int index = strlen (fontName);
+    
+    wr_get_font_metrics_by_descriptor(wr_vec_u8 * data, uint32_t index);
+		  // int glyph_size,
+		  // double scale_factor,
+		  // &wr_font_metrics);
 
     /* The values specified by fonts are not always exact. For
      * example, a 6x8 font could specify that the descender is

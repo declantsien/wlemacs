@@ -1,11 +1,21 @@
+use crate::capi::EMACS_UINT;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::{mem, ptr};
 use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::Length;
 
+pub type ImageHash = EMACS_UINT;
 pub type LayoutLength = Length<f32, LayoutPixel>;
 pub type DeviceLength = Length<f32, DevicePixel>;
+
+/// Whether a border should be antialiased.
+#[repr(C)]
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum AntialiasBorder {
+    No = 0,
+    Yes,
+}
 
 /// Hashable floating-point storage for glyph size.
 #[repr(C)]
@@ -208,8 +218,8 @@ pub enum WrFontTemplate {
 }
 
 #[repr(C)]
-#[derive(Eq, PartialEq, Copy, Clone)]
-pub struct FontMetrics {
+#[derive(Eq, PartialEq, Copy, Clone, Default)]
+pub struct WrFontMetrics {
     pub min_width: ::libc::c_int,
     pub max_width: ::libc::c_int,
     pub pixel_size: ::libc::c_int,

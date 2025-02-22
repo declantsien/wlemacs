@@ -44,6 +44,10 @@ GNUstep port and post-20 update by Adrian Robert (arobert@cogsci.ucsd.edu)
 #include "fontset.h"
 #include "font.h"
 
+// #ifdef USE_WEBRENDER
+// #include "wr.h"
+// #endif
+
 #ifdef NS_IMPL_COCOA
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include "macfont.h"
@@ -88,6 +92,8 @@ static Lisp_Object as_script, *as_result;
 static int as_status;
 
 static struct ns_display_info *ns_display_info_for_name (Lisp_Object);
+
+extern struct wr_canvas *wr_frame_gl_context(EmacsView *view, int width, int height, double scale_factor);
 
 /* ==========================================================================
 
@@ -1511,6 +1517,8 @@ DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
 #endif
 
   [[EmacsView alloc] initFrameFromEmacs: f];
+
+    f->output_data.ns->wr_data = wr_frame_gl_context(FRAME_NS_VIEW (f), FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f), ns_frame_scale_factor (f));
 
   ns_icon (f, parms);
 
