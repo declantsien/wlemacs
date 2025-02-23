@@ -245,3 +245,28 @@ fn wr_font_draw(
         }
     });
 }
+
+#[no_mangle]
+pub extern "C" fn wr_scroll_run(
+    canvas: &mut WrCanvas,
+    viewport: &Emacs_Rectangle,
+    new_frame_position: &Emacs_Rectangle,
+) {
+    use webrender_api::units::LayoutRect;
+    use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
+
+    let viewport: LayoutRect = viewport.into();
+    let new_frame_position: LayoutRect = new_frame_position.into();
+    if let Some(image_key) = canvas.get_previous_frame() {
+        canvas.display(|builder, space_and_clip, _| {
+            builder.push_image(
+                &CommonItemProperties::new(viewport, space_and_clip),
+                new_frame_position,
+                ImageRendering::Auto,
+                AlphaType::PremultipliedAlpha,
+                image_key,
+                ColorF::WHITE,
+            );
+        });
+    }
+}

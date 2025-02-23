@@ -2715,6 +2715,11 @@ ns_scroll_run (struct window *w, struct run *run)
   gui_clear_cursor (w);
 
 #ifdef USE_WEBRENDER
+  int diff_y = to_y - from_y;
+  const Emacs_Rectangle viewport = {x, to_y, width, height};
+  const Emacs_Rectangle new_frame_position = {0, 0 + diff_y, FRAME_PIXEL_WIDTH(f), FRAME_PIXEL_HEIGHT(f)};
+
+  wr_scroll_run(f->output_data.ns->wr_data, &viewport, &new_frame_position);
 #else    
   {
     NSRect srcRect = NSMakeRect (x, from_y, width, height);
