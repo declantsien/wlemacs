@@ -1,14 +1,14 @@
 use crate::capi::Emacs_Pixmap;
 use crate::color::pixel_to_color;
 use crate::gfx::context::GLContext;
-use crate::types::AntialiasBorder;
-use crate::util::HandyDandyRectBuilder;
+use crate::types::{
+    AntialiasBorder, EmacsIntLength, EmacsIntSideOffsets, EmacsIntSize, EmacsLength, EmacsRect,
+};
 use image::GenericImageView;
 use webrender::api::euclid::Length;
 
 use super::types::ImageHash;
 use crate::gfx::context::GLContextTrait;
-use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
@@ -17,6 +17,7 @@ use std::sync::Arc;
 use gleam::gl;
 use webrender::FastHashMap;
 
+use crate::types::{EmacsToDeviceScale, EmacsToLayoutScale};
 use webrender::api::units::*;
 use webrender::api::*;
 use webrender::{
@@ -24,7 +25,6 @@ use webrender::{
 };
 
 pub type LayoutLength = Length<f32, LayoutPixel>;
-pub type DeviceLength = Length<f32, DevicePixel>;
 
 use super::texture::TextureResourceManager;
 
@@ -37,8 +37,8 @@ pub struct FringeBitmap {
 }
 
 pub struct WrCanvas {
-    device_size: DeviceIntSize,
-    scale_factor: LayoutToDeviceScale,
+    size: EmacsIntSize,
+    scale_factor: EmacsToDeviceScale,
     fonts: FastHashMap<FontTemplate, FontKey>,
     fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
     font_instances: FastHashMap<
@@ -79,14 +79,14 @@ impl fmt::Debug for WrCanvas {
 impl WrCanvas {
     pub fn build(
         mut gl_context: GLContext,
-        device_size: DeviceIntSize,
+        size: EmacsIntSize,
         device_pixel_ratio: libc::c_double,
     ) -> Self {
         let gl = gl_context.load_gl();
 
         let version = gl.get_string(gl::VERSION);
         println!("WebRender - OpenGL version new {}", version);
-        println!("Device size {:?}", device_size);
+        println!("Emacs size {:?}", size);
 
         gl_context.ensure_is_current();
 
@@ -105,6 +105,8 @@ impl WrCanvas {
             gl.clone(),
             sender.create_api(),
         )));
+        let scale_factor = EmacsToDeviceScale::new(device_pixel_ratio as f32);
+        let device_size = (size.to_f32() * scale_factor).to_i32();
         let mut api = sender.create_api();
         let document_id = api.add_document(device_size);
 
@@ -118,13 +120,12 @@ impl WrCanvas {
         let root_space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
         txn.set_root_pipeline(pipeline_id);
 
-        let scale_factor = LayoutToDeviceScale::new(device_pixel_ratio as f32);
         gl_context.resize(&device_size);
 
         api.send_transaction(document_id, txn);
 
         Self {
-            device_size,
+            size,
             scale_factor,
             fonts: FastHashMap::default(),
             font_instances: FastHashMap::default(),
@@ -192,8 +193,8 @@ impl WrCanvas {
     //     self.frame.scale_factor() as f32
     // }
 
-    pub fn layout_to_device_scale_factor(&self) -> LayoutToDeviceScale {
-        self.scale_factor
+    pub fn emacs_to_layout_scale(&self) -> EmacsToLayoutScale {
+        EmacsToLayoutScale::new(self.scale_factor.get())
     }
 
     pub fn layout_size(&self) -> LayoutSize {
@@ -225,7 +226,7 @@ impl WrCanvas {
     }
 
     pub fn device_size(&self) -> DeviceIntSize {
-        self.device_size
+        (self.size.to_f32() * self.scale_factor).to_i32()
     }
 
     pub fn with_display_list_builder<F, T>(&mut self, f: F) -> Option<T>
@@ -250,9 +251,9 @@ impl WrCanvas {
 
     pub fn display<F>(&mut self, f: F)
     where
-        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, LayoutToDeviceScale),
+        F: Fn(&mut DisplayListBuilder, SpaceAndClipInfo, EmacsToLayoutScale),
     {
-        let scale_factor = self.layout_to_device_scale_factor();
+        let scale_factor = self.emacs_to_layout_scale();
         let spatial_id = self.root_space_and_clip.spatial_id;
         // TBD where these clones
         let mut clip_chain_id = None;
@@ -336,17 +337,18 @@ impl WrCanvas {
     pub fn clear_display_list_builder(&mut self) {
         let _ = std::mem::replace(&mut self.display_list_builder, None);
     }
+
     pub fn wr_add_font_instance(
         &mut self,
         font_key: FontKey,
-        glyph_size: LayoutLength,
+        glyph_size: EmacsLength,
         options: Option<FontInstanceOptions>,
         platform_options: Option<FontInstancePlatformOptions>,
         variations: Vec<FontVariation>,
     ) -> FontInstanceKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
-        let glyph_size = glyph_size * self.layout_to_device_scale_factor();
+        let glyph_size = glyph_size * self.scale_factor;
         let glyph_size = glyph_size.get();
         let hash_map_key = (
             font_key,
@@ -415,7 +417,7 @@ impl WrCanvas {
         font_key
     }
 
-    pub fn wr_delete_font(&mut self, key: FontKey) {
+    pub fn wr_delete_font(&mut self, _key: FontKey) {
         todo!()
     }
 
@@ -582,7 +584,7 @@ impl WrCanvas {
     }
 
     pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
-        self.display(|builder, space_and_clip, scale_factor| {
+        self.display(|builder, space_and_clip, _| {
             builder.push_rect(
                 &CommonItemProperties::new(rect, space_and_clip),
                 rect,
@@ -594,14 +596,13 @@ impl WrCanvas {
     pub fn push_rect(
         &mut self,
         color_pixel: ::libc::c_ulong,
-        rect: LayoutRect,
-        clip_rect: Option<LayoutRect>,
+        rect: EmacsRect,
+        clip_rect: Option<EmacsRect>,
     ) {
         println!("color pixel: {color_pixel:?}");
         let clear_color = crate::platform::pixel_to_color(color_pixel);
         println!("colorf: {clear_color:?}");
-        let scale = self.layout_to_device_scale_factor();
-        self.display(|builder, space_and_clip, scale_factor| {
+        self.display(|builder, space_and_clip, scale| {
             builder.push_rect(
                 &CommonItemProperties::new(
                     (clip_rect.unwrap_or(rect) * scale).cast_unit::<LayoutPixel>(),
@@ -615,19 +616,19 @@ impl WrCanvas {
 
     pub fn dp_push_rect(
         &mut self,
-        rect: LayoutRect,
-        clip: LayoutRect,
+        rect: EmacsRect,
+        clip: EmacsRect,
         is_backface_visible: bool,
         force_antialiasing: bool,
         is_checkerboard: bool,
         color: libc::c_ulong,
     ) {
-        // debug_assert!(unsafe { !is_in_render_thread() });
-        let rect = (rect * self.layout_to_device_scale_factor()).cast_unit::<LayoutPixel>();
-        let clip = (clip * self.layout_to_device_scale_factor()).cast_unit::<LayoutPixel>();
-        let color = crate::platform::pixel_to_color(color);
-
         self.display(|dl_builder, space_and_clip, scale_factor| {
+            // debug_assert!(unsafe { !is_in_render_thread() });
+            let rect = rect * scale_factor;
+            let clip = clip * scale_factor;
+            let color = crate::platform::pixel_to_color(color);
+
             let mut prim_info =
                 common_item_properties_for_rect(clip, is_backface_visible, &space_and_clip);
             if force_antialiasing {
@@ -664,7 +665,7 @@ impl WrCanvas {
             do_aa: true,
         });
 
-        self.display(|builder, space_and_clip, scale_factor| {
+        self.display(|builder, space_and_clip, _| {
             builder.push_border(
                 &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
                 rect,
@@ -680,7 +681,7 @@ impl WrCanvas {
         clip: LayoutRect,
         is_backface_visible: bool,
         do_aa: AntialiasBorder,
-        widths: DeviceIntSideOffsets,
+        widths: EmacsIntSideOffsets,
         top: BorderSide,
         right: BorderSide,
         bottom: BorderSide,
@@ -712,7 +713,7 @@ impl WrCanvas {
             dl_builder.push_border(
                 &prim_info,
                 rect,
-                device_int_to_layout_side_offsets(widths, scale_factor),
+                emacs_int_to_layout_side_offsets(widths, scale_factor),
                 border_details,
             );
         });
@@ -730,7 +731,7 @@ impl WrCanvas {
     ) {
         // debug_assert!(unsafe { is_in_main_thread() });
 
-        self.display(|dl_builder, space_and_clip, scale_factor| {
+        self.display(|dl_builder, space_and_clip, _| {
             let prim_info = CommonItemProperties {
                 clip_rect: clip,
                 clip_chain_id: space_and_clip.clip_chain_id,
@@ -870,21 +871,21 @@ fn common_item_properties_for_rect(
     }
 }
 
-fn device_int_to_layout_side_offsets(
-    offsets: DeviceIntSideOffsets,
-    scale_factor: LayoutToDeviceScale,
+fn emacs_int_to_layout_side_offsets(
+    offsets: EmacsIntSideOffsets,
+    scale_factor: EmacsToLayoutScale,
 ) -> LayoutSideOffsets {
     LayoutSideOffsets::new(
-        offsets.top as f32 / scale_factor.get(),
-        offsets.right as f32 / scale_factor.get(),
-        offsets.bottom as f32 / scale_factor.get(),
-        offsets.left as f32 / scale_factor.get(),
+        offsets.top as f32 * scale_factor.get(),
+        offsets.right as f32 * scale_factor.get(),
+        offsets.bottom as f32 * scale_factor.get(),
+        offsets.left as f32 * scale_factor.get(),
     )
 }
 
-fn device_int_to_layout_length(
-    length: DeviceIntLength,
-    scale_factor: LayoutToDeviceScale,
+fn emacs_int_to_layout_length(
+    length: EmacsIntLength,
+    scale_factor: EmacsToLayoutScale,
 ) -> LayoutLength {
-    LayoutLength::new(length.get() as f32 / scale_factor.get())
+    LayoutLength::new(length.get() as f32 * scale_factor.get())
 }

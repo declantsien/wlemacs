@@ -1,4 +1,4 @@
-use crate::types::{DeviceLength, GlyphSize, WrFontMetrics, WrFontTemplate, WrVecU8};
+use crate::types::{DeviceLength, GlyphSize, WrFontMetrics};
 use webrender::api::units::LayoutToDeviceScale;
 use webrender::api::{
     FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontTemplate,

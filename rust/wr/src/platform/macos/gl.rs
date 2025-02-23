@@ -1,13 +1,11 @@
 use crate::canvas::WrCanvas;
 use crate::gfx::context::{GLContext, GLContextTrait};
-use gleam::gl;
 use raw_window_handle::{
     AppKitDisplayHandle, AppKitWindowHandle, RawDisplayHandle, RawWindowHandle,
 };
 use std::ptr::NonNull;
-use webrender_api::units::{DeviceIntSize, LayoutIntSize, LayoutToDeviceScale};
 
-struct EmacsView {}
+pub struct EmacsView {}
 
 pub fn raw_display_handle() -> raw_window_handle::RawDisplayHandle {
     let raw = AppKitDisplayHandle::new();
@@ -28,15 +26,16 @@ pub extern "C" fn wr_frame_gl_context(
     height: libc::c_int,
     scale_factor: libc::c_double,
 ) -> *mut WrCanvas {
+    use crate::types::{EmacsIntSize, EmacsToDeviceScale};
+
     let display_handle = raw_display_handle();
     let window_handle = raw_window_handle(view);
     println!("window handle: {window_handle:?}");
-    let layout_size = LayoutIntSize::new(width, height);
-    let device_size =
-        (layout_size.to_f32() * LayoutToDeviceScale::new(scale_factor as f32)).to_i32();
-    let mut gl_context = GLContext::build(display_handle, window_handle, device_size);
+    let size = EmacsIntSize::new(width, height);
+    let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
+    let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
 
-    let data = Box::new(WrCanvas::build(gl_context, device_size, scale_factor));
+    let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
     Box::into_raw(data)
 }
 

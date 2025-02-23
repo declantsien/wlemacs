@@ -2,7 +2,7 @@
 [workspace]
 members = ["rust/*"]
 exclude = [
-	"rust/wr"
+	"rust/emacs-sys"
 ]
 resolver = "2"
 

@@ -4,10 +4,7 @@ use crate::gfx::context::GLContextTrait;
 
 use webrender_api::units::DeviceIntSize;
 
-use raw_window_handle::{
-    DisplayHandle, HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
-    WindowHandle,
-};
+use raw_window_handle::{DisplayHandle, RawDisplayHandle, RawWindowHandle, WindowHandle};
 use surfman::{Connection, GLApi, SurfaceType};
 
 use euclid::Size2D;
@@ -43,8 +40,6 @@ impl GLContextTrait for ContextImpl {
 
         let display_handle = unsafe { DisplayHandle::borrow_raw(display_handle) };
         let window_handle = unsafe { WindowHandle::borrow_raw(window_handle) };
-        let width = size.to_untyped().width;
-        let height = size.to_untyped().height;
 
         let connection = match Connection::from_display_handle(display_handle) {
             Ok(connection) => connection,

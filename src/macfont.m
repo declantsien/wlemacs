@@ -2948,7 +2948,7 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
   CGContextRef context;
 
   block_input ();
-  // macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
+  macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
 
   if (with_background)
     background_rect = CGRectMake (x, y - FONT_BASE (s->font),

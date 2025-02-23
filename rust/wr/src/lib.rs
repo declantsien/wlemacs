@@ -64,17 +64,17 @@ pub mod gfx {
     pub mod context;
 
     pub mod context_impl {
-        #[cfg(glutin)]
-        pub use crate::gfx::context_impl::glutin::*;
-        #[cfg(gtk3)]
-        pub use crate::gfx::context_impl::gtk3::*;
+        // #[cfg(glutin)]
+        // pub use crate::gfx::context_impl::glutin::*;
+        // #[cfg(gtk3)]
+        // pub use crate::gfx::context_impl::gtk3::*;
         // #[cfg(surfman)]
         pub use crate::gfx::context_impl::surfman::*;
 
-        #[cfg(glutin)]
-        pub mod glutin;
-        #[cfg(gtk3)]
-        pub mod gtk3;
+        // #[cfg(glutin)]
+        // pub mod glutin;
+        // #[cfg(gtk3)]
+        // pub mod gtk3;
         // #[cfg(surfman)]
         pub mod surfman;
     }
@@ -86,6 +86,7 @@ use crate::font::macfont_font_tpl;
 use crate::types::WrVecU32;
 use crate::util::HandyDandyRectBuilder;
 use core_text::font::CTFontRef;
+use types::{EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
 use webrender_api::FontTemplate;
 
 #[no_mangle]
@@ -178,8 +179,6 @@ fn wr_font_draw(
     padding_p: bool,
 ) {
     use crate::color::pixel_to_color;
-    use crate::types::LayoutLength;
-    use webrender_api::units::{DeviceIntPoint, LayoutIntPoint};
     use webrender_api::{
         CommonItemProperties, FontInstanceOptions, FontInstancePlatformOptions, GlyphInstance,
     };
@@ -188,7 +187,7 @@ fn wr_font_draw(
     let font_key = canvas.wr_add_font(font_tpl);
     let font_instance_key = canvas.wr_add_font_instance(
         font_key,
-        LayoutLength::new(glyph_size as f32),
+        EmacsLength::new(glyph_size as f32),
         Some(FontInstanceOptions::default()),
         Some(FontInstancePlatformOptions::default()),
         Vec::new(),
@@ -198,12 +197,12 @@ fn wr_font_draw(
     let glyph_dimensions = canvas.glyph_dimensions(font_instance_key, glyph_indices.to_vec());
     // println!("{:?}", glyph_dimensions);
     let glyph_dimensions = glyph_dimensions.as_slice();
-    let scale_factor = canvas.layout_to_device_scale_factor();
+    let scale_factor = canvas.emacs_to_layout_scale();
     let visible_rect = (x, y).by(width, height);
     println!("visible_rect {visible_rect:?}");
     // FIXME visible_rect set above is not correct here, hard code it for now
     let visible_rect = (0, 0).by(10000, 10000);
-    let mut x = x;
+    let mut x = EmacsLength::new(x as f32);
     let mut glyph_instances: Vec<GlyphInstance> = vec![];
     (from..to).for_each(|i| {
         let index = glyph_indices[i as usize];
@@ -212,17 +211,17 @@ fn wr_font_draw(
         // glyphinstance type is using layoutpixel
         let glyph_instance = GlyphInstance {
             index,
-            point: LayoutIntPoint::new(x, y).to_f32(),
+            point: EmacsPoint::new(x.get(), y as f32) * scale_factor,
         };
         // scale back to device pixel
-        let advance_width = glyph_dimensions[i as usize]
-            .map(|d| d.advance)
-            .unwrap_or(0.0)
-            / scale_factor.get();
+        let advance_width: LayoutLength = glyph_dimensions[i as usize]
+            .map(|d| LayoutLength::new(d.advance))
+            .unwrap_or(LayoutLength::new(0.0));
+
         if padding_p {
-            x += 1;
+            x += EmacsLength::new(1.0);
         } else {
-            x += advance_width as i32;
+            x += advance_width / scale_factor;
         }
         glyph_instances.push(glyph_instance);
     });
@@ -235,8 +234,8 @@ fn wr_font_draw(
             let visible_rect = visible_rect;
 
             builder.push_text(
-                &CommonItemProperties::new(visible_rect, space_and_clip),
-                visible_rect,
+                &CommonItemProperties::new(visible_rect * scale, space_and_clip),
+                visible_rect * scale,
                 &glyph_instances,
                 font_instance_key,
                 foreground_color,
@@ -252,16 +251,15 @@ pub extern "C" fn wr_scroll_run(
     viewport: &Emacs_Rectangle,
     new_frame_position: &Emacs_Rectangle,
 ) {
-    use webrender_api::units::LayoutRect;
     use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
 
-    let viewport: LayoutRect = viewport.into();
-    let new_frame_position: LayoutRect = new_frame_position.into();
+    let viewport: EmacsRect = viewport.into();
+    let new_frame_position: EmacsRect = new_frame_position.into();
     if let Some(image_key) = canvas.get_previous_frame() {
-        canvas.display(|builder, space_and_clip, _| {
+        canvas.display(|builder, space_and_clip, scale| {
             builder.push_image(
-                &CommonItemProperties::new(viewport, space_and_clip),
-                new_frame_position,
+                &CommonItemProperties::new(viewport * scale, space_and_clip),
+                new_frame_position * scale,
                 ImageRendering::Auto,
                 AlphaType::PremultipliedAlpha,
                 image_key,

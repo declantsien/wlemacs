@@ -4,12 +4,34 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::{mem, ptr};
 use webrender::api::units::{DevicePixel, LayoutPixel};
-use webrender::euclid::Length;
-use webrender_api::units::{DeviceRect, LayoutRect};
+use webrender::euclid::{
+    Box2D, Length, Point2D, Point3D, Scale, SideOffsets2D, Size2D, Vector2D, Vector3D,
+};
+
+/// Geometry in a stacking context's local coordinate space (logical pixels).
+#[derive(Hash, Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct EmacsPixel;
+
+pub type EmacsRect = Box2D<f32, EmacsPixel>;
+pub type EmacsPoint = Point2D<f32, EmacsPixel>;
+pub type EmacsPoint3D = Point3D<f32, EmacsPixel>;
+pub type EmacsVector2D = Vector2D<f32, EmacsPixel>;
+pub type EmacsVector3D = Vector3D<f32, EmacsPixel>;
+pub type EmacsSize = Size2D<f32, EmacsPixel>;
+pub type EmacsSideOffsets = SideOffsets2D<f32, EmacsPixel>;
+pub type EmacsLength = Length<f32, EmacsPixel>;
+pub type EmacsIntLength = Length<i32, EmacsPixel>;
+pub type EmacsIntSideOffsets = SideOffsets2D<i32, EmacsPixel>;
+
+pub type EmacsIntRect = Box2D<i32, EmacsPixel>;
+pub type EmacsIntPoint = Point2D<i32, EmacsPixel>;
+pub type EmacsIntSize = Size2D<i32, EmacsPixel>;
 
 pub type ImageHash = EMACS_UINT;
 pub type LayoutLength = Length<f32, LayoutPixel>;
 pub type DeviceLength = Length<f32, DevicePixel>;
+pub type EmacsToDeviceScale = Scale<f32, EmacsPixel, DevicePixel>;
+pub type EmacsToLayoutScale = Scale<f32, EmacsPixel, LayoutPixel>;
 
 /// Whether a border should be antialiased.
 #[repr(C)]
@@ -236,8 +258,8 @@ pub struct WrFontMetrics {
     pub baseline_offset: ::libc::c_int,
 }
 
-impl Into<LayoutRect> for &Emacs_Rectangle {
-    fn into(self) -> LayoutRect {
+impl Into<EmacsRect> for &Emacs_Rectangle {
+    fn into(self) -> EmacsRect {
         (self.x, self.y)
             .by(self.width as i32, self.height as i32)
             .to_f32()
