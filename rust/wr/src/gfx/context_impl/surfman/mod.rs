@@ -2,7 +2,7 @@ mod rendering_context;
 
 use crate::gfx::context::GLContextTrait;
 
-use webrender_api::units::DeviceIntSize;
+use webrender_api::units::LayoutIntSize;
 
 use raw_window_handle::{
     DisplayHandle, HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
@@ -37,7 +37,7 @@ impl GLContextTrait for ContextImpl {
     fn build(
         display_handle: RawDisplayHandle,
         window_handle: RawWindowHandle,
-        size: DeviceIntSize,
+        size: LayoutIntSize,
     ) -> Self {
         log::trace!("Initialize OpenGL context using Surfman");
 
@@ -104,7 +104,7 @@ impl GLContextTrait for ContextImpl {
         ErrorCheckingGl::wrap(gl)
     }
 
-    fn resize(&self, size: &DeviceIntSize) {
+    fn resize(&self, size: &LayoutIntSize) {
         self.0
             .resize(Size2D::new(size.width as i32, size.height as i32))
             .unwrap();

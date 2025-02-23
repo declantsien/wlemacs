@@ -38,7 +38,7 @@ pub struct FringeBitmap {
 
 pub struct WrCanvas {
     device_size: DeviceIntSize,
-    scale_factor: libc::c_double,
+    scale_factor: LayoutToDeviceScale,
     fonts: FastHashMap<FontTemplate, FontKey>,
     fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
     font_instances: FastHashMap<
@@ -117,7 +117,8 @@ impl WrCanvas {
         let mut txn = Transaction::new();
         txn.set_root_pipeline(pipeline_id);
         let mut api = sender.create_api();
-        gl_context.resize(&device_size);
+        let scale_factor = LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
+        gl_context.resize(&(device_size.to_f32() / scale_factor).to_i32());
         let document_id =
             api.add_document(device_size.cast_unit::<webrender::api::units::DevicePixel>());
         api.send_transaction(document_id, txn);
@@ -192,7 +193,7 @@ impl WrCanvas {
     // }
 
     pub fn layout_to_device_scale_factor(&self) -> LayoutToDeviceScale {
-        LayoutToDeviceScale::new(1.0 / (self.scale_factor as f32))
+        self.scale_factor
     }
 
     pub fn layout_size(&self) -> LayoutSize {
@@ -577,7 +578,7 @@ impl WrCanvas {
         txn.set_document_view(device_rect);
         self.render_api.send_transaction(self.document_id, txn);
 
-        self.gl_context.resize(&size);
+        self.gl_context.resize(&(size.to_f32() / self.layout_to_device_scale_factor()).to_i32());
     }
 
     pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: DeviceRect) {

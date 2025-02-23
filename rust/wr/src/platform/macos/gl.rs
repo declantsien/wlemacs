@@ -31,11 +31,11 @@ pub extern "C" fn wr_frame_gl_context(
     let display_handle = raw_display_handle();
     let window_handle = raw_window_handle(view);
     println!("window handle: {window_handle:?}");
-    // let scale_factor = LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
-    let size = DeviceIntSize::new(width, height);
+    let device_size = DeviceIntSize::new(width, height);
+    let size = device_size.to_f32() / LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
     let mut gl_context = GLContext::build(display_handle, window_handle, size.to_i32());
 
-    let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
+    let data = Box::new(WrCanvas::build(gl_context, device_size, scale_factor));
     Box::into_raw(data)
 }
 
