@@ -2609,13 +2609,10 @@ ns_clear_frame (struct frame *f)
       External (hook): Erase the entire frame
    -------------------------------------------------------------------------- */
 {
-#ifdef USE_WEBRENDER
-  wr_clear_area (  f->output_data.ns->wr_data,
-		   NS_FACE_BACKGROUND (FACE_FROM_ID (f, DEFAULT_FACE_ID)),
-		   0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
-#else  
+#ifndef USE_WEBRENDER
   NSView *view = FRAME_NS_VIEW (f);
   NSRect r;
+#endif
 
   NSTRACE_WHEN (NSTRACE_GROUP_UPDATES, "ns_clear_frame");
 
@@ -2626,19 +2623,27 @@ ns_clear_frame (struct frame *f)
 
   mark_window_cursors_off (XWINDOW (FRAME_ROOT_WINDOW (f)));
 
+#ifndef USE_WEBRENDER
   r = [view bounds];
+#endif
 
   block_input ();
+#ifdef USE_WEBRENDER
+  wr_clear_area (  f->output_data.ns->wr_data,
+		   NS_FACE_BACKGROUND (FACE_FROM_ID (f, DEFAULT_FACE_ID)),
+		   0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+#else
   ns_focus (f, &r, 1);
   ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
 			    (FACE_FROM_ID (f, DEFAULT_FACE_ID))], r, false);
   ns_unfocus (f);
+#endif /* USE_WEBRENDER */
 
 #ifdef NS_IMPL_GNUSTEP
   ns_redraw_scroll_bars (f);
 #endif
   unblock_input ();
-#endif  
+
 }
 
 
@@ -2648,7 +2653,9 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
     External (RIF):  Clear section of frame
    -------------------------------------------------------------------------- */
 {
+#ifndef USE_WEBRENDER
   NSRect r = NSMakeRect (x, y, width, height);
+#endif
   NSView *view = FRAME_NS_VIEW (f);
   struct face *face = FRAME_DEFAULT_FACE (f);
 
@@ -2657,11 +2664,17 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 
   NSTRACE_WHEN (NSTRACE_GROUP_UPDATES, "ns_clear_frame_area");
 
+#ifdef USE_WEBRENDER
+  const Emacs_Rectangle rect = {x, y, width, height};
+  const Emacs_Rectangle clip = {0, 0, FRAME_PIXEL_WIDTH(f), FRAME_PIXEL_HEIGHT(f)};
+  wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &clip, false, false, false, NS_FACE_BACKGROUND (face));
+#else
   r = NSIntersectionRect (r, [view frame]);
   ns_focus (f, &r, 1);
   ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)], r, false);
 
   ns_unfocus (f);
+#endif
   return;
 }
 
@@ -2720,7 +2733,7 @@ ns_scroll_run (struct window *w, struct run *run)
   const Emacs_Rectangle new_frame_position = {0, 0 + diff_y, FRAME_PIXEL_WIDTH(f), FRAME_PIXEL_HEIGHT(f)};
 
   wr_scroll_run(f->output_data.ns->wr_data, &viewport, &new_frame_position);
-#else    
+#else
   {
     NSRect srcRect = NSMakeRect (x, from_y, width, height);
     NSPoint dest = NSMakePoint (x, to_y);
@@ -2731,7 +2744,7 @@ ns_scroll_run (struct window *w, struct run *run)
     [view setNeedsDisplayInRect:srcRect];
 #endif
   }
-#endif  
+#endif
 
   unblock_input ();
 }
@@ -2818,6 +2831,15 @@ ns_after_update_window_line (struct window *w, struct glyph_row *desired_row)
       block_input ();
       if (face)
         {
+#ifdef USE_WEBRENDER
+	  const Emacs_Rectangle clip = {0, y, FRAME_PIXEL_WIDTH (f), height};
+
+	  const Emacs_Rectangle rect = {0, y, width, height};
+	  wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &clip, false, false, false, NS_FACE_BACKGROUND (face));
+	  const Emacs_Rectangle rect2 = {FRAME_PIXEL_WIDTH (f) - width,
+                                  y, width, height};
+	  wr_dp_push_rect(f->output_data.ns->wr_data, &rect2, &clip, false, false, false, NS_FACE_BACKGROUND (face));
+#else
           NSRect r = NSMakeRect (0, y, FRAME_PIXEL_WIDTH (f), height);
           ns_focus (f, &r, 1);
 
@@ -2827,6 +2849,7 @@ ns_after_update_window_line (struct window *w, struct glyph_row *desired_row)
                                   y, width, height));
 
           ns_unfocus (f);
+#endif
         }
       else
         {
@@ -8834,16 +8857,16 @@ ns_in_echo_area (void)
 
 - (void)lockFocus
 {
-  NSTRACE ("[EmacsView lockFocus]");  
+  NSTRACE ("[EmacsView lockFocus]");
 #ifdef USE_WEBRENDER
-#else  
+#else
   CGContextRef context = [(EmacsLayer*)[self layer] getContext];
 
   [NSGraphicsContext
         setCurrentContext:[NSGraphicsContext
                             graphicsContextWithCGContext:context
                                                  flipped:YES]];
-#endif  
+#endif
 }
 
 
@@ -8851,10 +8874,10 @@ ns_in_echo_area (void)
 {
   NSTRACE ("[EmacsView unlockFocus]");
 #ifdef USE_WEBRENDER
-#else  
+#else
   [NSGraphicsContext setCurrentContext:nil];
   [self setNeedsDisplay:YES];
-#endif  
+#endif
 }
 
 

@@ -86,6 +86,7 @@ impl WrCanvas {
 
         let version = gl.get_string(gl::VERSION);
         println!("WebRender - OpenGL version new {}", version);
+        println!("Device size {:?}", device_size);
 
         gl_context.ensure_is_current();
 
@@ -197,7 +198,7 @@ impl WrCanvas {
 
     pub fn layout_size(&self) -> LayoutSize {
         let device_size = self.device_size();
-        self.device_size().to_f32() / self.layout_to_device_scale_factor()
+        device_size.to_f32().cast_unit::<LayoutPixel>()
     }
 
     fn new_builder(&mut self, image: Option<(ImageKey, LayoutRect)>) -> DisplayListBuilder {
@@ -622,6 +623,9 @@ impl WrCanvas {
         color: libc::c_ulong,
     ) {
         // debug_assert!(unsafe { !is_in_render_thread() });
+        let rect = (rect * self.layout_to_device_scale_factor()).cast_unit::<LayoutPixel>();
+        let clip = (clip * self.layout_to_device_scale_factor()).cast_unit::<LayoutPixel>();
+        let color = crate::platform::pixel_to_color(color);
 
         self.display(|dl_builder, space_and_clip, scale_factor| {
             let mut prim_info =
@@ -633,7 +637,7 @@ impl WrCanvas {
                 prim_info.flags |= PrimitiveFlags::CHECKERBOARD_BACKGROUND;
             }
 
-            dl_builder.push_rect(&prim_info, rect, pixel_to_color(color));
+            dl_builder.push_rect(&prim_info, rect, color);
         });
     }
 
