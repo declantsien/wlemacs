@@ -80,13 +80,13 @@ impl WrCanvas {
     pub fn build(
         mut gl_context: GLContext,
         device_size: DeviceIntSize,
-        scale_factor: libc::c_double,
+        device_pixel_ratio: libc::c_double,
     ) -> Self {
         let gl = gl_context.load_gl();
-        
+
         let version = gl.get_string(gl::VERSION);
         println!("WebRender - OpenGL version new {}", version);
-        
+
         gl_context.ensure_is_current();
 
         // webrender
@@ -104,23 +104,22 @@ impl WrCanvas {
             gl.clone(),
             sender.create_api(),
         )));
+        let mut api = sender.create_api();
+        let document_id = api.add_document(device_size);
 
         let external_image_handler = texture_resources.borrow_mut().new_external_image_handler();
-
         renderer.set_external_image_handler(external_image_handler);
 
         let epoch = Epoch(0);
         let pipeline_id = PipelineId(0, 0);
-        let root_space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
-
-        // Some thing to do with Wayland?
         let mut txn = Transaction::new();
+
+        let root_space_and_clip = SpaceAndClipInfo::root_scroll(pipeline_id);
         txn.set_root_pipeline(pipeline_id);
-        let mut api = sender.create_api();
-        let scale_factor = LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
-        gl_context.resize(&(device_size.to_f32() / scale_factor).to_i32());
-        let document_id =
-            api.add_document(device_size.cast_unit::<webrender::api::units::DevicePixel>());
+
+        let scale_factor = LayoutToDeviceScale::new(device_pixel_ratio as f32);
+        gl_context.resize(&device_size);
+
         api.send_transaction(document_id, txn);
 
         Self {
@@ -198,7 +197,7 @@ impl WrCanvas {
 
     pub fn layout_size(&self) -> LayoutSize {
         let device_size = self.device_size();
-        LayoutSize::new(device_size.width as f32, device_size.height as f32)
+        self.device_size().to_f32() / self.layout_to_device_scale_factor()
     }
 
     fn new_builder(&mut self, image: Option<(ImageKey, LayoutRect)>) -> DisplayListBuilder {
@@ -339,14 +338,14 @@ impl WrCanvas {
     pub fn wr_add_font_instance(
         &mut self,
         font_key: FontKey,
-        glyph_size: DeviceLength,
+        glyph_size: LayoutLength,
         options: Option<FontInstanceOptions>,
         platform_options: Option<FontInstancePlatformOptions>,
         variations: Vec<FontVariation>,
     ) -> FontInstanceKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
-        let glyph_size = glyph_size / self.layout_to_device_scale_factor();
+        let glyph_size = glyph_size * self.layout_to_device_scale_factor();
         let glyph_size = glyph_size.get();
         let hash_map_key = (
             font_key,
@@ -532,10 +531,9 @@ impl WrCanvas {
         self.clip_ids = Vec::new();
     }
 
-    pub fn define_clip_rect(&mut self, rect: DeviceRect) {
+    pub fn define_clip_rect(&mut self, rect: LayoutRect) {
         assert_eq!(self.is_defining_clipinfo, true);
         let spatial_id = self.root_space_and_clip.spatial_id;
-        let rect = rect / self.layout_to_device_scale_factor();
         let clip_id =
             self.with_display_list_builder(|builder| builder.define_clip_rect(spatial_id, rect));
         if let Some(clip_id) = clip_id {
@@ -569,6 +567,7 @@ impl WrCanvas {
             height,
         }
     }
+
     pub fn update(&mut self) {
         let size = self.device_size();
         let device_rect =
@@ -578,14 +577,14 @@ impl WrCanvas {
         txn.set_document_view(device_rect);
         self.render_api.send_transaction(self.document_id, txn);
 
-        self.gl_context.resize(&(size.to_f32() / self.layout_to_device_scale_factor()).to_i32());
+        self.gl_context.resize(&size);
     }
 
-    pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: DeviceRect) {
+    pub fn draw_rectangle(&mut self, clear_color: ColorF, rect: LayoutRect) {
         self.display(|builder, space_and_clip, scale_factor| {
             builder.push_rect(
-                &CommonItemProperties::new(rect / scale_factor, space_and_clip),
-                rect / scale_factor,
+                &CommonItemProperties::new(rect, space_and_clip),
+                rect,
                 clear_color,
             );
         });
@@ -594,17 +593,20 @@ impl WrCanvas {
     pub fn push_rect(
         &mut self,
         color_pixel: ::libc::c_ulong,
-        rect: DeviceRect,
-        clip_rect: Option<DeviceRect>,
+        rect: LayoutRect,
+        clip_rect: Option<LayoutRect>,
     ) {
-        let clear_color = pixel_to_color(color_pixel);
+        println!("color pixel: {color_pixel:?}");
+        let clear_color = crate::platform::pixel_to_color(color_pixel);
+        println!("colorf: {clear_color:?}");
+        let scale = self.layout_to_device_scale_factor();
         self.display(|builder, space_and_clip, scale_factor| {
             builder.push_rect(
                 &CommonItemProperties::new(
-                    clip_rect.unwrap_or(rect) / scale_factor,
+                    (clip_rect.unwrap_or(rect) * scale).cast_unit::<LayoutPixel>(),
                     space_and_clip,
                 ),
-                rect / scale_factor,
+                (rect * scale).cast_unit::<LayoutPixel>(),
                 clear_color,
             );
         });
@@ -612,8 +614,8 @@ impl WrCanvas {
 
     pub fn dp_push_rect(
         &mut self,
-        rect: DeviceRect,
-        clip: DeviceRect,
+        rect: LayoutRect,
+        clip: LayoutRect,
         is_backface_visible: bool,
         force_antialiasing: bool,
         is_checkerboard: bool,
@@ -622,11 +624,8 @@ impl WrCanvas {
         // debug_assert!(unsafe { !is_in_render_thread() });
 
         self.display(|dl_builder, space_and_clip, scale_factor| {
-            let mut prim_info = common_item_properties_for_rect(
-                clip / scale_factor,
-                is_backface_visible,
-                &space_and_clip,
-            );
+            let mut prim_info =
+                common_item_properties_for_rect(clip, is_backface_visible, &space_and_clip);
             if force_antialiasing {
                 prim_info.flags |= PrimitiveFlags::ANTIALISED;
             }
@@ -634,15 +633,15 @@ impl WrCanvas {
                 prim_info.flags |= PrimitiveFlags::CHECKERBOARD_BACKGROUND;
             }
 
-            dl_builder.push_rect(&prim_info, rect / scale_factor, pixel_to_color(color));
+            dl_builder.push_rect(&prim_info, rect, pixel_to_color(color));
         });
     }
 
     pub fn push_border(
         &mut self,
         color_pixel: ::libc::c_ulong,
-        rect: DeviceRect,
-        clip_rect: Option<DeviceRect>,
+        rect: LayoutRect,
+        clip_rect: Option<LayoutRect>,
     ) {
         let color = pixel_to_color(color_pixel);
         let border_widths = LayoutSideOffsets::new_all_same(1.0);
@@ -663,11 +662,8 @@ impl WrCanvas {
 
         self.display(|builder, space_and_clip, scale_factor| {
             builder.push_border(
-                &CommonItemProperties::new(
-                    clip_rect.unwrap_or(rect) / scale_factor,
-                    space_and_clip,
-                ),
-                rect / scale_factor,
+                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
+                rect,
                 border_widths,
                 border_details,
             );
@@ -676,8 +672,8 @@ impl WrCanvas {
 
     pub fn dp_push_border(
         &mut self,
-        rect: DeviceRect,
-        clip: DeviceRect,
+        rect: LayoutRect,
+        clip: LayoutRect,
         is_backface_visible: bool,
         do_aa: AntialiasBorder,
         widths: DeviceIntSideOffsets,
@@ -700,7 +696,7 @@ impl WrCanvas {
 
         self.display(|dl_builder, space_and_clip, scale_factor| {
             let prim_info = CommonItemProperties {
-                clip_rect: clip / scale_factor,
+                clip_rect: clip,
                 clip_chain_id: space_and_clip.clip_chain_id,
                 spatial_id: space_and_clip.spatial_id,
                 flags: prim_flags(
@@ -711,7 +707,7 @@ impl WrCanvas {
 
             dl_builder.push_border(
                 &prim_info,
-                rect / scale_factor,
+                rect,
                 device_int_to_layout_side_offsets(widths, scale_factor),
                 border_details,
             );
@@ -720,11 +716,11 @@ impl WrCanvas {
 
     pub fn dp_push_line(
         &mut self,
-        bounds: DeviceRect,
-        clip: DeviceRect,
+        bounds: LayoutRect,
+        clip: LayoutRect,
         color: &ColorF,
         style: LineStyle,
-        wavy_line_thickness: DeviceIntLength,
+        wavy_line_thickness: LayoutLength,
         is_backface_visible: bool,
         orientation: LineOrientation,
     ) {
@@ -732,7 +728,7 @@ impl WrCanvas {
 
         self.display(|dl_builder, space_and_clip, scale_factor| {
             let prim_info = CommonItemProperties {
-                clip_rect: clip / scale_factor,
+                clip_rect: clip,
                 clip_chain_id: space_and_clip.clip_chain_id,
                 spatial_id: space_and_clip.spatial_id,
                 flags: prim_flags(
@@ -743,8 +739,8 @@ impl WrCanvas {
 
             dl_builder.push_line(
                 &prim_info,
-                &(bounds / scale_factor),
-                device_int_to_layout_length(wavy_line_thickness, scale_factor).get(),
+                &bounds,
+                wavy_line_thickness.get(),
                 orientation,
                 color,
                 style,

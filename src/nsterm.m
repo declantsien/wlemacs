@@ -74,7 +74,7 @@ GNUstep port and post-20 update by Adrian Robert (arobert@cogsci.ucsd.edu)
 #endif
 
 #ifdef USE_WEBRENDER
-#include "wr_ffi_generated.h"
+#include "wr_ffi.h"
 #endif
 
 static EmacsMenu *dockMenu;
@@ -2610,8 +2610,9 @@ ns_clear_frame (struct frame *f)
    -------------------------------------------------------------------------- */
 {
 #ifdef USE_WEBRENDER
-  // TODO
-  wr_clear_area (  f->output_data.ns->wr_data, f->background_pixel, 0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
+  wr_clear_area (  f->output_data.ns->wr_data,
+		   NS_FACE_BACKGROUND (FACE_FROM_ID (f, DEFAULT_FACE_ID)),
+		   0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
 #else  
   NSView *view = FRAME_NS_VIEW (f);
   NSRect r;

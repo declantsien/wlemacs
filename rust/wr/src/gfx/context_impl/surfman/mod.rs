@@ -2,7 +2,7 @@ mod rendering_context;
 
 use crate::gfx::context::GLContextTrait;
 
-use webrender_api::units::LayoutIntSize;
+use webrender_api::units::DeviceIntSize;
 
 use raw_window_handle::{
     DisplayHandle, HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
@@ -37,7 +37,7 @@ impl GLContextTrait for ContextImpl {
     fn build(
         display_handle: RawDisplayHandle,
         window_handle: RawWindowHandle,
-        size: LayoutIntSize,
+        size: DeviceIntSize,
     ) -> Self {
         log::trace!("Initialize OpenGL context using Surfman");
 
@@ -56,7 +56,7 @@ impl GLContextTrait for ContextImpl {
             .expect("Failed to create adapter");
 
         let native_widget = connection
-            .create_native_widget_from_window_handle(window_handle, Size2D::new(width, height))
+            .create_native_widget_from_window_handle(window_handle, size.to_untyped())
             .expect("Failed to create native widget");
 
         let surface_type = SurfaceType::Widget { native_widget };
@@ -64,9 +64,7 @@ impl GLContextTrait for ContextImpl {
         let rendering_context = RenderingContext::create(&connection, &adapter, surface_type)
             .expect("Failed to create WR surfman");
 
-        rendering_context
-            .resize(Size2D::new(size.width as i32, size.height as i32))
-            .unwrap();
+        rendering_context.resize(size.to_untyped()).unwrap();
 
         rendering_context.make_gl_context_current().unwrap();
 
@@ -104,7 +102,7 @@ impl GLContextTrait for ContextImpl {
         ErrorCheckingGl::wrap(gl)
     }
 
-    fn resize(&self, size: &LayoutIntSize) {
+    fn resize(&self, size: &DeviceIntSize) {
         self.0
             .resize(Size2D::new(size.width as i32, size.height as i32))
             .unwrap();

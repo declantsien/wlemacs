@@ -769,7 +769,26 @@ pub extern "C" fn wr_fit_context(f: *mut Frame) {
 // }
 
 #[no_mangle]
-pub extern "C" fn wr_font_draw(
+pub extern "C" fn wr_macfont_draw(
+    canvas: &mut WrCanvas,
+    color_pixel: ::libc::c_ulong,
+    ct_font_ref: CTFontRef,
+    char2b: &mut WrVecU32,
+    from: ::libc::c_int,
+    to: ::libc::c_int,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    glyph_size: ::libc::c_int,
+    padding_p: bool,
+) {
+    let font_tpl = macfont_font_tpl(ct_font_ref);
+    wr_font_draw(canvas, color_pixel, font_tpl, char2b, from, to, x, y, width, height, glyph_size, padding_p);
+}
+
+#[no_mangle]
+pub extern "C" fn wr_ftfont_draw(
     canvas: &mut WrCanvas,
     color_pixel: ::libc::c_ulong,
     data: &mut WrVecU8,
@@ -785,6 +804,23 @@ pub extern "C" fn wr_font_draw(
     padding_p: bool,
 ) {
     let font_tpl = FontTemplate::Native(read_font_descriptor(data, index));
+}
+
+#[no_mangle]
+fn wr_font_draw(
+    canvas: &mut WrCanvas,
+    color_pixel: ::libc::c_ulong,
+    font_tpl: FontTemplate,
+    char2b: &mut WrVecU32,
+    from: ::libc::c_int,
+    to: ::libc::c_int,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    glyph_size: ::libc::c_int,
+    padding_p: bool,
+) {
     // println!("{:?}", font_tpl);
     let font_key = canvas.wr_add_font(font_tpl);
     let font_instance_key = canvas.wr_add_font_instance(

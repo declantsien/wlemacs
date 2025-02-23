@@ -8,8 +8,8 @@
 /* #include "wr_ffi.h" */
 #include "font.h"
 
-extern void wr_get_font_metrics_by_descriptor (const char *data, int index);
-extern void wr_get_font_metrics (struct font *font, struct frame *f);
+/* extern void wr_get_font_metrics_by_descriptor (const char *data, int index); */
+/* extern void wr_get_font_metrics (struct font *font, struct frame *f); */
 
 /* // defined in rust */
 /* // FIXME takes gl directly or rawwindowhandle */

@@ -1,9 +1,11 @@
-use crate::capi::EMACS_UINT;
+use crate::capi::{Emacs_Rectangle, EMACS_UINT};
+use crate::util::HandyDandyRectBuilder;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::{mem, ptr};
 use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::Length;
+use webrender_api::units::{DeviceRect, LayoutRect};
 
 pub type ImageHash = EMACS_UINT;
 pub type LayoutLength = Length<f32, LayoutPixel>;
@@ -232,4 +234,12 @@ pub struct WrFontMetrics {
     pub underline_position: ::libc::c_int,
     pub vertical_centering: bool,
     pub baseline_offset: ::libc::c_int,
+}
+
+impl Into<LayoutRect> for &Emacs_Rectangle {
+    fn into(self) -> LayoutRect {
+        (self.x, self.y)
+            .by(self.width as i32, self.height as i32)
+            .to_f32()
+    }
 }

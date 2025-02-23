@@ -226,3 +226,17 @@ pub extern "C" fn wr_font_metrics_impl(
 //         // descent: top,
 //     }
 // }
+
+pub fn macfont_font_tpl(font: CTFontRef) -> FontTemplate {
+    let ct_font = unsafe { CTFont::wrap_under_get_rule(font) };
+    let point_size = ct_font.pt_size();
+    let descriptor = ct_font.copy_descriptor();
+    let font_path = descriptor.font_path();
+    let mut font_metrics = WrFontMetrics::default();
+    FontTemplate::Native(NativeFontHandle {
+        name: ct_font.postscript_name(),
+        path: font_path
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or("".to_string()),
+    })
+}

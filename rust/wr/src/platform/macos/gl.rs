@@ -5,7 +5,7 @@ use raw_window_handle::{
     AppKitDisplayHandle, AppKitWindowHandle, RawDisplayHandle, RawWindowHandle,
 };
 use std::ptr::NonNull;
-use webrender_api::units::{DeviceIntSize, LayoutToDeviceScale};
+use webrender_api::units::{DeviceIntSize, LayoutIntSize, LayoutToDeviceScale};
 
 struct EmacsView {}
 
@@ -27,13 +27,14 @@ pub extern "C" fn wr_frame_gl_context(
     width: libc::c_int,
     height: libc::c_int,
     scale_factor: libc::c_double,
-)  -> *mut WrCanvas {
+) -> *mut WrCanvas {
     let display_handle = raw_display_handle();
     let window_handle = raw_window_handle(view);
     println!("window handle: {window_handle:?}");
-    let device_size = DeviceIntSize::new(width, height);
-    let size = device_size.to_f32() / LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
-    let mut gl_context = GLContext::build(display_handle, window_handle, size.to_i32());
+    let layout_size = LayoutIntSize::new(width, height);
+    let device_size =
+        (layout_size.to_f32() * LayoutToDeviceScale::new(scale_factor as f32)).to_i32();
+    let mut gl_context = GLContext::build(display_handle, window_handle, device_size);
 
     let data = Box::new(WrCanvas::build(gl_context, device_size, scale_factor));
     Box::into_raw(data)

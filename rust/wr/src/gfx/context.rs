@@ -1,5 +1,5 @@
 use crate::gfx::context_impl::ContextImpl;
-use webrender_api::units::LayoutIntSize;
+use webrender_api::units::DeviceIntSize;
 
 use gleam::gl::Gl;
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
@@ -11,7 +11,7 @@ pub trait GLContextTrait {
     fn build(
         display_handle: RawDisplayHandle,
         window_handle: RawWindowHandle,
-        size: LayoutIntSize,
+        size: DeviceIntSize,
     ) -> Self;
 
     fn bind_framebuffer(&mut self, gl: &mut Rc<dyn Gl>);
@@ -20,7 +20,7 @@ pub trait GLContextTrait {
 
     fn load_gl(&self) -> Rc<dyn Gl>;
 
-    fn resize(&self, size: &LayoutIntSize);
+    fn resize(&self, size: &DeviceIntSize);
 
     fn ensure_is_current(&mut self);
 }

@@ -26,7 +26,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "blockinput.h"
 #include "frame.h"
 #include "font.h"
-#include "wr_ffi_generated.h"
+#include "wr_ffi.h"
 #ifdef HAVE_FREETYPE
 #include "ftfont.h"
 #endif /* HAVE_FREETYPE */
@@ -346,6 +346,46 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* /\*   return len; *\/ */
 /* /\* } *\/ */
+
+int
+macwrfont_draw (struct glyph_string *s, CTFontRef font,
+               int from, int to, int x, int y, bool with_background)
+{
+  struct frame *f = s->f;
+  unsigned *glyphs;
+  int len = to - from;
+
+
+  int i;
+  const wr_vec_u32 char2b  = { s->char2b, s->nchars, 0};
+
+  if (!f->output_data.ns->wr_data) {
+    return 0;
+  }
+
+  block_input ();
+
+  if (with_background)
+    {
+      const Emacs_Rectangle rect = {x, y - FONT_BASE (s->font),
+				    s->width, FONT_HEIGHT (s->font)};
+      wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &rect, s->hl != DRAW_CURSOR, false, false, (unsigned long) f->output_data.ns->cursor_color);
+    }
+
+
+  unblock_input ();
+  wr_macfont_draw (f->output_data.ns->wr_data,
+		   (unsigned long) f->output_data.ns->cursor_color,
+		   font, &char2b, from, to,
+		   x, y, s->width, (s->row->mode_line_p ? s->row->height : s->row->visible_height),
+		   s->font->pixel_size, s->padding_p);
+
+
+
+  wr_vec_u32_free(char2b);
+
+  return len;
+}
 
 void
 syms_of_webrender (void)

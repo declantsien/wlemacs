@@ -36,7 +36,7 @@ Original author: YAMAMOTO Mitsuharu
 #include "macfont.h"
 #include "macuvs.h"
 #include "pdumper.h"
-// #include "wr_ffi_generated.h"
+#include "wr_ffi.h"
 
 #include <libkern/OSByteOrder.h>
 extern void wr_add_ctfont(CTFontRef font);
@@ -1766,6 +1766,9 @@ static unsigned macfont_encode_char (struct font *, int);
 static void macfont_text_extents (struct font *, const unsigned int *, int,
                                   struct font_metrics *);
 static int macfont_draw (struct glyph_string *, int, int, int, int, bool);
+#ifdef USE_WEBRENDER
+static int macwrfont_draw (struct glyph_string *, CTFontRef, int, int, int, int, bool);
+#endif
 static Lisp_Object macfont_shape (Lisp_Object, Lisp_Object);
 static int macfont_variation_glyphs (struct font *, int c,
                                      unsigned variations[256]);
@@ -2945,6 +2948,7 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
   CGContextRef context;
 
   block_input ();
+  // macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
 
   if (with_background)
     background_rect = CGRectMake (x, y - FONT_BASE (s->font),
