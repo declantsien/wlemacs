@@ -80,39 +80,40 @@ cfg_aliases = "0.2"
   
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.9"
-# # AppKit
-# objc2-app-kit = { version = "0.3.0", default-features = false, features = [
-#     "std",
-#     "objc2-core-foundation",
-#     "NSAppearance",
-#     "NSApplication",
-#     "NSBitmapImageRep",
-#     "NSButton",
-#     "NSColor",
-#     "NSControl",
-#     "NSCursor",
-#     "NSDragging",
-#     "NSEvent",
-#     "NSGraphics",
-#     "NSGraphicsContext",
-#     "NSImage",
-#     "NSImageRep",
-#     "NSMenu",
-#     "NSMenuItem",
-#     "NSOpenGLView",
-#     "NSPanel",
-#     "NSPasteboard",
-#     "NSResponder",
-#     # "NSRunningApplication",
-#     # "NSScreen",
-#     # "NSTextInputClient",
-#     # "NSTextInputContext",
-#     # "NSToolbar",
-#     "NSView",
-#     # "NSWindow",
-#     # "NSWindowScripting",
-#     # "NSWindowTabGroup",
-# ] }
+objc2-foundation = "0.3"
+# AppKit
+objc2-app-kit = { version = "0.3.0", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "NSAppearance",
+    "NSApplication",
+    "NSBitmapImageRep",
+    "NSButton",
+    "NSColor",
+    "NSControl",
+    "NSCursor",
+    "NSDragging",
+    "NSEvent",
+    "NSGraphics",
+    "NSGraphicsContext",
+    "NSImage",
+    "NSImageRep",
+    "NSMenu",
+    "NSMenuItem",
+    "NSOpenGLView",
+    "NSPanel",
+    "NSPasteboard",
+    "NSResponder",
+    # "NSRunningApplication",
+    # "NSScreen",
+    # "NSTextInputClient",
+    # "NSTextInputContext",
+    # "NSToolbar",
+    "NSView",
+    # "NSWindow",
+    # "NSWindowScripting",
+    # "NSWindowTabGroup",
+] }
 
 
 [features]

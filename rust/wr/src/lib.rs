@@ -31,6 +31,8 @@ pub mod platform {
     pub use super::platform::macos::font;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::gl;
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    pub use super::platform::macos::types;
 
     // #[cfg(any(
     //     target_os = "android",
@@ -45,6 +47,7 @@ pub mod platform {
         pub mod color;
         pub mod font;
         pub mod gl;
+        pub mod types;        
     }
     // #[cfg(any(
     //     target_os = "android",
@@ -86,8 +89,9 @@ use crate::font::macfont_font_tpl;
 use crate::types::WrVecU32;
 use crate::util::HandyDandyRectBuilder;
 use core_text::font::CTFontRef;
-use types::{EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
-use webrender_api::FontTemplate;
+use platform::pixel_to_color;
+use types::{EmacsIntPoint, EmacsIntSize, EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
+use webrender_api::{AlphaType, CommonItemProperties, FontTemplate, ImageRendering};
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(
@@ -106,26 +110,26 @@ pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
     canvas.flush();
 }
 
-#[no_mangle]
-pub extern "C" fn wr_dp_push_rect(
-    canvas: &mut WrCanvas,
-    rect: &Emacs_Rectangle,
-    clip: &Emacs_Rectangle,
-    is_backface_visible: bool,
-    force_antialiasing: bool,
-    is_checkerboard: bool,
-    color_pixel: ::libc::c_ulong,
-) {
-    // debug_assert!(unsafe { !is_in_render_thread() });
-    canvas.dp_push_rect(
-        rect.into(),
-        clip.into(),
-        is_backface_visible,
-        force_antialiasing,
-        is_checkerboard,
-        color_pixel,
-    );
-}
+// #[no_mangle]
+// pub extern "C" fn wr_dp_push_rect(
+//     canvas: &mut WrCanvas,
+//     rect: &Emacs_Rectangle,
+//     clip: &Emacs_Rectangle,
+//     is_backface_visible: bool,
+//     force_antialiasing: bool,
+//     is_checkerboard: bool,
+//     color_pixel: ::libc::c_ulong,
+// ) {
+//     // debug_assert!(unsafe { !is_in_render_thread() });
+//     canvas.dp_push_rect(
+//         rect.into(),
+//         clip.into(),
+//         is_backface_visible,
+//         force_antialiasing,
+//         is_checkerboard,
+//         color_pixel,
+//     );
+// }
 #[no_mangle]
 pub extern "C" fn wr_vec_u32_free(v: WrVecU32) {
     v.into_vec();

@@ -6,6 +6,7 @@
 
 /* #include TERM_HEADER */
 /* #include "wr_ffi.h" */
+#include "dispextern.h"
 #include "font.h"
 
 /* extern void wr_get_font_metrics_by_descriptor (const char *data, int index); */
@@ -67,7 +68,9 @@
 /* extern void */
 /* wr_set_glyph_string_clipping_exactly (struct glyph_string *src, */
 /* 				      struct glyph_string *dst); */
-
+extern void
+wr_row_clip_bounds (struct window *w, struct glyph_row *row,
+		    enum glyph_row_area area, Emacs_Rectangle *rect);
 /* extern void emacs_rust_init_syms(void); */
 extern void syms_of_webrender(void);
 

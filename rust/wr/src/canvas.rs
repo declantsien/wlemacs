@@ -502,8 +502,7 @@ impl WrCanvas {
     pub fn get_or_create_fringe_bitmap(
         &mut self,
         which: i32,
-        bitmap_width: u32,
-        bitmap_height: u32,
+        bitmap_size: EmacsIntSize,
         bits: *mut ::libc::c_ushort,
     ) -> Option<FringeBitmap> {
         if which <= 0 {
@@ -513,8 +512,8 @@ impl WrCanvas {
         if let Some(bitmap) = self.fringe_bitmaps.get(&which) {
             return Some(bitmap.clone());
         }
-
-        let bitmap = self.create_fringe_bitmap(bitmap_width, bitmap_height, bits);
+        let bitmap_size = (bitmap_size.to_f32() * self.scale_factor).to_i32();
+        let bitmap = self.create_fringe_bitmap(bitmap_size, bits);
 
         // add bitmap to cache
         self.fringe_bitmaps.insert(which, bitmap.clone());
@@ -546,11 +545,10 @@ impl WrCanvas {
 
     fn create_fringe_bitmap(
         &mut self,
-        bitmap_width: u32,
-        bitmap_height: u32,
+        bitmap_size: DeviceIntSize,
         bits: *mut ::libc::c_ushort,
     ) -> FringeBitmap {
-        let image_buffer = create_fringe_bitmap_image_buffer(bitmap_width, bitmap_height, bits);
+        let image_buffer = create_fringe_bitmap_image_buffer(bitmap_size, bits);
 
         let (width, height) = image_buffer.dimensions();
         let descriptor = ImageDescriptor::new(
@@ -621,13 +619,12 @@ impl WrCanvas {
         is_backface_visible: bool,
         force_antialiasing: bool,
         is_checkerboard: bool,
-        color: libc::c_ulong,
+        color: ColorF,
     ) {
         self.display(|dl_builder, space_and_clip, scale_factor| {
             // debug_assert!(unsafe { !is_in_render_thread() });
             let rect = rect * scale_factor;
             let clip = clip * scale_factor;
-            let color = crate::platform::pixel_to_color(color);
 
             let mut prim_info =
                 common_item_properties_for_rect(clip, is_backface_visible, &space_and_clip);
@@ -786,8 +783,7 @@ impl RenderNotifier for Notifier {
 }
 
 fn create_fringe_bitmap_image_buffer(
-    bitmap_width: u32,
-    bitmap_height: u32,
+    bitmap_size: DeviceIntSize,
     bits: *mut ::libc::c_ushort,
 ) -> image::DynamicImage {
     use image::{Rgba, RgbaImage};
@@ -797,7 +793,7 @@ fn create_fringe_bitmap_image_buffer(
         // `len` is assumed to be 0.
         Vec::new()
     } else {
-        let bits = unsafe { std::slice::from_raw_parts(bits, (8 * bitmap_height) as usize) };
+        let bits = unsafe { std::slice::from_raw_parts(bits, (8 * bitmap_size.height) as usize) };
         bits.iter().map(|v| *v as u8).collect()
     };
 
@@ -806,19 +802,23 @@ fn create_fringe_bitmap_image_buffer(
     let white_pixel = Rgba([255, 255, 255, 255]);
     let transparent_pixel = Rgba([0, 0, 0, 0]);
 
-    let image_buffer = RgbaImage::from_fn(bitmap_width, bitmap_height, |x, y| {
-        let index = (y * bitmap_width + x) as usize;
+    let image_buffer = RgbaImage::from_fn(
+        bitmap_size.width as u32,
+        bitmap_size.height as u32,
+        |x, y| {
+            let index = (y * bitmap_size.width as u32 + x) as usize;
 
-        if bits
-            .get(index)
-            .expect("RgbaImage construction: out of index.")
-            == true
-        {
-            white_pixel
-        } else {
-            transparent_pixel
-        }
-    });
+            if bits
+                .get(index)
+                .expect("RgbaImage construction: out of index.")
+                == true
+            {
+                white_pixel
+            } else {
+                transparent_pixel
+            }
+        },
+    );
 
     image::DynamicImage::ImageRgba8(image_buffer)
 }
