@@ -81,6 +81,10 @@ static EmacsMenu *mainMenu;
 /* The last known monitor attributes list.  */
 static Lisp_Object last_known_monitors;
 
+static void ns_fill_rectangle_1 (struct frame *, NSColor *, NSRect, bool);
+static void ns_fill_rectangle (struct frame *, unsigned long, int, int,
+				 int, int, bool);
+
 /* ==========================================================================
 
    NSTRACE, Trace support.
@@ -2617,9 +2621,8 @@ ns_clear_frame (struct frame *f)
 
   block_input ();
   ns_focus (f, &r, 1);
-  [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
-			    (FACE_FROM_ID (f, DEFAULT_FACE_ID))] set];
-  NSRectFill (r);
+  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
+			    (FACE_FROM_ID (f, DEFAULT_FACE_ID))], r, false);
   ns_unfocus (f);
 
 #ifdef NS_IMPL_GNUSTEP
@@ -2646,9 +2649,7 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 
   r = NSIntersectionRect (r, [view frame]);
   ns_focus (f, &r, 1);
-  [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)] set];
-
-  NSRectFill (r);
+  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)], r, false);
 
   ns_unfocus (f);
   return;
@@ -2750,13 +2751,13 @@ ns_clear_under_internal_border (struct frame *f)
         return;
 
       ns_focus (f, NULL, 1);
-      [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)] set];
-      NSRectFill (NSMakeRect (0, margin, width, border));
-      NSRectFill (NSMakeRect (0, 0, border, height));
-      NSRectFill (NSMakeRect (0, margin, width, border));
-      NSRectFill (NSMakeRect (width - border, 0, border, height));
-      NSRectFill (NSMakeRect (0, height - bottom_margin - border,
-			      width, border));
+      unsigned long color = NS_FACE_BACKGROUND (face);
+      ns_fill_rectangle (f, color, 0, margin, width, border, false);
+      ns_fill_rectangle (f, color, 0, 0, border, height, false);
+      ns_fill_rectangle (f, color, 0, margin, width, border, false);
+      ns_fill_rectangle (f, color, width - border, 0, border, height, false);
+      ns_fill_rectangle (f, color, 0, height - bottom_margin - border,
+			   width, border, false);
       ns_unfocus (f);
     }
 }
@@ -2970,8 +2971,7 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
         {
           NSTRACE_RECT ("clearRect", clearRect);
 
-          [[NSColor colorWithUnsignedLong:face->background] set];
-          NSRectFill (clearRect);
+	  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:face->background], clearRect, false);
         }
     }
 
@@ -3127,7 +3127,7 @@ ns_draw_window_cursor (struct window *w, struct glyph_row *glyph_row,
       break;
     case HBAR_CURSOR:
     case BAR_CURSOR:
-      NSRectFill (r);
+      ns_fill_rectangle_1 (f, FRAME_CURSOR_COLOR (f), r, true);
       [ctx restoreGraphicsState];
       break;
     }
@@ -3188,30 +3188,23 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
     /* A vertical divider, at least three pixels wide: Draw first and
        last pixels differently.  */
     {
-      [[NSColor colorWithUnsignedLong:color_first] set];
-      NSRectFill(NSMakeRect (x0, y0, 1, y1 - y0));
-      [[NSColor colorWithUnsignedLong:color] set];
-      NSRectFill(NSMakeRect (x0 + 1, y0, x1 - x0 - 2, y1 - y0));
-      [[NSColor colorWithUnsignedLong:color_last] set];
-      NSRectFill(NSMakeRect (x1 - 1, y0, 1, y1 - y0));
+      ns_fill_rectangle (f, color_first, x0, y0, 1, y1 - y0, false);
+      ns_fill_rectangle (f, color, x0 + 1, y0, x1 - x0 - 2, y1 - y0, false);
+      ns_fill_rectangle (f, color_last, x1 - 1, y0, 1, y1 - y0, false);
     }
   else if ((x1 - x0 > y1 - y0) && (y1 - y0 >= 3))
     /* A horizontal divider, at least three pixels high: Draw first and
        last pixels differently.  */
     {
-      [[NSColor colorWithUnsignedLong:color_first] set];
-      NSRectFill(NSMakeRect (x0, y0, x1 - x0, 1));
-      [[NSColor colorWithUnsignedLong:color] set];
-      NSRectFill(NSMakeRect (x0, y0 + 1, x1 - x0, y1 - y0 - 2));
-      [[NSColor colorWithUnsignedLong:color_last] set];
-      NSRectFill(NSMakeRect (x0, y1 - 1, x1 - x0, 1));
+      ns_fill_rectangle (f, color_first, x0, y0, x1 - x0, 1, false);
+      ns_fill_rectangle (f, color, x0, y0 + 1, x1 - x0, y1 - y0 - 2, false);
+      ns_fill_rectangle (f, color_last, x0, y1 - 1, x1 - x0, 1, false);
     }
   else
     {
       /* In any other case do not draw the first and last pixels
          differently.  */
-      [[NSColor colorWithUnsignedLong:color] set];
-      NSRectFill(divider);
+      ns_fill_rectangle (f, color, x0, y0, x1-x0, y1-y0, false);
     }
 
   ns_unfocus (f);
@@ -3320,6 +3313,21 @@ ns_draw_dash (struct glyph_string *s, int width, int segment,
   [path lineToPoint: NSMakePoint (s->x + width, y_center)];
   [path stroke];
   [path release];
+}
+
+static void
+ns_fill_rectangle_1 (struct frame *f, NSColor *color, NSRect r, bool respect_alpha_background)
+{
+  [color set];
+  NSRectFill (r);
+}
+
+static void
+ns_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
+		     int width, int height, bool respect_alpha_background)
+{
+  NSColor *nscolor = [NSColor colorWithUnsignedLong:color];
+  ns_fill_rectangle_1 (f, nscolor, NSMakeRect (x, y, width, height),  respect_alpha_background);
 }
 
 /* Draw an underline of STYLE onto the focused frame at an offset of
