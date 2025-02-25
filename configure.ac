@@ -2965,7 +2965,7 @@ if test "${HAVE_NS}" = yes; then
   NS_OBJC_OBJ="nsterm.o nsfns.o nsmenu.o nsselect.o nsimage.o $ns_fontfile"
 
 if test "${with_webrender}" != "yes" ; then
-  NS_OBJC_OBJ="$NS_OBJC_OBJ nsredisp.o"
+  NS_OBJC_OBJ="$NS_OBJC_OBJ nsgui.o"
 fi
 
 fi
@@ -7210,11 +7210,15 @@ AC_SUBST([XMENU_OBJ])
 AC_SUBST([XOBJ])
 AC_SUBST([FONT_OBJ])
 
+RUST_ARCHIVE_EXTENSION=".a"
+if test "${HAVE_W32}" = "yes"; then
+    RUST_ARCHIVE_EXTENSION=".lib"
+fi
+
 WR_OBJ=
 WR_LIBS=
+LIBWR_ARCHIVE=
 if test "${with_webrender}" = "yes" ; then
-
-  WR_OBJ="wr.o"
 
   if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc" \
      && test "${window_system}" != "nextstep"; then
@@ -7230,9 +7234,14 @@ if test "${with_webrender}" = "yes" ; then
 
   AC_DEFINE(HAVE_NATIVE_IMAGE_API, 1, [Define to use native OS APIs for images.])
             NATIVE_IMAGE_API="yes (webrender)"
+
+  WR_OBJ="wr.o"
+  LIBWR_ARCHIVE="libwr$RUST_ARCHIVE_EXTENSION"
+  WR_LIBS="$LIBWR_ARCHIVE"
 fi
 AC_SUBST(WR_LIBS)
 AC_SUBST(WR_OBJ)
+AC_SUBST(LIBWR_ARCHIVE)
 
 WIDGET_OBJ=
 MOTIF_LIBW=
@@ -7435,9 +7444,7 @@ case "$opsys" in
    RUST_DEPS="-ldl -lm -lrt -lstdc++" ;;
 esac
 
-RUST_ARCHIVE_EXTENSION=".a"
 if test "${HAVE_W32}" = "yes"; then
-    RUST_ARCHIVE_EXTENSION=".lib"
     RUST_DEPS="$RUST_DEPS -lws2_32 -luserenv"
 
     # Windows fails linking in the 'cargo test' stage, skip for now.

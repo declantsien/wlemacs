@@ -67,8 +67,7 @@ AWK = @AWK@
 # LIBS = @LIBS@
 LIBOBJS = @LIBOBJS@
 
-RUST_ARCHIVE_EXTENSION=@RUST_ARCHIVE_EXTENSION@
-LIBWR_ARCHIVE=libwr$(RUST_ARCHIVE_EXTENSION)
+LIBWR_ARCHIVE = @LIBWR_ARCHIVE@
 
 lispsource = $(top_srcdir)/lisp
 lib = ../lib
@@ -358,7 +357,7 @@ LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
 LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
 
 RUST_CFLAGS = @RUST_CFLAGS@
-WR_LIBS = $(LIBWR_ARCHIVE) @WR_LIBS@
+WR_LIBS = @WR_LIBS@
 WR_OBJ = @WR_OBJ@
 
 LIBSYSTEMD_LIBS = @LIBSYSTEMD_LIBS@
@@ -724,21 +723,32 @@ globals.h: gl-stamp; @true
 
 HEADERS=$(wildcard $(srcdir)/*.h)
 
-wr_ffi_generated.h : FORCE
+wr_ffi_generated.h :
 	cd ../rust/wr/ && cbindgen -q --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
 
-../rust/wr/src/capi.rs : FORCE
+nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
+
+../rust/wr/src/emacs.rs :
 	bindgen wrapper.h \
 	--ctypes-prefix ::libc \
+	--allowlist-function ns_define_frame_cursor \
+	--allowlist-function ns_default_font_parameter \
+	--allowlist-function gui_produce_glyphs \
+	--allowlist-function gui_write_glyphs \
+	--allowlist-function gui_insert_glyphs \
+	--allowlist-function gui_clear_end_of_line \
+	--allowlist-function gui_clear_window_mouse_face \
+	--allowlist-function gui_get_glyph_overhangs \
+	--allowlist-function gui_fix_overlapping_area \
 	--allowlist-type redisplay_interface \
-	--allowlist-type ns_frame_parm_handlers \
+	--allowlist-var ns_frame_parm_handlers \
 	--allowlist-type Emacs_Color \
 	--allowlist-type Emacs_Rectangle \
 	--allowlist-type Emacs_Pixmap \
 	-o $@ \
 	-- $(ALL_CFLAGS)
 
-$(LIBWR_ARCHIVE) : FORCE
+$(LIBWR_ARCHIVE) : ../rust/wr/src/emacs.rs
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
 	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p wr \

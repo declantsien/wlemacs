@@ -1,4 +1,8 @@
 use crate::canvas::WrCanvas;
+use crate::emacs::{
+    frame, ns_default_font_parameter, ns_define_frame_cursor, window, Emacs_Cursor, Emacs_Pixmap,
+    Lisp_Object,
+};
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::types::{EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect};
 use crate::util::HandyDandyRectBuilder;
@@ -141,3 +145,70 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 //     let data = Box::new(WrCanvas::build(f));
 //     Box::into_raw(data)
 // }
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_clear_frame(f: *mut frame) {
+    //TODO
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_clear_frame_area(
+    f: *mut frame,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+) {
+    //todo
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_condemn_scroll_bars(f: *mut frame) {
+    //TODO
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_free_pixmap(f: *mut frame, pixmap: Emacs_Pixmap) {
+    //TODO
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_judge_scroll_bars(f: *mut frame) {
+    //TODO
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_redeem_scroll_bar(window: *mut window) {}
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_set_vertical_scroll_bar(
+    w: *mut window,
+    portion: ::libc::c_int,
+    whole: ::libc::c_int,
+    position: ::libc::c_int,
+) {
+}
+
+/// cbindgen:ignore
+#[no_mangle]
+pub extern "C" fn ns_set_horizontal_scroll_bar(
+    w: *mut window,
+    portion: ::libc::c_int,
+    whole: ::libc::c_int,
+    position: ::libc::c_int,
+) {
+}
+
+pub extern "C" fn define_frame_cursor(f: *mut frame, cursor: Emacs_Cursor) {
+    unsafe { ns_define_frame_cursor(f, cursor) };
+}
+
+pub extern "C" fn default_font_parameter(f: *mut frame, parms: Lisp_Object) {
+    unsafe { ns_default_font_parameter(f, parms) };
+}

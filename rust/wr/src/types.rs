@@ -1,4 +1,4 @@
-use crate::capi::{Emacs_Rectangle, EMACS_UINT};
+use crate::emacs::{Emacs_Rectangle, EMACS_UINT};
 use crate::util::HandyDandyRectBuilder;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};

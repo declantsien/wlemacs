@@ -1,5 +1,5 @@
 use crate::bindings::AntialiasBorder;
-use crate::capi::Emacs_Pixmap;
+use crate::emacs::Emacs_Pixmap;
 use crate::color::pixel_to_color;
 use crate::util::HandyDandyRectBuilder;
 use emacs_sys::gfx::context::GLContext;

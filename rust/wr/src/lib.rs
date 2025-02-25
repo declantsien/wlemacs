@@ -10,11 +10,11 @@ pub mod color;
 // pub mod output;
 
 /// cbindgen:ignore
-mod capi;
+mod emacs;
 // mod face;
 mod canvas;
-pub mod disp;
 pub mod font;
+pub mod gui;
 pub mod types;
 // mod glyph;
 mod texture;
@@ -31,7 +31,7 @@ pub mod platform {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::font;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
-    pub use super::platform::macos::gl;
+    pub use super::platform::macos::gui;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::types;
 
@@ -47,7 +47,7 @@ pub mod platform {
     pub mod macos {
         pub mod color;
         pub mod font;
-        pub mod gl;
+        pub mod gui;
         pub mod types;
     }
     // #[cfg(any(
@@ -85,7 +85,7 @@ pub mod gfx {
 }
 
 use crate::canvas::WrCanvas;
-use crate::capi::Emacs_Rectangle;
+use crate::emacs::Emacs_Rectangle;
 use crate::font::macfont_font_tpl;
 use crate::types::WrVecU32;
 use crate::util::HandyDandyRectBuilder;
