@@ -73,10 +73,6 @@ GNUstep port and post-20 update by Adrian Robert (arobert@cogsci.ucsd.edu)
 #include <IOSurface/IOSurface.h>
 #endif
 
-#ifdef USE_WEBRENDER
-#include "wr_ffi.h"
-#endif
-
 static EmacsMenu *dockMenu;
 #ifdef NS_IMPL_COCOA
 static EmacsMenu *mainMenu;
@@ -84,10 +80,6 @@ static EmacsMenu *mainMenu;
 
 /* The last known monitor attributes list.  */
 static Lisp_Object last_known_monitors;
-
-static void ns_fill_rectangle_1 (struct frame *, NSColor *, NSRect, bool);
-static void ns_fill_rectangle (struct frame *, unsigned long, int, int,
-				 int, int, bool);
 
 /* ==========================================================================
 
@@ -2609,10 +2601,8 @@ ns_clear_frame (struct frame *f)
       External (hook): Erase the entire frame
    -------------------------------------------------------------------------- */
 {
-#ifndef USE_WEBRENDER
   NSView *view = FRAME_NS_VIEW (f);
   NSRect r;
-#endif
 
   NSTRACE_WHEN (NSTRACE_GROUP_UPDATES, "ns_clear_frame");
 
@@ -2623,27 +2613,19 @@ ns_clear_frame (struct frame *f)
 
   mark_window_cursors_off (XWINDOW (FRAME_ROOT_WINDOW (f)));
 
-#ifndef USE_WEBRENDER
   r = [view bounds];
-#endif
 
   block_input ();
-#ifdef USE_WEBRENDER
-  wr_clear_area (  f->output_data.ns->wr_data,
-		   NS_FACE_BACKGROUND (FACE_FROM_ID (f, DEFAULT_FACE_ID)),
-		   0, 0, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f));
-#else
   ns_focus (f, &r, 1);
-  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
-			    (FACE_FROM_ID (f, DEFAULT_FACE_ID))], r, false);
+  [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND
+			    (FACE_FROM_ID (f, DEFAULT_FACE_ID))] set];
+  NSRectFill (r);
   ns_unfocus (f);
-#endif /* USE_WEBRENDER */
 
 #ifdef NS_IMPL_GNUSTEP
   ns_redraw_scroll_bars (f);
 #endif
   unblock_input ();
-
 }
 
 
@@ -2664,7 +2646,9 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 
   r = NSIntersectionRect (r, [view frame]);
   ns_focus (f, &r, 1);
-  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)], r, false);
+  [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)] set];
+
+  NSRectFill (r);
 
   ns_unfocus (f);
   return;
@@ -2719,13 +2703,6 @@ ns_scroll_run (struct window *w, struct run *run)
 
   gui_clear_cursor (w);
 
-#ifdef USE_WEBRENDER
-  int diff_y = to_y - from_y;
-  const Emacs_Rectangle viewport = {x, to_y, width, height};
-  const Emacs_Rectangle new_frame_position = {0, 0 + diff_y, FRAME_PIXEL_WIDTH(f), FRAME_PIXEL_HEIGHT(f)};
-
-  wr_scroll_run(f->output_data.ns->wr_data, &viewport, &new_frame_position);
-#else
   {
     NSRect srcRect = NSMakeRect (x, from_y, width, height);
     NSPoint dest = NSMakePoint (x, to_y);
@@ -2736,7 +2713,6 @@ ns_scroll_run (struct window *w, struct run *run)
     [view setNeedsDisplayInRect:srcRect];
 #endif
   }
-#endif
 
   unblock_input ();
 }
@@ -2774,13 +2750,13 @@ ns_clear_under_internal_border (struct frame *f)
         return;
 
       ns_focus (f, NULL, 1);
-      unsigned long color = NS_FACE_BACKGROUND (face);
-      ns_fill_rectangle (f, color, 0, margin, width, border, false);
-      ns_fill_rectangle (f, color, 0, 0, border, height, false);
-      ns_fill_rectangle (f, color, 0, margin, width, border, false);
-      ns_fill_rectangle (f, color, width - border, 0, border, height, false);
-      ns_fill_rectangle (f, color, 0, height - bottom_margin - border,
-			   width, border, false);
+      [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)] set];
+      NSRectFill (NSMakeRect (0, margin, width, border));
+      NSRectFill (NSMakeRect (0, 0, border, height));
+      NSRectFill (NSMakeRect (0, margin, width, border));
+      NSRectFill (NSMakeRect (width - border, 0, border, height));
+      NSRectFill (NSMakeRect (0, height - bottom_margin - border,
+			      width, border));
       ns_unfocus (f);
     }
 }
@@ -2827,25 +2803,11 @@ ns_after_update_window_line (struct window *w, struct glyph_row *desired_row)
           ns_focus (f, &r, 1);
 
           [[NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)] set];
-#ifdef USE_WEBRENDER
-	  NSRect rect = NSMakeRect (0, y, width, height);
-	  NSColor *color = [NSColor colorWithUnsignedLong:NS_FACE_BACKGROUND (face)];
-	  [color set];
-
-	  wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &r, false, false, false, color);
-	  rect = NSMakeRect (FRAME_PIXEL_WIDTH (f) - width,
-                                  y, width, height);
-	  wr_dp_push_rect(f->output_data.ns->wr_data,
-			  &rect,
-			  &r, false, false, false, color);
-#else
-
           NSRectFill (NSMakeRect (0, y, width, height));
           NSRectFill (NSMakeRect (FRAME_PIXEL_WIDTH (f) - width,
                                   y, width, height));
 
           ns_unfocus (f);
-#endif
         }
       else
         {
@@ -2992,8 +2954,6 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
   /* Clear screen unless overlay.  */
   if (!p->overlay_p)
     {
-      // TODO handle this branch in WR
-
       /* Work out the rectangle we will need to clear.  */
       clearRect = NSMakeRect (p->x, p->y, p->wd, p->h);
 
@@ -3010,28 +2970,11 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
         {
           NSTRACE_RECT ("clearRect", clearRect);
 
-	  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:face->background], clearRect, false);
-
+          [[NSColor colorWithUnsignedLong:face->background] set];
+          NSRectFill (clearRect);
         }
     }
-#ifdef USE_WEBRENDER
-  int bitmap_width = 8;
-  int bitmap_height = p->h + p->dh;
-  NSColor *bm_color;
 
-  if (!p->cursor_p)
-    bm_color = [NSColor colorWithUnsignedLong:face->foreground];
-  else if (p->overlay_p)
-    bm_color = [NSColor colorWithUnsignedLong:face->background];
-  else
-    bm_color = f->output_data.ns->cursor_color;
-
-  [bm_color set];
-
-  wr_draw_fringe_bitmap(f->output_data.ns->wr_data, p->which, p->x, p->y, p->wd, p->h,
-			bitmap_width, bitmap_height, p->bits,
-			bm_color, &rowRect);
-#else
   NSBezierPath *bmp = [fringe_bmp objectForKey:[NSNumber numberWithInt:p->which]];
 
   if (bmp == nil
@@ -3064,7 +3007,6 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 
       [bmp release];
     }
-#endif
   ns_unfocus (f);
 }
 
@@ -3185,7 +3127,7 @@ ns_draw_window_cursor (struct window *w, struct glyph_row *glyph_row,
       break;
     case HBAR_CURSOR:
     case BAR_CURSOR:
-      ns_fill_rectangle_1 (f, FRAME_CURSOR_COLOR (f), r, true);
+      NSRectFill (r);
       [ctx restoreGraphicsState];
       break;
     }
@@ -3246,23 +3188,30 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
     /* A vertical divider, at least three pixels wide: Draw first and
        last pixels differently.  */
     {
-      ns_fill_rectangle (f, color_first, x0, y0, 1, y1 - y0, false);
-      ns_fill_rectangle (f, color, x0 + 1, y0, x1 - x0 - 2, y1 - y0, false);
-      ns_fill_rectangle (f, color_last, x1 - 1, y0, 1, y1 - y0, false);
+      [[NSColor colorWithUnsignedLong:color_first] set];
+      NSRectFill(NSMakeRect (x0, y0, 1, y1 - y0));
+      [[NSColor colorWithUnsignedLong:color] set];
+      NSRectFill(NSMakeRect (x0 + 1, y0, x1 - x0 - 2, y1 - y0));
+      [[NSColor colorWithUnsignedLong:color_last] set];
+      NSRectFill(NSMakeRect (x1 - 1, y0, 1, y1 - y0));
     }
   else if ((x1 - x0 > y1 - y0) && (y1 - y0 >= 3))
     /* A horizontal divider, at least three pixels high: Draw first and
        last pixels differently.  */
     {
-      ns_fill_rectangle (f, color_first, x0, y0, x1 - x0, 1, false);
-      ns_fill_rectangle (f, color, x0, y0 + 1, x1 - x0, y1 - y0 - 2, false);
-      ns_fill_rectangle (f, color_last, x0, y1 - 1, x1 - x0, 1, false);
+      [[NSColor colorWithUnsignedLong:color_first] set];
+      NSRectFill(NSMakeRect (x0, y0, x1 - x0, 1));
+      [[NSColor colorWithUnsignedLong:color] set];
+      NSRectFill(NSMakeRect (x0, y0 + 1, x1 - x0, y1 - y0 - 2));
+      [[NSColor colorWithUnsignedLong:color_last] set];
+      NSRectFill(NSMakeRect (x0, y1 - 1, x1 - x0, 1));
     }
   else
     {
       /* In any other case do not draw the first and last pixels
          differently.  */
-      ns_fill_rectangle (f, color, x0, y0, x1-x0, y1-y0, false);
+      [[NSColor colorWithUnsignedLong:color] set];
+      NSRectFill(divider);
     }
 
   ns_unfocus (f);
@@ -3371,25 +3320,6 @@ ns_draw_dash (struct glyph_string *s, int width, int segment,
   [path lineToPoint: NSMakePoint (s->x + width, y_center)];
   [path stroke];
   [path release];
-}
-
-static void
-ns_fill_rectangle_1 (struct frame *f, NSColor *color, NSRect r, bool respect_alpha_background)
-{
-#ifndef USE_WEBRENDER
-  [color set];
-  NSRectFill (r);
-#else
-  wr_dp_push_rect(f->output_data.ns->wr_data, &r, &r, respect_alpha_background, false, false, color);
-#endif
-}
-
-static void
-ns_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
-		     int width, int height, bool respect_alpha_background)
-{
-  NSColor *nscolor = [NSColor colorWithUnsignedLong:color];
-  ns_fill_rectangle_1 (f, nscolor, NSMakeRect (x, y, width, height),  respect_alpha_background);
 }
 
 /* Draw an underline of STYLE onto the focused frame at an offset of
@@ -5489,10 +5419,6 @@ ns_flush_display (struct frame *f)
 
   EVENT_INIT (ie);
   ns_read_socket_1 (FRAME_TERMINAL (f), &ie, YES);
-
-  #ifdef USE_WEBRENDER
-  wr_flush (f->output_data.ns->wr_data );
-  #endif
 }
 
 /* This and next define (many of the) public functions in this
@@ -8886,26 +8812,22 @@ ns_in_echo_area (void)
 - (void)lockFocus
 {
   NSTRACE ("[EmacsView lockFocus]");
-#ifdef USE_WEBRENDER
-#else
+
   CGContextRef context = [(EmacsLayer*)[self layer] getContext];
 
   [NSGraphicsContext
         setCurrentContext:[NSGraphicsContext
                             graphicsContextWithCGContext:context
                                                  flipped:YES]];
-#endif
 }
 
 
 - (void)unlockFocus
 {
   NSTRACE ("[EmacsView unlockFocus]");
-#ifdef USE_WEBRENDER
-#else
+
   [NSGraphicsContext setCurrentContext:nil];
   [self setNeedsDisplay:YES];
-#endif
 }
 
 
