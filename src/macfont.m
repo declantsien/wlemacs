@@ -2699,8 +2699,10 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
     return Qnil;
 
   int fontsize = (int) [((NSFont *) macfont) pointSize];
+#ifdef USE_WEBRENDER
   wr_add_ctfont(macfont);
   // wr_get_font_metrics_by_descriptor(font_name, 0);
+#endif
 
   font_object = font_build_object (VECSIZE (struct macfont_info),
                                    Qmac_ct, entity, size);
@@ -2927,6 +2929,7 @@ macfont_text_extents (struct font *font, const unsigned int *code, int nglyphs,
     metrics->width = width;
 }
 
+#ifdef USE_WEBRENDER
 int
 macwrfont_draw (struct glyph_string *s, CTFontRef font,
                int from, int to, int x, int y, bool with_background)
@@ -2966,7 +2969,7 @@ macwrfont_draw (struct glyph_string *s, CTFontRef font,
 
   return len;
 }
-
+#endif
 
 static int
 macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
@@ -2989,7 +2992,9 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
   CGContextRef context;
 
   block_input ();
+#ifdef USE_WEBRENDER
   macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
+#endif
 
   if (with_background)
     background_rect = CGRectMake (x, y - FONT_BASE (s->font),

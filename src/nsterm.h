@@ -25,9 +25,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "font.h"
 #include "sysselect.h"
 #include "sysstdio.h"
-#ifdef USE_WEBRENDER
-#include "wr.h"
-#endif
 
 #ifdef HAVE_NS
 #ifdef __OBJC__
@@ -1178,6 +1175,25 @@ extern const char *ns_get_defaults_value (const char *key);
 extern void ns_init_pool (void);
 extern void ns_init_locale (void);
 
+extern int ns_read_socket_1 (struct terminal *terminal, struct input_event *hold_quit,
+			      bool no_release);
+extern void
+ns_define_frame_cursor (struct frame *f, Emacs_Cursor cursor);
+extern void
+ns_default_font_parameter (struct frame *f, Lisp_Object parms);
+extern void ns_condemn_scroll_bars (struct frame *f);
+extern void ns_judge_scroll_bars (struct frame *f);
+extern void
+ns_set_vertical_scroll_bar (struct window *window,
+			    int portion, int whole, int position);
+extern void
+ns_set_horizontal_scroll_bar (struct window *window,
+			      int portion, int whole, int position);
+extern void
+ns_redeem_scroll_bar (struct window *window);
+extern void
+ns_free_pixmap (struct frame *_f, Emacs_Pixmap pixmap);
+
 /* in nsmenu */
 extern void update_frame_tool_bar (struct frame *f);
 #ifdef __OBJC__
@@ -1263,8 +1279,16 @@ extern void ns_init_events (struct input_event *);
 extern void ns_finish_events (void);
 
 extern double ns_frame_scale_factor (struct frame *);
+extern void
+ns_clear_frame_area (struct frame *f, int x, int y, int width, int height);
 
 extern frame_parm_handler ns_frame_parm_handlers[];
+extern struct frame *ns_updating_frame;
+#ifdef USE_WEBRENDER
+extern struct redisplay_interface wr_redisplay_interface;
+#else
+extern struct redisplay_interface ns_redisplay_interface;
+#endif
 
 #ifdef NS_IMPL_GNUSTEP
 extern char gnustep_base_version[];  /* version tracking */

@@ -2963,6 +2963,11 @@ if test "${HAVE_NS}" = yes; then
   fi
 
   NS_OBJC_OBJ="nsterm.o nsfns.o nsmenu.o nsselect.o nsimage.o $ns_fontfile"
+
+if test "${with_webrender}" != "yes" ; then
+  NS_OBJC_OBJ="$NS_OBJC_OBJ nsredisp.o"
+fi
+
 fi
 CFLAGS="$tmp_CFLAGS"
 CPPFLAGS="$tmp_CPPFLAGS"
