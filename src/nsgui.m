@@ -2170,6 +2170,17 @@ ns_draw_glyph_string (struct glyph_string *s)
   s->num_clips = 0;
 }
 
+#ifdef NS_IMPL_GNUSTEP
+static void
+ns_update_window_end (struct window *w, bool cursor_on_p,
+		      bool mouse_face_overwritten_p)
+{
+  NSTRACE ("ns_update_window_end (cursor_on_p = %d)", cursor_on_p);
+
+  ns_redraw_scroll_bars (WINDOW_XFRAME (w));
+}
+#endif
+
 static void
 ns_flush_display (struct frame *f)
 {

@@ -2963,17 +2963,6 @@ ns_default_font_parameter (struct frame *f, Lisp_Object parms)
 {
 }
 
-#ifdef NS_IMPL_GNUSTEP
-static void
-ns_update_window_end (struct window *w, bool cursor_on_p,
-		      bool mouse_face_overwritten_p)
-{
-  NSTRACE ("ns_update_window_end (cursor_on_p = %d)", cursor_on_p);
-
-  ns_redraw_scroll_bars (WINDOW_XFRAME (w));
-}
-#endif
-
 #ifdef NS_IMPL_COCOA
 static void
 ns_displays_reconfigured (CGDirectDisplayID display,
@@ -6320,20 +6309,27 @@ ns_in_echo_area (void)
 {
   NSTRACE ("[EmacsView lockFocus]");
 
+#ifdef USE_WEBRENDER
+  //TODO for WR
+#else
   CGContextRef context = [(EmacsLayer*)[self layer] getContext];
 
   [NSGraphicsContext
         setCurrentContext:[NSGraphicsContext
                             graphicsContextWithCGContext:context
                                                  flipped:YES]];
+#endif
 }
 
 
 - (void)unlockFocus
 {
   NSTRACE ("[EmacsView unlockFocus]");
-
+#ifdef USE_WEBRENDER
+  //TODO for WR
+#else
   [NSGraphicsContext setCurrentContext:nil];
+#endif
   [self setNeedsDisplay:YES];
 }
 
