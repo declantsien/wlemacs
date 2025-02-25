@@ -7,8 +7,8 @@ use objc2_foundation::NSRect;
 use raw_window_handle::{
     AppKitDisplayHandle, AppKitWindowHandle, RawDisplayHandle, RawWindowHandle,
 };
-use webrender_api::{AlphaType, CommonItemProperties, ImageRendering};
 use std::ptr::NonNull;
+use webrender_api::{AlphaType, CommonItemProperties, ImageRendering};
 
 use super::color::ns_color_to_color_f;
 use super::types::ns_rect_to_emacs;

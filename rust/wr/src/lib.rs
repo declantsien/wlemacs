@@ -13,6 +13,7 @@ pub mod color;
 mod capi;
 // mod face;
 mod canvas;
+pub mod disp;
 pub mod font;
 pub mod types;
 // mod glyph;
@@ -47,7 +48,7 @@ pub mod platform {
         pub mod color;
         pub mod font;
         pub mod gl;
-        pub mod types;        
+        pub mod types;
     }
     // #[cfg(any(
     //     target_os = "android",

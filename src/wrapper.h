@@ -69,3 +69,4 @@
 /* #ifdef HAVE_WAYLAND_CLIENT */
 /* # include "wlcterm.h" */
 /* #endif */
+#include TERM_HEADER

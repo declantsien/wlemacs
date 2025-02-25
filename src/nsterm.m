@@ -3011,7 +3011,7 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
           NSTRACE_RECT ("clearRect", clearRect);
 
 	  ns_fill_rectangle_1 (f, [NSColor colorWithUnsignedLong:face->background], clearRect, false);
-	  
+
         }
     }
 #ifdef USE_WEBRENDER
@@ -3376,8 +3376,12 @@ ns_draw_dash (struct glyph_string *s, int width, int segment,
 static void
 ns_fill_rectangle_1 (struct frame *f, NSColor *color, NSRect r, bool respect_alpha_background)
 {
+#ifndef USE_WEBRENDER
   [color set];
   NSRectFill (r);
+#else
+  wr_dp_push_rect(f->output_data.ns->wr_data, &r, &r, respect_alpha_background, false, false, color);
+#endif
 }
 
 static void
@@ -5603,6 +5607,9 @@ ns_delete_terminal (struct terminal *terminal)
 
 static Lisp_Object ns_new_font (struct frame *f, Lisp_Object font_object,
                                 int fontset);
+#ifdef USE_WEBRENDER
+extern struct redisplay_interface wr_redisplay_interface;
+#endif
 
 static struct terminal *
 ns_create_terminal (struct ns_display_info *dpyinfo)
@@ -5614,7 +5621,11 @@ ns_create_terminal (struct ns_display_info *dpyinfo)
 
   NSTRACE ("ns_create_terminal");
 
+#ifdef USE_WEBRENDER
+  terminal = create_terminal (output_ns, &wr_redisplay_interface);
+#else
   terminal = create_terminal (output_ns, &ns_redisplay_interface);
+#endif
 
   terminal->display_info.ns = dpyinfo;
   dpyinfo->terminal = terminal;

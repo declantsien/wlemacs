@@ -725,11 +725,13 @@ globals.h: gl-stamp; @true
 HEADERS=$(wildcard $(srcdir)/*.h)
 
 wr_ffi_generated.h : FORCE
-	cd ../rust/wr/ && cbindgen -i --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
+	cd ../rust/wr/ && cbindgen -q --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
 
 ../rust/wr/src/capi.rs : FORCE
 	bindgen wrapper.h \
 	--ctypes-prefix ::libc \
+	--allowlist-type redisplay_interface \
+	--allowlist-type ns_frame_parm_handlers \
 	--allowlist-type Emacs_Color \
 	--allowlist-type Emacs_Rectangle \
 	--allowlist-type Emacs_Pixmap \
