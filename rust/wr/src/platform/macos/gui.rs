@@ -1,7 +1,7 @@
 use crate::canvas::WrCanvas;
 use crate::emacs::{
-    frame, ns_default_font_parameter, ns_define_frame_cursor, window, Emacs_Cursor, Emacs_Pixmap,
-    Lisp_Object,
+    frame, ns_default_font_parameter, ns_define_frame_cursor, ns_output, window, Emacs_Cursor,
+    Emacs_Pixmap, Lisp_Object,
 };
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::types::{EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect};
@@ -24,8 +24,8 @@ pub fn raw_display_handle() -> raw_window_handle::RawDisplayHandle {
     RawDisplayHandle::AppKit(raw)
 }
 
-pub fn raw_window_handle(view: &EmacsView) -> raw_window_handle::RawWindowHandle {
-    let handle = AppKitWindowHandle::new(NonNull::from(view).cast());
+pub fn raw_window_handle(output_data: &ns_output) -> raw_window_handle::RawWindowHandle {
+    let handle = AppKitWindowHandle::new(unsafe { NonNull::new_unchecked(output_data.view) });
     RawWindowHandle::AppKit(handle)
 }
 
@@ -33,7 +33,7 @@ pub fn raw_window_handle(view: &EmacsView) -> raw_window_handle::RawWindowHandle
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_frame_gl_context(
-    view: &EmacsView,
+    f: *mut frame,
     width: libc::c_int,
     height: libc::c_int,
     scale_factor: libc::c_double,
@@ -41,7 +41,8 @@ pub extern "C" fn wr_frame_gl_context(
     use crate::types::{EmacsIntSize, EmacsToDeviceScale};
 
     let display_handle = raw_display_handle();
-    let window_handle = raw_window_handle(view);
+    let window_handle =
+        raw_window_handle(unsafe { f.as_ref().unwrap().output_data.ns.as_ref().unwrap() });
     println!("window handle: {window_handle:?}");
     let size = EmacsIntSize::new(width, height);
     let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
@@ -148,12 +149,14 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_clear_frame(f: *mut frame) {
     //TODO
 }
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_clear_frame_area(
     f: *mut frame,
     x: ::libc::c_int,
@@ -166,27 +169,32 @@ pub extern "C" fn ns_clear_frame_area(
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_condemn_scroll_bars(f: *mut frame) {
     //TODO
 }
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_free_pixmap(f: *mut frame, pixmap: Emacs_Pixmap) {
     //TODO
 }
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_judge_scroll_bars(f: *mut frame) {
     //TODO
 }
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_redeem_scroll_bar(window: *mut window) {}
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_set_vertical_scroll_bar(
     w: *mut window,
     portion: ::libc::c_int,
@@ -197,6 +205,7 @@ pub extern "C" fn ns_set_vertical_scroll_bar(
 
 /// cbindgen:ignore
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn ns_set_horizontal_scroll_bar(
     w: *mut window,
     portion: ::libc::c_int,

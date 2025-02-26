@@ -13,34 +13,6 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
 
-// pub mod platform {
-//     #[cfg(any(target_os = "macos", target_os = "ios"))]
-//     pub use super::platform::macos::font;
-//     #[cfg(any(
-//         target_os = "android",
-//         all(unix, not(any(target_os = "ios", target_os = "macos")))
-//     ))]
-//     pub use super::platform::unix::font;
-//     #[cfg(target_os = "windows")]
-//     pub use super::platform::windows::font;
-
-//     #[cfg(any(target_os = "ios", target_os = "macos"))]
-//     pub mod macos {
-//         pub mod font;
-//     }
-//     #[cfg(any(
-//         target_os = "android",
-//         all(unix, not(any(target_os = "macos", target_os = "ios")))
-//     ))]
-//     pub mod unix {
-//         pub mod font;
-//     }
-//     #[cfg(target_os = "windows")]
-//     pub mod windows {
-//         pub mod font;
-//     }
-// }
-
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()
         .thread_name(|idx| format!("WRWorker#{}", idx))

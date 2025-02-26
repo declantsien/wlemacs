@@ -1,11 +1,10 @@
 use crate::emacs::{
-    draw_fringe_bitmap_params, frame, frame_parm_handler, glyph_row, glyph_string,
-    gui_clear_end_of_line, gui_clear_window_mouse_face, gui_fix_overlapping_area,
-    gui_get_glyph_overhangs, gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs,
-    ns_frame_parm_handlers, redisplay_interface, run, terminal, text_cursor_kinds, window,
+    draw_fringe_bitmap_params, frame, glyph_row, glyph_string, gui_clear_end_of_line,
+    gui_clear_window_mouse_face, gui_fix_overlapping_area, gui_get_glyph_overhangs,
+    gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
+    redisplay_interface, run, text_cursor_kinds, window,
 };
 use crate::platform::gui::{default_font_parameter, define_frame_cursor};
-use std::sync::LazyLock;
 
 unsafe impl Sync for redisplay_interface {}
 unsafe impl Send for redisplay_interface {}
@@ -13,7 +12,8 @@ unsafe impl Send for redisplay_interface {}
 /// cbindgen:ignore
 #[no_mangle]
 pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface {
-    frame_parm_handlers: unsafe { &mut ns_frame_parm_handlers } as *mut Option<_>, //(Box::into_raw(frame_parm_handlers)) as *mut Option<_>,
+    frame_parm_handlers: &raw mut ns_frame_parm_handlers as *mut Option<_>,
+    // frame_parm_handlers: unsafe { &mut ns_frame_parm_handlers } as *mut Option<_>,
     produce_glyphs: Some(gui_produce_glyphs),
     write_glyphs: Some(gui_write_glyphs),
     insert_glyphs: Some(gui_insert_glyphs),
@@ -44,23 +44,29 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
     default_font_parameter: Some(default_font_parameter),
 };
 
+#[allow(unused_variables)]
 extern "C" fn scroll_run(w: *mut window, run: *mut run) {
     println!("wr_scroll_run");
 }
 
+#[allow(unused_variables)]
 extern "C" fn after_update_window_line(w: *mut window, desired_row: *mut glyph_row) {
     println!("after_update_window_line");
 }
 
+#[allow(unused_variables)]
 extern "C" fn update_window_begin(w: *mut window) {
     println!("update_window_begin");
 }
 
+#[allow(unused_variables)]
 extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_overwritten_p: bool) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {}
 
+#[allow(unused_variables)]
 extern "C" fn draw_fringe_bitmap(
     w: *mut window,
     row: *mut glyph_row,
@@ -68,8 +74,10 @@ extern "C" fn draw_fringe_bitmap(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn flush_display(f: *mut frame) {}
 
+#[allow(unused_variables)]
 extern "C" fn clear_frame_area(
     f: *mut frame,
     x: ::libc::c_int,
@@ -79,6 +87,7 @@ extern "C" fn clear_frame_area(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn draw_window_cursor(
     w: *mut window,
     glyph_row: *mut glyph_row,
@@ -91,6 +100,7 @@ extern "C" fn draw_window_cursor(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn draw_vertical_window_border(
     w: *mut window,
     x: ::libc::c_int,
@@ -99,6 +109,7 @@ extern "C" fn draw_vertical_window_border(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn draw_window_divider(
     w: *mut window,
     x_0: ::libc::c_int,
@@ -108,6 +119,7 @@ extern "C" fn draw_window_divider(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn define_fringe_bitmap(
     which: ::libc::c_int,
     bits: *mut ::libc::c_ushort,
@@ -116,12 +128,16 @@ extern "C" fn define_fringe_bitmap(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn destroy_fringe_bitmap(which: ::libc::c_int) {}
 
+#[allow(unused_variables)]
 extern "C" fn compute_glyph_string_overhangs(s: *mut glyph_string) {}
 
+#[allow(unused_variables)]
 extern "C" fn clear_under_internal_border(f: *mut frame) {}
 
+#[allow(unused_variables)]
 extern "C" fn shift_glyphs_for_insert(
     f: *mut frame,
     x: ::libc::c_int,
@@ -132,6 +148,8 @@ extern "C" fn shift_glyphs_for_insert(
 ) {
 }
 
+#[allow(unused_variables)]
 extern "C" fn show_hourglass(f: *mut frame) {}
 
+#[allow(unused_variables)]
 extern "C" fn hide_hourglass(f: *mut frame) {}

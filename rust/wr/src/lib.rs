@@ -90,9 +90,8 @@ use crate::font::macfont_font_tpl;
 use crate::types::WrVecU32;
 use crate::util::HandyDandyRectBuilder;
 use core_text::font::CTFontRef;
-use platform::pixel_to_color;
-use types::{EmacsIntPoint, EmacsIntSize, EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
-use webrender_api::{AlphaType, CommonItemProperties, FontTemplate, ImageRendering};
+use types::{EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
+use webrender_api::FontTemplate;
 
 #[no_mangle]
 pub extern "C" fn wr_clear_area(
