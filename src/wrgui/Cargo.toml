@@ -1,6 +1,6 @@
 
 [package]
-name = "wr"
+name = "wrgui"
 description = "Emacs draw api using Rust crate webrender"
 version = "0.1.0"
 edition = "2021"
@@ -77,7 +77,7 @@ objc2 = "0.6.0"
 anyhow = "1"
 cfg_aliases = "0.2"
 # cbindgen = "0.28.0"
-  
+
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.9"
 objc2-foundation = "0.3"

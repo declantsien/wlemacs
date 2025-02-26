@@ -1549,7 +1549,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "wr"
+name = "wr_glyph_rasterizer"
+version = "0.1.0"
+dependencies = [
+ "core-foundation",
+ "core-graphics",
+ "core-text",
+ "dwrote",
+ "euclid",
+ "freetype",
+ "fxhash",
+ "lazy_static",
+ "libc",
+ "log",
+ "malloc_size_of_derive",
+ "objc",
+ "rayon",
+ "serde",
+ "smallvec",
+ "tracy-rs",
+ "webrender_api",
+ "wr_malloc_size_of",
+]
+
+[[package]]
+name = "wr_malloc_size_of"
+version = "0.0.2"
+dependencies = [
+ "app_units",
+ "euclid",
+]
+
+[[package]]
+name = "wrgui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1580,38 +1612,6 @@ dependencies = [
  "webrender",
  "webrender_api",
  "wr_glyph_rasterizer",
-]
-
-[[package]]
-name = "wr_glyph_rasterizer"
-version = "0.1.0"
-dependencies = [
- "core-foundation",
- "core-graphics",
- "core-text",
- "dwrote",
- "euclid",
- "freetype",
- "fxhash",
- "lazy_static",
- "libc",
- "log",
- "malloc_size_of_derive",
- "objc",
- "rayon",
- "serde",
- "smallvec",
- "tracy-rs",
- "webrender_api",
- "wr_malloc_size_of",
-]
-
-[[package]]
-name = "wr_malloc_size_of"
-version = "0.0.2"
-dependencies = [
- "app_units",
- "euclid",
 ]
 
 [[package]]

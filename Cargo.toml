@@ -1,8 +1,7 @@
 ### Workspace configurations
 [workspace]
-members = ["rust/*"]
+members = ["src/wrgui"]
 exclude = [
-	"rust/emacs-sys"
 ]
 resolver = "2"
 

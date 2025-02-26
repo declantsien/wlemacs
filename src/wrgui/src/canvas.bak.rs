@@ -37,4 +37,3 @@ impl WrCanvas {
 
         self.fonts.insert(data, font_key);
 }
-

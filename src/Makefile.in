@@ -724,11 +724,11 @@ globals.h: gl-stamp; @true
 HEADERS=$(wildcard $(srcdir)/*.h)
 
 wr_ffi_generated.h :
-	cd ../rust/wr/ && cbindgen -q --config cbindgen.toml --crate wr --output $(abs_top_srcdir)/src/$@
+	cd ./wrgui/ && cbindgen -q --config cbindgen.toml --crate wrgui --output $(abs_top_srcdir)/src/$@
 
 nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 
-../rust/wr/src/emacs.rs :
+./wrgui/src/emacs.rs :
 	bindgen wrapper.h \
 	--ctypes-prefix ::libc \
 	--allowlist-function ns_define_frame_cursor \
@@ -747,10 +747,10 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 	-o $@ \
 	-- $(ALL_CFLAGS)
 
-$(LIBWR_ARCHIVE) : ../rust/wr/src/emacs.rs
+$(LIBWR_ARCHIVE) : ./wrgui/src/emacs.rs
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
-	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p wr \
+	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p wrgui \
 	--features "$(CARGO_FEATURES)" --out-dir ./
 
 check check-maybe check-expensive:
