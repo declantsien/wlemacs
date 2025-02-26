@@ -742,9 +742,8 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 	--allowlist-function gui_fix_overlapping_area \
 	--allowlist-type redisplay_interface \
 	--allowlist-var ns_frame_parm_handlers \
-	--allowlist-type Emacs_Color \
-	--allowlist-type Emacs_Rectangle \
-	--allowlist-type Emacs_Pixmap \
+	--allowlist-type "Emacs_*" \
+	--rustified-enum ".*" \
 	-o $@ \
 	-- $(ALL_CFLAGS)
 

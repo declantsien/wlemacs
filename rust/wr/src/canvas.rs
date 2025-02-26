@@ -1,8 +1,8 @@
 use crate::color::pixel_to_color;
-use crate::emacs::Emacs_Pixmap;
 use crate::gfx::context::GLContext;
 use crate::types::{
     AntialiasBorder, EmacsIntLength, EmacsIntSideOffsets, EmacsIntSize, EmacsLength, EmacsRect,
+    Emacs_Pixmap,
 };
 use image::GenericImageView;
 use webrender::api::euclid::Length;

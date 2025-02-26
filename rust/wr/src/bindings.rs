@@ -1,5 +1,5 @@
-use crate::emacs::{Emacs_Color, Emacs_GC, Emacs_Pixmap, Emacs_Rectangle};
-use crate::color::{color_to_xcolor, lookup_color_by_name_or_hex, pixel_to_color};
+use crate::types::{Emacs_Color, Emacs_GC, Emacs_Pixmap, Emacs_Rectangle};
+use crate::coloro::{color_to_xcolor, lookup_color_by_name_or_hex, pixel_to_color};
 use crate::frame::FrameExtWrCommon;
 use crate::image::{ImageExt, ImageRef, WrPixmap};
 use crate::output::{DeviceLength, WrCanvas};

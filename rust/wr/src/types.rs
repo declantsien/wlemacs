@@ -1,7 +1,8 @@
-use crate::emacs::{Emacs_Rectangle, EMACS_UINT};
+use crate::canvas::WrCanvas;
 use crate::util::HandyDandyRectBuilder;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut};
 use std::{mem, ptr};
 use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::{
@@ -265,3 +266,83 @@ impl Into<EmacsRect> for &Emacs_Rectangle {
             .to_f32()
     }
 }
+
+// ExternalPtr
+
+#[repr(transparent)]
+pub struct ExternalPtr<T>(*mut T);
+
+impl<T> Copy for ExternalPtr<T> {}
+unsafe impl<T> Send for ExternalPtr<T> {}
+
+// Derive fails for this type so do it manually
+impl<T> Clone for ExternalPtr<T> {
+    fn clone(&self) -> Self {
+        Self::new(self.0)
+    }
+}
+
+impl<T> ExternalPtr<T> {
+    pub const fn null() -> Self {
+        Self(ptr::null_mut() as *mut T)
+    }
+
+    pub const fn new(p: *mut T) -> Self {
+        Self(p)
+    }
+
+    pub fn is_null(self) -> bool {
+        self.0.is_null()
+    }
+
+    pub const fn as_ptr(self) -> *const T {
+        self.0
+    }
+
+    pub fn as_mut(&mut self) -> *mut T {
+        self.0
+    }
+
+    pub fn from_ptr(ptr: *mut ::libc::c_void) -> Option<Self> {
+        unsafe { ptr.as_ref().map(|p| mem::transmute(p)) }
+    }
+
+    pub fn cast<U>(mut self) -> ExternalPtr<U> {
+        ExternalPtr::<U>(self.as_mut().cast())
+    }
+}
+
+impl<T> Deref for ExternalPtr<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.0 }
+    }
+}
+
+impl<T> DerefMut for ExternalPtr<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.0 }
+    }
+}
+
+impl<T> From<*mut T> for ExternalPtr<T> {
+    fn from(o: *mut T) -> Self {
+        Self::new(o)
+    }
+}
+
+impl<T> PartialEq for ExternalPtr<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ptr() == other.as_ptr()
+    }
+}
+
+impl<T> PartialOrd for ExternalPtr<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.as_ptr().cmp(&other.as_ptr()))
+    }
+}
+
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
+
+pub type FrameRef = ExternalPtr<frame>;

@@ -140,4 +140,6 @@ struct wr_bitmap_record
   int height, width, depth;
 };
 
+extern void wrgui_init (struct frame *f);
+
 #endif /* EMACS_WRGUI_H */

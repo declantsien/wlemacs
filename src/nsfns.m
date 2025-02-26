@@ -1519,7 +1519,7 @@ DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
   [[EmacsView alloc] initFrameFromEmacs: f];
 
 #ifdef USE_WEBRENDER
-  f->output_data.ns->wr_data = wr_frame_gl_context(f, FRAME_PIXEL_WIDTH (f), FRAME_PIXEL_HEIGHT (f), ns_frame_scale_factor (f));
+  wrgui_init (f);
 #endif
 
   ns_icon (f, parms);

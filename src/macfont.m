@@ -1767,7 +1767,7 @@ static void macfont_text_extents (struct font *, const unsigned int *, int,
                                   struct font_metrics *);
 static int macfont_draw (struct glyph_string *, int, int, int, int, bool);
 #ifdef USE_WEBRENDER
-static int macwrfont_draw (struct glyph_string *, CTFontRef, int, int, int, int, bool);
+// static int macwrfont_draw (struct glyph_string *, CTFontRef, int, int, int, int, bool);
 #endif
 static Lisp_Object macfont_shape (Lisp_Object, Lisp_Object);
 static int macfont_variation_glyphs (struct font *, int c,
@@ -2700,7 +2700,7 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
 
   int fontsize = (int) [((NSFont *) macfont) pointSize];
 #ifdef USE_WEBRENDER
-  wr_add_ctfont(macfont);
+  // wr_add_ctfont(macfont);
   // wr_get_font_metrics_by_descriptor(font_name, 0);
 #endif
 
@@ -2929,47 +2929,47 @@ macfont_text_extents (struct font *font, const unsigned int *code, int nglyphs,
     metrics->width = width;
 }
 
-#ifdef USE_WEBRENDER
-int
-macwrfont_draw (struct glyph_string *s, CTFontRef font,
-               int from, int to, int x, int y, bool with_background)
-{
-  struct frame *f = s->f;
-  unsigned *glyphs;
-  int len = to - from;
+// #ifdef USE_WEBRENDER
+// int
+// macwrfont_draw (struct glyph_string *s, CTFontRef font,
+//                int from, int to, int x, int y, bool with_background)
+// {
+//   struct frame *f = s->f;
+//   unsigned *glyphs;
+//   int len = to - from;
 
 
-  int i;
-  const wr_vec_u32 char2b  = { s->char2b, s->nchars, 0};
+//   int i;
+//   const WrVecU32 char2b  = { s->char2b, s->nchars, 0};
 
-  if (!f->output_data.ns->wr_data) {
-    return 0;
-  }
+//   if (!f->output_data.ns->wr_data) {
+//     return 0;
+//   }
 
-  block_input ();
+//   block_input ();
 
-  if (with_background)
-    {
-      const Emacs_Rectangle rect = {x, y - FONT_BASE (s->font),
-				    s->width, FONT_HEIGHT (s->font)};
-      wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &rect, s->hl != DRAW_CURSOR, false, false, f->output_data.ns->cursor_color);
-    }
-
-
-  unblock_input ();
-  wr_macfont_draw (f->output_data.ns->wr_data,
-		   (unsigned long) f->output_data.ns->cursor_color,
-		   font, &char2b, from, to,
-		   x, y, s->width, (s->row->mode_line_p ? s->row->height : s->row->visible_height),
-		   s->font->pixel_size, s->padding_p);
+//   if (with_background)
+//     {
+//       const Emacs_Rectangle rect = {x, y - FONT_BASE (s->font),
+// 				    s->width, FONT_HEIGHT (s->font)};
+//       wr_dp_push_rect(f->output_data.ns->wr_data, &rect, &rect, s->hl != DRAW_CURSOR, false, false, f->output_data.ns->cursor_color);
+//     }
 
 
+//   unblock_input ();
+//   wr_macfont_draw (f->output_data.ns->wr_data,
+// 		   (unsigned long) f->output_data.ns->cursor_color,
+// 		   font, &char2b, from, to,
+// 		   x, y, s->width, (s->row->mode_line_p ? s->row->height : s->row->visible_height),
+// 		   s->font->pixel_size, s->padding_p);
 
-  wr_vec_u32_free(char2b);
 
-  return len;
-}
-#endif
+
+//   wr_vec_u32_free(char2b);
+
+//   return len;
+// }
+// #endif
 
 static int
 macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
@@ -2993,7 +2993,7 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
 
   block_input ();
 #ifdef USE_WEBRENDER
-  macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
+  // macwrfont_draw(s, macfont_info->macfont, from, to, x, y, with_background);
 #endif
 
   if (with_background)

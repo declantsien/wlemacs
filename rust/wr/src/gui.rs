@@ -1,13 +1,34 @@
-use crate::emacs::{
+use crate::canvas::WrCanvas;
+use crate::gfx::context::{GLContext, GLContextTrait};
+use crate::platform::gui::{default_font_parameter, define_frame_cursor};
+use crate::types::{
     draw_fringe_bitmap_params, frame, glyph_row, glyph_string, gui_clear_end_of_line,
     gui_clear_window_mouse_face, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
-    redisplay_interface, run, text_cursor_kinds, window,
+    redisplay_interface, run, text_cursor_kinds, window, FrameRef,
 };
-use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 
 unsafe impl Sync for redisplay_interface {}
 unsafe impl Send for redisplay_interface {}
+
+/// cbindgen:ignore
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "C" fn wrgui_init(f: *mut frame) {
+    use crate::types::{EmacsIntSize, EmacsToDeviceScale};
+    let mut f = FrameRef::new(f);
+    let scale_factor = f.scale_factor();
+
+    let display_handle = f.raw_display_handle();
+    let window_handle = f.raw_window_handle();
+    println!("window handle: {window_handle:?}");
+    let size = EmacsIntSize::new(f.pixel_width, f.pixel_height);
+    let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
+    let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
+
+    let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
+    f.output_data().wr_data = Box::into_raw(data);
+}
 
 /// cbindgen:ignore
 #[no_mangle]

@@ -928,7 +928,7 @@ struct ns_output
 {
 #ifdef USE_WEBRENDER
   /* Inner perporty in Rust */
-  struct wr_canvas* wr_data;
+  struct WrCanvas* wr_data;
 #endif  /*USE_WEBRENDER*/
 
 #ifdef __OBJC__

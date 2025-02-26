@@ -227,13 +227,13 @@ renaming_overrides_prefixing = true
 
 # Table of name conversions to apply to item names (lhs becomes rhs)
 [export.rename]
-"WrRect" = "wr_rect"
-"WrVecU8" = "wr_vec_u8"
-"WrVecU32" = "wr_vec_u32"
-"WrCanvas" = "wr_canvas"
-"WrFontTemplate" = "wr_font_template"
-"WrFontMetrics" = "wr_font_metrics"
-"my_function" = "BetterFunctionName"
+# "WrRect" = "wr_rect"
+# "WrVecU8" = "wr_vec_u8"
+# "WrVecU32" = "wr_vec_u32"
+# "WrCanvas" = "wr_canvas"
+# "WrFontTemplate" = "wr_font_template"
+# "WrFontMetrics" = "wr_font_metrics"
+# "my_function" = "BetterFunctionName"
 
 # Table of things to prepend to the body of any struct, union, or enum that has the
 # given name. This can be used to add things like methods which don't change ABI,

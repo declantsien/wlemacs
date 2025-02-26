@@ -1,10 +1,9 @@
 use crate::canvas::WrCanvas;
-use crate::emacs::{
-    frame, ns_default_font_parameter, ns_define_frame_cursor, ns_output, window, Emacs_Cursor,
-    Emacs_Pixmap, Lisp_Object,
+use crate::types::{
+    frame, ns_default_font_parameter, ns_define_frame_cursor, ns_frame_scale_factor, window,
+    EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect, Emacs_Cursor, Emacs_Pixmap, FrameRef,
+    Lisp_Object,
 };
-use crate::gfx::context::{GLContext, GLContextTrait};
-use crate::types::{EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect};
 use crate::util::HandyDandyRectBuilder;
 use objc2_app_kit::NSColor;
 use objc2_foundation::NSRect;
@@ -15,43 +14,53 @@ use std::ptr::NonNull;
 use webrender_api::{AlphaType, CommonItemProperties, ImageRendering};
 
 use super::color::ns_color_to_color_f;
-use super::types::ns_rect_to_emacs;
+use super::types::{ns_rect_to_emacs, OutputDataRef};
 
 pub struct EmacsView {}
 
-pub fn raw_display_handle() -> raw_window_handle::RawDisplayHandle {
-    let raw = AppKitDisplayHandle::new();
-    RawDisplayHandle::AppKit(raw)
+impl FrameRef {
+    pub fn output_data(&mut self) -> OutputDataRef {
+        OutputDataRef::new(unsafe { self.output_data.ns })
+    }
+    pub fn scale_factor(&mut self) -> f64 {
+        unsafe { ns_frame_scale_factor(self.as_mut()) }
+    }
+
+    pub fn raw_display_handle(&mut self) -> raw_window_handle::RawDisplayHandle {
+        let raw = AppKitDisplayHandle::new();
+        RawDisplayHandle::AppKit(raw)
+    }
+
+    pub fn raw_window_handle(&mut self) -> raw_window_handle::RawWindowHandle {
+        let handle =
+            AppKitWindowHandle::new(unsafe { NonNull::new_unchecked(self.output_data().view) });
+        RawWindowHandle::AppKit(handle)
+    }
 }
 
-pub fn raw_window_handle(output_data: &ns_output) -> raw_window_handle::RawWindowHandle {
-    let handle = AppKitWindowHandle::new(unsafe { NonNull::new_unchecked(output_data.view) });
-    RawWindowHandle::AppKit(handle)
-}
+// /// cbindgen:ignore
+// #[allow(unused_variables)]
+// #[no_mangle]
+// pub extern "C" fn wr_frame_gl_context(
+//     f: *mut frame,
+// ) -> *mut WrCanvas {
+//     use crate::types::{EmacsIntSize, EmacsToDeviceScale};
+//     let scale_factor = unsafe { ns_frame_scale_factor(f) };
+//     let f = unsafe { f.as_ref().unwrap() };
+
+//     let display_handle = raw_display_handle();
+//     let window_handle =
+//         raw_window_handle(unsafe { f.output_data.ns.as_ref().unwrap() });
+//     println!("window handle: {window_handle:?}");
+//     let size = EmacsIntSize::new(f.pixel_width, f.pixel_height);
+//     let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
+//     let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
+
+//     let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
+//     Box::into_raw(data)
+// }
 
 /// cbindgen:ignore
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern "C" fn wr_frame_gl_context(
-    f: *mut frame,
-    width: libc::c_int,
-    height: libc::c_int,
-    scale_factor: libc::c_double,
-) -> *mut WrCanvas {
-    use crate::types::{EmacsIntSize, EmacsToDeviceScale};
-
-    let display_handle = raw_display_handle();
-    let window_handle =
-        raw_window_handle(unsafe { f.as_ref().unwrap().output_data.ns.as_ref().unwrap() });
-    println!("window handle: {window_handle:?}");
-    let size = EmacsIntSize::new(width, height);
-    let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
-    let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
-
-    let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
-    Box::into_raw(data)
-}
-
 #[no_mangle]
 pub extern "C" fn wr_dp_push_rect(
     canvas: &mut WrCanvas,
@@ -73,6 +82,7 @@ pub extern "C" fn wr_dp_push_rect(
     );
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_draw_fringe_bitmap(
     canvas: &mut WrCanvas,

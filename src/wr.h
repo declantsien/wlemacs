@@ -72,6 +72,7 @@ extern void
 wr_row_clip_bounds (struct window *w, struct glyph_row *row,
 		    enum glyph_row_area area, Emacs_Rectangle *rect);
 /* extern void emacs_rust_init_syms(void); */
+extern void wrgui_init(struct frame *f);
 extern void syms_of_webrender(void);
 
 /* #define FRAME_WR_DATA(f) (FRAME_OUTPUT_DATA (f)->wr_data) */

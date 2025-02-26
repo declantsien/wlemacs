@@ -9,7 +9,7 @@ pub static COLOR_MAP: LazyLock<HashMap<&'static str, (u8, u8, u8)>> =
 use image::Rgba;
 use webrender::api::{ColorF, ColorU};
 
-use crate::emacs::Emacs_Color;
+use crate::types::Emacs_Color;
 
 pub fn pixel_to_color(pixel: u64) -> ColorF {
     let pixel_array: [u16; 4] = unsafe { std::mem::transmute(pixel) };

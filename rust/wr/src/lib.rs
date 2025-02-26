@@ -10,7 +10,7 @@ pub mod color;
 // pub mod output;
 
 /// cbindgen:ignore
-mod emacs;
+// mod emacs;
 // mod face;
 mod canvas;
 pub mod font;
@@ -85,14 +85,14 @@ pub mod gfx {
 }
 
 use crate::canvas::WrCanvas;
-use crate::emacs::Emacs_Rectangle;
 use crate::font::macfont_font_tpl;
-use crate::types::WrVecU32;
+use crate::types::{Emacs_Rectangle, WrVecU32};
 use crate::util::HandyDandyRectBuilder;
 use core_text::font::CTFontRef;
 use types::{EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
 use webrender_api::FontTemplate;
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_clear_area(
     canvas: &mut WrCanvas,
@@ -105,6 +105,7 @@ pub extern "C" fn wr_clear_area(
     canvas.push_rect(color, (x, y).by(width, height), None);
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
     canvas.flush();
@@ -135,6 +136,7 @@ pub extern "C" fn wr_vec_u32_free(v: WrVecU32) {
     v.into_vec();
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_macfont_draw(
     canvas: &mut WrCanvas,
@@ -167,6 +169,7 @@ pub extern "C" fn wr_macfont_draw(
     );
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 fn wr_font_draw(
     canvas: &mut WrCanvas,
@@ -249,6 +252,7 @@ fn wr_font_draw(
     });
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_scroll_run(
     canvas: &mut WrCanvas,
