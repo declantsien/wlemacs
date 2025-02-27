@@ -4,12 +4,13 @@ use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
 use crate::canvas::WrCanvas;
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::platform::gui::{default_font_parameter, define_frame_cursor};
+use crate::platform::pixel_to_color;
 use crate::types::{
     block_input, draw_fringe_bitmap_params, frame, glyph_row, glyph_row_area, glyph_string,
     gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face, gui_fix_overlapping_area,
     gui_get_glyph_overhangs, gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs,
     ns_frame_parm_handlers, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    FrameRef, WindowRef,
+    FaceRef, FrameRef, WindowRef,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -150,10 +151,51 @@ extern "C" fn draw_fringe_bitmap(
     row: *mut glyph_row,
     p: *mut draw_fringe_bitmap_params,
 ) {
+    let mut w = WindowRef::new(w);
+    let mut f = w.x_frame();
+    let row = unsafe { row.as_ref().unwrap() };
+    let p = unsafe { p.as_ref().unwrap() };
+    let face = FaceRef::new(p.face);
+    let clip = w.row_clip_bounds(row, glyph_row_area::ANY_AREA);
+
+    if p.bx >= 0 && !p.overlay_p() {
+        let rect = (p.bx, p.by).by(p.nx, p.ny);
+        f.renderer().dp_push_rect(
+            rect,
+            Some(clip.to_f32()),
+            false,
+            false,
+            false,
+            pixel_to_color(face.background),
+        );
+    }
+
+    if p.which > 0 {
+        let bitmap_width = 8;
+        let bitmap_height = p.h + p.dh;
+
+        let foreground = if p.cursor_p() {
+            if p.overlay_p() {
+                pixel_to_color(face.background)
+            } else {
+                f.cursor_color()
+            }
+        } else {
+            pixel_to_color(face.foreground)
+        };
+    }
+
+    //check wlcterm.c
+    // wr_draw_fringe_bitmap(FRAME_WR_DATA(f), p->which, p->x, p->y, p->wd, p->h,
+    //     bitmap_width, bitmap_height, p->bits,
+    //     &gcv, &clip_bounds);
 }
 
 #[allow(unused_variables)]
-extern "C" fn flush_display(f: *mut frame) {}
+extern "C" fn flush_display(f: *mut frame) {
+    let mut f = FrameRef::new(f);
+    f.renderer().flush();
+}
 
 #[allow(unused_variables)]
 extern "C" fn clear_frame_area(

@@ -33,6 +33,8 @@ pub mod platform {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::font;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
+    pub use super::platform::macos::frame;
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::gui;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::types;
@@ -49,6 +51,7 @@ pub mod platform {
     pub mod macos {
         pub mod color;
         pub mod font;
+        pub mod frame;
         pub mod gui;
         pub mod types;
     }

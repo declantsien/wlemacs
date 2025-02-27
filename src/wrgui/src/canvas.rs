@@ -615,7 +615,7 @@ impl WrCanvas {
     pub fn dp_push_rect(
         &mut self,
         rect: EmacsRect,
-        clip: EmacsRect,
+        clip: Option<EmacsRect>,
         is_backface_visible: bool,
         force_antialiasing: bool,
         is_checkerboard: bool,
@@ -623,8 +623,8 @@ impl WrCanvas {
     ) {
         self.display(|dl_builder, space_and_clip, scale_factor| {
             // debug_assert!(unsafe { !is_in_render_thread() });
+            let clip = clip.unwrap_or(rect) * scale_factor;
             let rect = rect * scale_factor;
-            let clip = clip * scale_factor;
 
             let mut prim_info =
                 common_item_properties_for_rect(clip, is_backface_visible, &space_and_clip);

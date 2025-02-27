@@ -4443,6 +4443,31 @@ impl face {
         __bindgen_bitfield_unit
     }
 }
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum face_id {
+    DEFAULT_FACE_ID = 0,
+    MODE_LINE_ACTIVE_FACE_ID = 1,
+    MODE_LINE_INACTIVE_FACE_ID = 2,
+    TOOL_BAR_FACE_ID = 3,
+    FRINGE_FACE_ID = 4,
+    HEADER_LINE_ACTIVE_FACE_ID = 5,
+    HEADER_LINE_INACTIVE_FACE_ID = 6,
+    SCROLL_BAR_FACE_ID = 7,
+    BORDER_FACE_ID = 8,
+    CURSOR_FACE_ID = 9,
+    MOUSE_FACE_ID = 10,
+    MENU_FACE_ID = 11,
+    VERTICAL_BORDER_FACE_ID = 12,
+    WINDOW_DIVIDER_FACE_ID = 13,
+    WINDOW_DIVIDER_FIRST_PIXEL_FACE_ID = 14,
+    WINDOW_DIVIDER_LAST_PIXEL_FACE_ID = 15,
+    INTERNAL_BORDER_FACE_ID = 16,
+    CHILD_FRAME_BORDER_FACE_ID = 17,
+    TAB_BAR_FACE_ID = 18,
+    TAB_LINE_FACE_ID = 19,
+    BASIC_FACE_ID_SENTINEL = 20,
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct face_cache {
@@ -9646,6 +9671,12 @@ impl window {
     }
 }
 unsafe extern "C" {
+    pub fn XWINDOW(a: Lisp_Object) -> *mut window;
+}
+unsafe extern "C" {
+    pub fn mark_window_cursors_off(arg1: *mut window);
+}
+unsafe extern "C" {
     pub fn window_to_frame_pixel_y(w: *mut window, y: ::libc::c_int) -> ::libc::c_int;
 }
 #[repr(u32)]
@@ -11781,6 +11812,12 @@ impl frame {
 }
 unsafe extern "C" {
     pub fn XFRAME(p: Lisp_Object) -> *mut frame;
+}
+unsafe extern "C" {
+    pub fn FACE_FROM_ID(f: *mut frame, id: ::libc::c_int) -> *mut face;
+}
+unsafe extern "C" {
+    pub fn FACE_FROM_ID_OR_NULL(f: *mut frame, id: ::libc::c_int) -> *mut face;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
