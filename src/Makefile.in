@@ -731,8 +731,11 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 ./wrgui/src/emacs.rs :
 	bindgen wrapper.h \
 	--ctypes-prefix ::libc \
+	--blocklist-type WrCanvas \
+	--blocklist-type CTFontRef \
 	--allowlist-function ns_define_frame_cursor \
 	--allowlist-function ns_default_font_parameter \
+	--allowlist-function ns_frame_scale_factor \
 	--allowlist-function gui_produce_glyphs \
 	--allowlist-function gui_write_glyphs \
 	--allowlist-function gui_insert_glyphs \
@@ -741,6 +744,8 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 	--allowlist-function gui_get_glyph_overhangs \
 	--allowlist-function gui_fix_overlapping_area \
 	--allowlist-type redisplay_interface \
+	--allowlist-type macfont_info \
+	--allowlist-type glyph_type \
 	--allowlist-var ns_frame_parm_handlers \
 	--allowlist-type "Emacs_*" \
 	--rustified-enum ".*" \

@@ -2699,10 +2699,6 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
     return Qnil;
 
   int fontsize = (int) [((NSFont *) macfont) pointSize];
-#ifdef USE_WEBRENDER
-  // wr_add_ctfont(macfont);
-  // wr_get_font_metrics_by_descriptor(font_name, 0);
-#endif
 
   font_object = font_build_object (VECSIZE (struct macfont_info),
                                    Qmac_ct, entity, size);
@@ -2758,6 +2754,11 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
   macfont_info->color_bitmap_p = 0;
   if (sym_traits & kCTFontTraitColorGlyphs)
     macfont_info->color_bitmap_p = 1;
+
+#ifdef USE_WEBRENDER
+  wr_add_font(font);
+  // wr_get_font_metrics_by_descriptor(font_name, 0);
+#endif
 
   glyph = macfont_get_glyph_for_character (font, ' ');
   if (glyph != kCGFontIndexInvalid)

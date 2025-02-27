@@ -99,31 +99,6 @@ fn wr_font_instance(
 /// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn wr_add_ctfont(font: CTFontRef) {
-    let ct_font = unsafe { CTFont::wrap_under_get_rule(font) };
-    let point_size = ct_font.pt_size();
-    let descriptor = ct_font.copy_descriptor();
-    let font_path = descriptor.font_path();
-    let mut font_metrics = WrFontMetrics::default();
-    let font_tpl = FontTemplate::Native(NativeFontHandle {
-        name: ct_font.postscript_name(),
-        path: font_path
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or("".to_string()),
-    });
-    wr_font_metrics_impl(
-        font_tpl,
-        point_size as ::libc::c_int,
-        1.0,
-        &mut font_metrics,
-    );
-    // println!("cf_name: {:?}, path: {:?}, size: {:?}",
-    //     ct_font.postscript_name(), font_path, point_size);
-}
-
-/// cbindgen:ignore
-#[allow(unused_variables)]
-#[no_mangle]
 pub extern "C" fn wr_font_metrics_impl(
     font_tpl: FontTemplate,
     glyph_size: ::libc::c_int,
