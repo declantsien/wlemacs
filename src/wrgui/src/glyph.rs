@@ -1,16 +1,8 @@
 use crate::color::pixel_to_color;
-use crate::face::WrFace;
-use crate::font::FontInfoRef;
-use crate::frame::FrameExtWrCommon;
-use crate::output::{DeviceLength, LayoutLength};
 use crate::util::HandyDandyRectBuilder;
-use emacs_sys::bindings::face_box_type::FACE_NO_BOX;
-use emacs_sys::bindings::{
-    face_underline_type, font_info, globals, glyph_type, Emacs_Rectangle as NativeRectangle,
+use crate::types::{
+    face_underline_type, glyph_type, Emacs_Rectangle as NativeRectangle,
 };
-use emacs_sys::display_traits::GlyphStringRef;
-use emacs_sys::lisp::LispObject;
-use emacs_sys::number::LNumber;
 use std::cmp::max;
 use webrender::api::units::*;
 use webrender::api::{

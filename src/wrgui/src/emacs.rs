@@ -386,6 +386,16 @@ const _: () = {
     ["Offset of field: display_pos::dpvec_index"]
         [::std::mem::offset_of!(display_pos, dpvec_index) - 40usize];
 };
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum glyph_type {
+    CHAR_GLYPH = 0,
+    COMPOSITE_GLYPH = 1,
+    GLYPHLESS_GLYPH = 2,
+    IMAGE_GLYPH = 3,
+    STRETCH_GLYPH = 4,
+    XWIDGET_GLYPH = 5,
+}
 #[repr(C)]
 #[repr(align(4))]
 #[derive(Debug, Copy, Clone)]
@@ -7575,6 +7585,538 @@ unsafe extern "C" {
 unsafe extern "C" {
     pub fn gui_clear_window_mouse_face(arg1: *mut window);
 }
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct font {
+    pub header: vectorlike_header,
+    pub props: [Lisp_Object; 17usize],
+    pub min_width: ::libc::c_int,
+    pub max_width: ::libc::c_int,
+    pub pixel_size: ::libc::c_int,
+    pub height: ::libc::c_int,
+    pub space_width: ::libc::c_int,
+    pub average_width: ::libc::c_int,
+    pub ascent: ::libc::c_int,
+    pub descent: ::libc::c_int,
+    pub underline_thickness: ::libc::c_int,
+    pub underline_position: ::libc::c_int,
+    pub vertical_centering: bool,
+    pub baseline_offset: ::libc::c_int,
+    pub relative_compose: ::libc::c_int,
+    pub default_ascent: ::libc::c_int,
+    pub encoding_charset: ::libc::c_int,
+    pub repertory_charset: ::libc::c_int,
+    pub driver: *const font_driver,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of font"][::std::mem::size_of::<font>() - 216usize];
+    ["Alignment of font"][::std::mem::align_of::<font>() - 8usize];
+    ["Offset of field: font::header"][::std::mem::offset_of!(font, header) - 0usize];
+    ["Offset of field: font::props"][::std::mem::offset_of!(font, props) - 8usize];
+    ["Offset of field: font::min_width"][::std::mem::offset_of!(font, min_width) - 144usize];
+    ["Offset of field: font::max_width"][::std::mem::offset_of!(font, max_width) - 148usize];
+    ["Offset of field: font::pixel_size"][::std::mem::offset_of!(font, pixel_size) - 152usize];
+    ["Offset of field: font::height"][::std::mem::offset_of!(font, height) - 156usize];
+    ["Offset of field: font::space_width"][::std::mem::offset_of!(font, space_width) - 160usize];
+    ["Offset of field: font::average_width"]
+        [::std::mem::offset_of!(font, average_width) - 164usize];
+    ["Offset of field: font::ascent"][::std::mem::offset_of!(font, ascent) - 168usize];
+    ["Offset of field: font::descent"][::std::mem::offset_of!(font, descent) - 172usize];
+    ["Offset of field: font::underline_thickness"]
+        [::std::mem::offset_of!(font, underline_thickness) - 176usize];
+    ["Offset of field: font::underline_position"]
+        [::std::mem::offset_of!(font, underline_position) - 180usize];
+    ["Offset of field: font::vertical_centering"]
+        [::std::mem::offset_of!(font, vertical_centering) - 184usize];
+    ["Offset of field: font::baseline_offset"]
+        [::std::mem::offset_of!(font, baseline_offset) - 188usize];
+    ["Offset of field: font::relative_compose"]
+        [::std::mem::offset_of!(font, relative_compose) - 192usize];
+    ["Offset of field: font::default_ascent"]
+        [::std::mem::offset_of!(font, default_ascent) - 196usize];
+    ["Offset of field: font::encoding_charset"]
+        [::std::mem::offset_of!(font, encoding_charset) - 200usize];
+    ["Offset of field: font::repertory_charset"]
+        [::std::mem::offset_of!(font, repertory_charset) - 204usize];
+    ["Offset of field: font::driver"][::std::mem::offset_of!(font, driver) - 208usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct font_metrics {
+    pub lbearing: ::libc::c_short,
+    pub rbearing: ::libc::c_short,
+    pub width: ::libc::c_short,
+    pub ascent: ::libc::c_short,
+    pub descent: ::libc::c_short,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of font_metrics"][::std::mem::size_of::<font_metrics>() - 10usize];
+    ["Alignment of font_metrics"][::std::mem::align_of::<font_metrics>() - 2usize];
+    ["Offset of field: font_metrics::lbearing"]
+        [::std::mem::offset_of!(font_metrics, lbearing) - 0usize];
+    ["Offset of field: font_metrics::rbearing"]
+        [::std::mem::offset_of!(font_metrics, rbearing) - 2usize];
+    ["Offset of field: font_metrics::width"][::std::mem::offset_of!(font_metrics, width) - 4usize];
+    ["Offset of field: font_metrics::ascent"]
+        [::std::mem::offset_of!(font_metrics, ascent) - 6usize];
+    ["Offset of field: font_metrics::descent"]
+        [::std::mem::offset_of!(font_metrics, descent) - 8usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct font_bitmap {
+    pub bits_per_pixel: ::libc::c_int,
+    pub rows: ::libc::c_int,
+    pub width: ::libc::c_int,
+    pub pitch: ::libc::c_int,
+    pub buffer: *mut ::libc::c_uchar,
+    pub left: ::libc::c_int,
+    pub top: ::libc::c_int,
+    pub advance: ::libc::c_int,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of font_bitmap"][::std::mem::size_of::<font_bitmap>() - 40usize];
+    ["Alignment of font_bitmap"][::std::mem::align_of::<font_bitmap>() - 8usize];
+    ["Offset of field: font_bitmap::bits_per_pixel"]
+        [::std::mem::offset_of!(font_bitmap, bits_per_pixel) - 0usize];
+    ["Offset of field: font_bitmap::rows"][::std::mem::offset_of!(font_bitmap, rows) - 4usize];
+    ["Offset of field: font_bitmap::width"][::std::mem::offset_of!(font_bitmap, width) - 8usize];
+    ["Offset of field: font_bitmap::pitch"][::std::mem::offset_of!(font_bitmap, pitch) - 12usize];
+    ["Offset of field: font_bitmap::buffer"][::std::mem::offset_of!(font_bitmap, buffer) - 16usize];
+    ["Offset of field: font_bitmap::left"][::std::mem::offset_of!(font_bitmap, left) - 24usize];
+    ["Offset of field: font_bitmap::top"][::std::mem::offset_of!(font_bitmap, top) - 28usize];
+    ["Offset of field: font_bitmap::advance"]
+        [::std::mem::offset_of!(font_bitmap, advance) - 32usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct font_driver {
+    pub type_: Lisp_Object,
+    pub case_sensitive: bool,
+    pub get_cache: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> Lisp_Object>,
+    pub list: ::std::option::Option<
+        unsafe extern "C" fn(frame: *mut frame, font_spec: Lisp_Object) -> Lisp_Object,
+    >,
+    pub match_: ::std::option::Option<
+        unsafe extern "C" fn(f: *mut frame, font_spec: Lisp_Object) -> Lisp_Object,
+    >,
+    pub list_family: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> Lisp_Object>,
+    pub free_entity: ::std::option::Option<unsafe extern "C" fn(font_entity: Lisp_Object)>,
+    pub open_font: ::std::option::Option<
+        unsafe extern "C" fn(
+            f: *mut frame,
+            font_entity: Lisp_Object,
+            pixel_size: ::libc::c_int,
+        ) -> Lisp_Object,
+    >,
+    pub close_font: ::std::option::Option<unsafe extern "C" fn(font: *mut font)>,
+    pub prepare_face: ::std::option::Option<unsafe extern "C" fn(f: *mut frame, face: *mut face)>,
+    pub done_face: ::std::option::Option<unsafe extern "C" fn(f: *mut frame, face: *mut face)>,
+    pub has_char: ::std::option::Option<
+        unsafe extern "C" fn(font: Lisp_Object, c: ::libc::c_int) -> ::libc::c_int,
+    >,
+    pub encode_char: ::std::option::Option<
+        unsafe extern "C" fn(font: *mut font, c: ::libc::c_int) -> ::libc::c_uint,
+    >,
+    pub text_extents: ::std::option::Option<
+        unsafe extern "C" fn(
+            font: *mut font,
+            code: *const ::libc::c_uint,
+            nglyphs: ::libc::c_int,
+            metrics: *mut font_metrics,
+        ),
+    >,
+    pub draw: ::std::option::Option<
+        unsafe extern "C" fn(
+            s: *mut glyph_string,
+            from: ::libc::c_int,
+            to: ::libc::c_int,
+            x: ::libc::c_int,
+            y: ::libc::c_int,
+            with_background: bool,
+        ) -> ::libc::c_int,
+    >,
+    pub get_bitmap: ::std::option::Option<
+        unsafe extern "C" fn(
+            font: *mut font,
+            code: ::libc::c_uint,
+            bitmap: *mut font_bitmap,
+            bits_per_pixel: ::libc::c_int,
+        ) -> ::libc::c_int,
+    >,
+    pub free_bitmap:
+        ::std::option::Option<unsafe extern "C" fn(font: *mut font, bitmap: *mut font_bitmap)>,
+    pub anchor_point: ::std::option::Option<
+        unsafe extern "C" fn(
+            font: *mut font,
+            code: ::libc::c_uint,
+            index: ::libc::c_int,
+            x: *mut ::libc::c_int,
+            y: *mut ::libc::c_int,
+        ) -> ::libc::c_int,
+    >,
+    pub otf_capability: ::std::option::Option<unsafe extern "C" fn(font: *mut font) -> Lisp_Object>,
+    pub otf_drive: ::std::option::Option<
+        unsafe extern "C" fn(
+            font: *mut font,
+            features: Lisp_Object,
+            gstring_in: Lisp_Object,
+            from: ::libc::c_int,
+            to: ::libc::c_int,
+            gstring_out: Lisp_Object,
+            idx: ::libc::c_int,
+            alternate_subst: bool,
+        ) -> ::libc::c_int,
+    >,
+    pub start_for_frame:
+        ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> ::libc::c_int>,
+    pub end_for_frame: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> ::libc::c_int>,
+    pub shape: ::std::option::Option<
+        unsafe extern "C" fn(lgstring: Lisp_Object, direction: Lisp_Object) -> Lisp_Object,
+    >,
+    pub check: ::std::option::Option<
+        unsafe extern "C" fn(f: *mut frame, font: *mut font) -> ::libc::c_int,
+    >,
+    pub get_variation_glyphs: ::std::option::Option<
+        unsafe extern "C" fn(
+            font: *mut font,
+            c: ::libc::c_int,
+            variations: *mut ::libc::c_uint,
+        ) -> ::libc::c_int,
+    >,
+    pub filter_properties:
+        ::std::option::Option<unsafe extern "C" fn(font: Lisp_Object, properties: Lisp_Object)>,
+    pub cached_font_ok: ::std::option::Option<
+        unsafe extern "C" fn(f: *mut frame, font_object: Lisp_Object, entity: Lisp_Object) -> bool,
+    >,
+    pub combining_capability:
+        ::std::option::Option<unsafe extern "C" fn(font: *mut font) -> Lisp_Object>,
+    pub drop_xrender_surfaces: ::std::option::Option<unsafe extern "C" fn(f: *mut frame)>,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of font_driver"][::std::mem::size_of::<font_driver>() - 232usize];
+    ["Alignment of font_driver"][::std::mem::align_of::<font_driver>() - 8usize];
+    ["Offset of field: font_driver::type_"][::std::mem::offset_of!(font_driver, type_) - 0usize];
+    ["Offset of field: font_driver::case_sensitive"]
+        [::std::mem::offset_of!(font_driver, case_sensitive) - 8usize];
+    ["Offset of field: font_driver::get_cache"]
+        [::std::mem::offset_of!(font_driver, get_cache) - 16usize];
+    ["Offset of field: font_driver::list"][::std::mem::offset_of!(font_driver, list) - 24usize];
+    ["Offset of field: font_driver::match_"][::std::mem::offset_of!(font_driver, match_) - 32usize];
+    ["Offset of field: font_driver::list_family"]
+        [::std::mem::offset_of!(font_driver, list_family) - 40usize];
+    ["Offset of field: font_driver::free_entity"]
+        [::std::mem::offset_of!(font_driver, free_entity) - 48usize];
+    ["Offset of field: font_driver::open_font"]
+        [::std::mem::offset_of!(font_driver, open_font) - 56usize];
+    ["Offset of field: font_driver::close_font"]
+        [::std::mem::offset_of!(font_driver, close_font) - 64usize];
+    ["Offset of field: font_driver::prepare_face"]
+        [::std::mem::offset_of!(font_driver, prepare_face) - 72usize];
+    ["Offset of field: font_driver::done_face"]
+        [::std::mem::offset_of!(font_driver, done_face) - 80usize];
+    ["Offset of field: font_driver::has_char"]
+        [::std::mem::offset_of!(font_driver, has_char) - 88usize];
+    ["Offset of field: font_driver::encode_char"]
+        [::std::mem::offset_of!(font_driver, encode_char) - 96usize];
+    ["Offset of field: font_driver::text_extents"]
+        [::std::mem::offset_of!(font_driver, text_extents) - 104usize];
+    ["Offset of field: font_driver::draw"][::std::mem::offset_of!(font_driver, draw) - 112usize];
+    ["Offset of field: font_driver::get_bitmap"]
+        [::std::mem::offset_of!(font_driver, get_bitmap) - 120usize];
+    ["Offset of field: font_driver::free_bitmap"]
+        [::std::mem::offset_of!(font_driver, free_bitmap) - 128usize];
+    ["Offset of field: font_driver::anchor_point"]
+        [::std::mem::offset_of!(font_driver, anchor_point) - 136usize];
+    ["Offset of field: font_driver::otf_capability"]
+        [::std::mem::offset_of!(font_driver, otf_capability) - 144usize];
+    ["Offset of field: font_driver::otf_drive"]
+        [::std::mem::offset_of!(font_driver, otf_drive) - 152usize];
+    ["Offset of field: font_driver::start_for_frame"]
+        [::std::mem::offset_of!(font_driver, start_for_frame) - 160usize];
+    ["Offset of field: font_driver::end_for_frame"]
+        [::std::mem::offset_of!(font_driver, end_for_frame) - 168usize];
+    ["Offset of field: font_driver::shape"][::std::mem::offset_of!(font_driver, shape) - 176usize];
+    ["Offset of field: font_driver::check"][::std::mem::offset_of!(font_driver, check) - 184usize];
+    ["Offset of field: font_driver::get_variation_glyphs"]
+        [::std::mem::offset_of!(font_driver, get_variation_glyphs) - 192usize];
+    ["Offset of field: font_driver::filter_properties"]
+        [::std::mem::offset_of!(font_driver, filter_properties) - 200usize];
+    ["Offset of field: font_driver::cached_font_ok"]
+        [::std::mem::offset_of!(font_driver, cached_font_ok) - 208usize];
+    ["Offset of field: font_driver::combining_capability"]
+        [::std::mem::offset_of!(font_driver, combining_capability) - 216usize];
+    ["Offset of field: font_driver::drop_xrender_surfaces"]
+        [::std::mem::offset_of!(font_driver, drop_xrender_surfaces) - 224usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct font_driver_list {
+    pub on: bool,
+    pub driver: *const font_driver,
+    pub next: *mut font_driver_list,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of font_driver_list"][::std::mem::size_of::<font_driver_list>() - 24usize];
+    ["Alignment of font_driver_list"][::std::mem::align_of::<font_driver_list>() - 8usize];
+    ["Offset of field: font_driver_list::on"]
+        [::std::mem::offset_of!(font_driver_list, on) - 0usize];
+    ["Offset of field: font_driver_list::driver"]
+        [::std::mem::offset_of!(font_driver_list, driver) - 8usize];
+    ["Offset of field: font_driver_list::next"]
+        [::std::mem::offset_of!(font_driver_list, next) - 16usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _EmacsScreenFont {
+    _unused: [u8; 0],
+}
+pub type ScreenFontRef = *const _EmacsScreenFont;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _CGFont {
+    _unused: [u8; 0],
+}
+pub type CGFontRef = *const _CGFont;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _CTFont {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+pub struct macfont_info {
+    pub font: font,
+    pub macfont: CTFontRef,
+    pub cgfont: CGFontRef,
+    pub screen_font: ScreenFontRef,
+    pub cache: *mut macfont_cache,
+    pub metrics: *mut *mut macfont_metrics,
+    pub metrics_nrows: ::libc::c_short,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
+    pub __bindgen_padding_0: [u8; 5usize],
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of macfont_info"][::std::mem::size_of::<macfont_info>() - 264usize];
+    ["Alignment of macfont_info"][::std::mem::align_of::<macfont_info>() - 8usize];
+    ["Offset of field: macfont_info::font"][::std::mem::offset_of!(macfont_info, font) - 0usize];
+    ["Offset of field: macfont_info::macfont"]
+        [::std::mem::offset_of!(macfont_info, macfont) - 216usize];
+    ["Offset of field: macfont_info::cgfont"]
+        [::std::mem::offset_of!(macfont_info, cgfont) - 224usize];
+    ["Offset of field: macfont_info::screen_font"]
+        [::std::mem::offset_of!(macfont_info, screen_font) - 232usize];
+    ["Offset of field: macfont_info::cache"]
+        [::std::mem::offset_of!(macfont_info, cache) - 240usize];
+    ["Offset of field: macfont_info::metrics"]
+        [::std::mem::offset_of!(macfont_info, metrics) - 248usize];
+    ["Offset of field: macfont_info::metrics_nrows"]
+        [::std::mem::offset_of!(macfont_info, metrics_nrows) - 256usize];
+};
+impl macfont_info {
+    #[inline]
+    pub fn synthetic_italic_p(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_synthetic_italic_p(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn synthetic_italic_p_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_synthetic_italic_p_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn synthetic_bold_p(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_synthetic_bold_p(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn synthetic_bold_p_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_synthetic_bold_p_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn spacing(&self) -> ::libc::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 2u8) as u32) }
+    }
+    #[inline]
+    pub fn set_spacing(&mut self, val: ::libc::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 2u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn spacing_raw(this: *const Self) -> ::libc::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                2usize,
+                2u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_spacing_raw(this: *mut Self, val: ::libc::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                2usize,
+                2u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn antialias(&self) -> ::libc::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 2u8) as u32) }
+    }
+    #[inline]
+    pub fn set_antialias(&mut self, val: ::libc::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(4usize, 2u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn antialias_raw(this: *const Self) -> ::libc::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                4usize,
+                2u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_antialias_raw(this: *mut Self, val: ::libc::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                4usize,
+                2u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn color_bitmap_p(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_color_bitmap_p(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(6usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn color_bitmap_p_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                6usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_color_bitmap_p_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                6usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        synthetic_italic_p: bool_bf,
+        synthetic_bold_p: bool_bf,
+        spacing: ::libc::c_uint,
+        antialias: ::libc::c_uint,
+        color_bitmap_p: bool_bf,
+    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let synthetic_italic_p: u8 = unsafe { ::std::mem::transmute(synthetic_italic_p) };
+            synthetic_italic_p as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let synthetic_bold_p: u8 = unsafe { ::std::mem::transmute(synthetic_bold_p) };
+            synthetic_bold_p as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 2u8, {
+            let spacing: u32 = unsafe { ::std::mem::transmute(spacing) };
+            spacing as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 2u8, {
+            let antialias: u32 = unsafe { ::std::mem::transmute(antialias) };
+            antialias as u64
+        });
+        __bindgen_bitfield_unit.set(6usize, 1u8, {
+            let color_bitmap_p: u8 = unsafe { ::std::mem::transmute(color_bitmap_p) };
+            color_bitmap_p as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
 pub type Time = ::libc::c_ulong;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -11216,292 +11758,6 @@ impl frame {
     }
 }
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct font {
-    pub header: vectorlike_header,
-    pub props: [Lisp_Object; 17usize],
-    pub min_width: ::libc::c_int,
-    pub max_width: ::libc::c_int,
-    pub pixel_size: ::libc::c_int,
-    pub height: ::libc::c_int,
-    pub space_width: ::libc::c_int,
-    pub average_width: ::libc::c_int,
-    pub ascent: ::libc::c_int,
-    pub descent: ::libc::c_int,
-    pub underline_thickness: ::libc::c_int,
-    pub underline_position: ::libc::c_int,
-    pub vertical_centering: bool,
-    pub baseline_offset: ::libc::c_int,
-    pub relative_compose: ::libc::c_int,
-    pub default_ascent: ::libc::c_int,
-    pub encoding_charset: ::libc::c_int,
-    pub repertory_charset: ::libc::c_int,
-    pub driver: *const font_driver,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of font"][::std::mem::size_of::<font>() - 216usize];
-    ["Alignment of font"][::std::mem::align_of::<font>() - 8usize];
-    ["Offset of field: font::header"][::std::mem::offset_of!(font, header) - 0usize];
-    ["Offset of field: font::props"][::std::mem::offset_of!(font, props) - 8usize];
-    ["Offset of field: font::min_width"][::std::mem::offset_of!(font, min_width) - 144usize];
-    ["Offset of field: font::max_width"][::std::mem::offset_of!(font, max_width) - 148usize];
-    ["Offset of field: font::pixel_size"][::std::mem::offset_of!(font, pixel_size) - 152usize];
-    ["Offset of field: font::height"][::std::mem::offset_of!(font, height) - 156usize];
-    ["Offset of field: font::space_width"][::std::mem::offset_of!(font, space_width) - 160usize];
-    ["Offset of field: font::average_width"]
-        [::std::mem::offset_of!(font, average_width) - 164usize];
-    ["Offset of field: font::ascent"][::std::mem::offset_of!(font, ascent) - 168usize];
-    ["Offset of field: font::descent"][::std::mem::offset_of!(font, descent) - 172usize];
-    ["Offset of field: font::underline_thickness"]
-        [::std::mem::offset_of!(font, underline_thickness) - 176usize];
-    ["Offset of field: font::underline_position"]
-        [::std::mem::offset_of!(font, underline_position) - 180usize];
-    ["Offset of field: font::vertical_centering"]
-        [::std::mem::offset_of!(font, vertical_centering) - 184usize];
-    ["Offset of field: font::baseline_offset"]
-        [::std::mem::offset_of!(font, baseline_offset) - 188usize];
-    ["Offset of field: font::relative_compose"]
-        [::std::mem::offset_of!(font, relative_compose) - 192usize];
-    ["Offset of field: font::default_ascent"]
-        [::std::mem::offset_of!(font, default_ascent) - 196usize];
-    ["Offset of field: font::encoding_charset"]
-        [::std::mem::offset_of!(font, encoding_charset) - 200usize];
-    ["Offset of field: font::repertory_charset"]
-        [::std::mem::offset_of!(font, repertory_charset) - 204usize];
-    ["Offset of field: font::driver"][::std::mem::offset_of!(font, driver) - 208usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct font_metrics {
-    pub lbearing: ::libc::c_short,
-    pub rbearing: ::libc::c_short,
-    pub width: ::libc::c_short,
-    pub ascent: ::libc::c_short,
-    pub descent: ::libc::c_short,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of font_metrics"][::std::mem::size_of::<font_metrics>() - 10usize];
-    ["Alignment of font_metrics"][::std::mem::align_of::<font_metrics>() - 2usize];
-    ["Offset of field: font_metrics::lbearing"]
-        [::std::mem::offset_of!(font_metrics, lbearing) - 0usize];
-    ["Offset of field: font_metrics::rbearing"]
-        [::std::mem::offset_of!(font_metrics, rbearing) - 2usize];
-    ["Offset of field: font_metrics::width"][::std::mem::offset_of!(font_metrics, width) - 4usize];
-    ["Offset of field: font_metrics::ascent"]
-        [::std::mem::offset_of!(font_metrics, ascent) - 6usize];
-    ["Offset of field: font_metrics::descent"]
-        [::std::mem::offset_of!(font_metrics, descent) - 8usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct font_bitmap {
-    pub bits_per_pixel: ::libc::c_int,
-    pub rows: ::libc::c_int,
-    pub width: ::libc::c_int,
-    pub pitch: ::libc::c_int,
-    pub buffer: *mut ::libc::c_uchar,
-    pub left: ::libc::c_int,
-    pub top: ::libc::c_int,
-    pub advance: ::libc::c_int,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of font_bitmap"][::std::mem::size_of::<font_bitmap>() - 40usize];
-    ["Alignment of font_bitmap"][::std::mem::align_of::<font_bitmap>() - 8usize];
-    ["Offset of field: font_bitmap::bits_per_pixel"]
-        [::std::mem::offset_of!(font_bitmap, bits_per_pixel) - 0usize];
-    ["Offset of field: font_bitmap::rows"][::std::mem::offset_of!(font_bitmap, rows) - 4usize];
-    ["Offset of field: font_bitmap::width"][::std::mem::offset_of!(font_bitmap, width) - 8usize];
-    ["Offset of field: font_bitmap::pitch"][::std::mem::offset_of!(font_bitmap, pitch) - 12usize];
-    ["Offset of field: font_bitmap::buffer"][::std::mem::offset_of!(font_bitmap, buffer) - 16usize];
-    ["Offset of field: font_bitmap::left"][::std::mem::offset_of!(font_bitmap, left) - 24usize];
-    ["Offset of field: font_bitmap::top"][::std::mem::offset_of!(font_bitmap, top) - 28usize];
-    ["Offset of field: font_bitmap::advance"]
-        [::std::mem::offset_of!(font_bitmap, advance) - 32usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct font_driver {
-    pub type_: Lisp_Object,
-    pub case_sensitive: bool,
-    pub get_cache: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> Lisp_Object>,
-    pub list: ::std::option::Option<
-        unsafe extern "C" fn(frame: *mut frame, font_spec: Lisp_Object) -> Lisp_Object,
-    >,
-    pub match_: ::std::option::Option<
-        unsafe extern "C" fn(f: *mut frame, font_spec: Lisp_Object) -> Lisp_Object,
-    >,
-    pub list_family: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> Lisp_Object>,
-    pub free_entity: ::std::option::Option<unsafe extern "C" fn(font_entity: Lisp_Object)>,
-    pub open_font: ::std::option::Option<
-        unsafe extern "C" fn(
-            f: *mut frame,
-            font_entity: Lisp_Object,
-            pixel_size: ::libc::c_int,
-        ) -> Lisp_Object,
-    >,
-    pub close_font: ::std::option::Option<unsafe extern "C" fn(font: *mut font)>,
-    pub prepare_face: ::std::option::Option<unsafe extern "C" fn(f: *mut frame, face: *mut face)>,
-    pub done_face: ::std::option::Option<unsafe extern "C" fn(f: *mut frame, face: *mut face)>,
-    pub has_char: ::std::option::Option<
-        unsafe extern "C" fn(font: Lisp_Object, c: ::libc::c_int) -> ::libc::c_int,
-    >,
-    pub encode_char: ::std::option::Option<
-        unsafe extern "C" fn(font: *mut font, c: ::libc::c_int) -> ::libc::c_uint,
-    >,
-    pub text_extents: ::std::option::Option<
-        unsafe extern "C" fn(
-            font: *mut font,
-            code: *const ::libc::c_uint,
-            nglyphs: ::libc::c_int,
-            metrics: *mut font_metrics,
-        ),
-    >,
-    pub draw: ::std::option::Option<
-        unsafe extern "C" fn(
-            s: *mut glyph_string,
-            from: ::libc::c_int,
-            to: ::libc::c_int,
-            x: ::libc::c_int,
-            y: ::libc::c_int,
-            with_background: bool,
-        ) -> ::libc::c_int,
-    >,
-    pub get_bitmap: ::std::option::Option<
-        unsafe extern "C" fn(
-            font: *mut font,
-            code: ::libc::c_uint,
-            bitmap: *mut font_bitmap,
-            bits_per_pixel: ::libc::c_int,
-        ) -> ::libc::c_int,
-    >,
-    pub free_bitmap:
-        ::std::option::Option<unsafe extern "C" fn(font: *mut font, bitmap: *mut font_bitmap)>,
-    pub anchor_point: ::std::option::Option<
-        unsafe extern "C" fn(
-            font: *mut font,
-            code: ::libc::c_uint,
-            index: ::libc::c_int,
-            x: *mut ::libc::c_int,
-            y: *mut ::libc::c_int,
-        ) -> ::libc::c_int,
-    >,
-    pub otf_capability: ::std::option::Option<unsafe extern "C" fn(font: *mut font) -> Lisp_Object>,
-    pub otf_drive: ::std::option::Option<
-        unsafe extern "C" fn(
-            font: *mut font,
-            features: Lisp_Object,
-            gstring_in: Lisp_Object,
-            from: ::libc::c_int,
-            to: ::libc::c_int,
-            gstring_out: Lisp_Object,
-            idx: ::libc::c_int,
-            alternate_subst: bool,
-        ) -> ::libc::c_int,
-    >,
-    pub start_for_frame:
-        ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> ::libc::c_int>,
-    pub end_for_frame: ::std::option::Option<unsafe extern "C" fn(f: *mut frame) -> ::libc::c_int>,
-    pub shape: ::std::option::Option<
-        unsafe extern "C" fn(lgstring: Lisp_Object, direction: Lisp_Object) -> Lisp_Object,
-    >,
-    pub check: ::std::option::Option<
-        unsafe extern "C" fn(f: *mut frame, font: *mut font) -> ::libc::c_int,
-    >,
-    pub get_variation_glyphs: ::std::option::Option<
-        unsafe extern "C" fn(
-            font: *mut font,
-            c: ::libc::c_int,
-            variations: *mut ::libc::c_uint,
-        ) -> ::libc::c_int,
-    >,
-    pub filter_properties:
-        ::std::option::Option<unsafe extern "C" fn(font: Lisp_Object, properties: Lisp_Object)>,
-    pub cached_font_ok: ::std::option::Option<
-        unsafe extern "C" fn(f: *mut frame, font_object: Lisp_Object, entity: Lisp_Object) -> bool,
-    >,
-    pub combining_capability:
-        ::std::option::Option<unsafe extern "C" fn(font: *mut font) -> Lisp_Object>,
-    pub drop_xrender_surfaces: ::std::option::Option<unsafe extern "C" fn(f: *mut frame)>,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of font_driver"][::std::mem::size_of::<font_driver>() - 232usize];
-    ["Alignment of font_driver"][::std::mem::align_of::<font_driver>() - 8usize];
-    ["Offset of field: font_driver::type_"][::std::mem::offset_of!(font_driver, type_) - 0usize];
-    ["Offset of field: font_driver::case_sensitive"]
-        [::std::mem::offset_of!(font_driver, case_sensitive) - 8usize];
-    ["Offset of field: font_driver::get_cache"]
-        [::std::mem::offset_of!(font_driver, get_cache) - 16usize];
-    ["Offset of field: font_driver::list"][::std::mem::offset_of!(font_driver, list) - 24usize];
-    ["Offset of field: font_driver::match_"][::std::mem::offset_of!(font_driver, match_) - 32usize];
-    ["Offset of field: font_driver::list_family"]
-        [::std::mem::offset_of!(font_driver, list_family) - 40usize];
-    ["Offset of field: font_driver::free_entity"]
-        [::std::mem::offset_of!(font_driver, free_entity) - 48usize];
-    ["Offset of field: font_driver::open_font"]
-        [::std::mem::offset_of!(font_driver, open_font) - 56usize];
-    ["Offset of field: font_driver::close_font"]
-        [::std::mem::offset_of!(font_driver, close_font) - 64usize];
-    ["Offset of field: font_driver::prepare_face"]
-        [::std::mem::offset_of!(font_driver, prepare_face) - 72usize];
-    ["Offset of field: font_driver::done_face"]
-        [::std::mem::offset_of!(font_driver, done_face) - 80usize];
-    ["Offset of field: font_driver::has_char"]
-        [::std::mem::offset_of!(font_driver, has_char) - 88usize];
-    ["Offset of field: font_driver::encode_char"]
-        [::std::mem::offset_of!(font_driver, encode_char) - 96usize];
-    ["Offset of field: font_driver::text_extents"]
-        [::std::mem::offset_of!(font_driver, text_extents) - 104usize];
-    ["Offset of field: font_driver::draw"][::std::mem::offset_of!(font_driver, draw) - 112usize];
-    ["Offset of field: font_driver::get_bitmap"]
-        [::std::mem::offset_of!(font_driver, get_bitmap) - 120usize];
-    ["Offset of field: font_driver::free_bitmap"]
-        [::std::mem::offset_of!(font_driver, free_bitmap) - 128usize];
-    ["Offset of field: font_driver::anchor_point"]
-        [::std::mem::offset_of!(font_driver, anchor_point) - 136usize];
-    ["Offset of field: font_driver::otf_capability"]
-        [::std::mem::offset_of!(font_driver, otf_capability) - 144usize];
-    ["Offset of field: font_driver::otf_drive"]
-        [::std::mem::offset_of!(font_driver, otf_drive) - 152usize];
-    ["Offset of field: font_driver::start_for_frame"]
-        [::std::mem::offset_of!(font_driver, start_for_frame) - 160usize];
-    ["Offset of field: font_driver::end_for_frame"]
-        [::std::mem::offset_of!(font_driver, end_for_frame) - 168usize];
-    ["Offset of field: font_driver::shape"][::std::mem::offset_of!(font_driver, shape) - 176usize];
-    ["Offset of field: font_driver::check"][::std::mem::offset_of!(font_driver, check) - 184usize];
-    ["Offset of field: font_driver::get_variation_glyphs"]
-        [::std::mem::offset_of!(font_driver, get_variation_glyphs) - 192usize];
-    ["Offset of field: font_driver::filter_properties"]
-        [::std::mem::offset_of!(font_driver, filter_properties) - 200usize];
-    ["Offset of field: font_driver::cached_font_ok"]
-        [::std::mem::offset_of!(font_driver, cached_font_ok) - 208usize];
-    ["Offset of field: font_driver::combining_capability"]
-        [::std::mem::offset_of!(font_driver, combining_capability) - 216usize];
-    ["Offset of field: font_driver::drop_xrender_surfaces"]
-        [::std::mem::offset_of!(font_driver, drop_xrender_surfaces) - 224usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct font_driver_list {
-    pub on: bool,
-    pub driver: *const font_driver,
-    pub next: *mut font_driver_list,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of font_driver_list"][::std::mem::size_of::<font_driver_list>() - 24usize];
-    ["Alignment of font_driver_list"][::std::mem::align_of::<font_driver_list>() - 8usize];
-    ["Offset of field: font_driver_list::on"]
-        [::std::mem::offset_of!(font_driver_list, on) - 0usize];
-    ["Offset of field: font_driver_list::driver"]
-        [::std::mem::offset_of!(font_driver_list, driver) - 8usize];
-    ["Offset of field: font_driver_list::next"]
-        [::std::mem::offset_of!(font_driver_list, next) - 16usize];
-};
-#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ns_bitmap_record {
     pub img: *mut ::libc::c_void,
@@ -11788,6 +12044,16 @@ pub struct xwidget {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct image_type {
+    pub _address: u8,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct macfont_cache {
+    pub _address: u8,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct macfont_metrics {
     pub _address: u8,
 }
 #[repr(C)]

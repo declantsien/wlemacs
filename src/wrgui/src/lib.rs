@@ -2,16 +2,17 @@
 #![feature(concat_idents)]
 #![allow(non_upper_case_globals)]
 
-// pub mod frame;
+// mod frame;
 
 // pub mod bindings;
 pub mod color;
-// pub mod image;
+// mod image;
 // pub mod output;
 
 /// cbindgen:ignore
 // mod emacs;
 // mod face;
+// mod fringe;
 mod canvas;
 pub mod font;
 pub mod gui;

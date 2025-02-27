@@ -21,11 +21,38 @@
 /* #include "emacs-icon.h" */
 /* #include "emacs-module.h" */
 /* #include "epaths.h" */
-/* #include "font.h" */
+#include "font.h"
 /* #ifdef HAVE_FREETYPE */
 /* #include <fontconfig/fontconfig.h> */
 /* #include "ftfont.h" */
 /* #endif */
+#ifdef NS_IMPL_COCOA
+/* #include "macfont.h" */
+typedef const struct _EmacsScreenFont *ScreenFontRef; /* opaque */
+typedef const struct _CGFont *CGFontRef; /* opaque */
+typedef const struct _CTFont *CTFontRef; /* opaque */
+
+/* The actual structure for Mac font that can be cast to struct font.  */
+
+struct macfont_info
+{
+  struct font font;
+  CTFontRef macfont;
+  CGFontRef cgfont;
+  ScreenFontRef screen_font;
+  struct macfont_cache *cache;
+  struct macfont_metrics **metrics;
+  short metrics_nrows;
+  bool_bf synthetic_italic_p : 1;
+  bool_bf synthetic_bold_p : 1;
+  unsigned spacing : 2;
+  unsigned antialias : 2;
+  bool_bf color_bitmap_p : 1;
+};
+#endif
+#ifdef NS_IMPL_GNUSTEP
+#include "nsfont.h"
+#endif
 /* #include "fontset.h" */
 /* #include "frame.h" */
 /* #include "getpagesize.h" */

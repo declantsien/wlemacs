@@ -8,6 +8,8 @@ use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::{
     Box2D, Length, Point2D, Point3D, Scale, SideOffsets2D, Size2D, Vector2D, Vector3D,
 };
+// NS_IMPL_COCOA
+use core_text::font::CTFontRef;
 
 /// Geometry in a stacking context's local coordinate space (logical pixels).
 #[derive(Hash, Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -346,3 +348,5 @@ impl<T> PartialOrd for ExternalPtr<T> {
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
 
 pub type FrameRef = ExternalPtr<frame>;
+pub type GlyphStringRef = ExternalPtr<glyph_string>;
+pub type FaceRef = ExternalPtr<face>;
