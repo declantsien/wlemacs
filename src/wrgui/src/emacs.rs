@@ -7691,6 +7691,9 @@ const _: () = {
     ["Offset of field: font_bitmap::advance"]
         [::std::mem::offset_of!(font_bitmap, advance) - 32usize];
 };
+unsafe extern "C" {
+    pub fn XFONT_OBJECT(p: Lisp_Object) -> *mut font;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct font_driver {

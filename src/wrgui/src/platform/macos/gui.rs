@@ -231,3 +231,12 @@ pub extern "C" fn define_frame_cursor(f: *mut frame, cursor: Emacs_Cursor) {
 pub extern "C" fn default_font_parameter(f: *mut frame, parms: Lisp_Object) {
     unsafe { ns_default_font_parameter(f, parms) };
 }
+
+// #[no_mangle]
+pub extern "C" fn wr_new_font(
+    f: *mut frame,
+    font_object: Lisp_Object,
+    fontset: ::libc::c_int,
+) -> Lisp_Object {
+    return font_object;
+}
