@@ -1261,6 +1261,10 @@ overlay_matches_window (const struct window *w, Lisp_Object ov)
   return (! WINDOWP (window) || XWINDOW (window) == w);
 }
 
+#ifdef USE_WEBRENDER
+extern int window_to_frame_pixel_y(struct window *w, int y);
+#endif
+
 INLINE_HEADER_END
 
 #endif /* not WINDOW_H_INCLUDED */

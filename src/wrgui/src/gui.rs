@@ -1,12 +1,17 @@
+use euclid::{Point2D, Rect, Size2D};
+use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
+
 use crate::canvas::WrCanvas;
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 use crate::types::{
-    draw_fringe_bitmap_params, frame, glyph_row, glyph_string, gui_clear_end_of_line,
-    gui_clear_window_mouse_face, gui_fix_overlapping_area, gui_get_glyph_overhangs,
-    gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
-    redisplay_interface, run, text_cursor_kinds, window, FrameRef,
+    block_input, draw_fringe_bitmap_params, frame, glyph_row, glyph_row_area, glyph_string,
+    gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face, gui_fix_overlapping_area,
+    gui_get_glyph_overhangs, gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs,
+    ns_frame_parm_handlers, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
+    FrameRef, WindowRef,
 };
+use crate::util::HandyDandyRectBuilder;
 
 unsafe impl Sync for redisplay_interface {}
 unsafe impl Send for redisplay_interface {}
@@ -67,7 +72,59 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
 
 #[allow(unused_variables)]
 extern "C" fn scroll_run(w: *mut window, run: *mut run) {
-    println!("wr_scroll_run");
+    let mut w = WindowRef::new(w);
+    let mut f = w.x_frame();
+    let run = unsafe { run.as_ref().unwrap() };
+    let Rect {
+        origin: Point2D { x, y, .. },
+        size: Size2D {
+            width, mut height, ..
+        },
+    } = w.window_box(glyph_row_area::ANY_AREA).to_rect();
+    let from_y = w.to_frame_pixel_y(run.current_y);
+    let to_y = w.to_frame_pixel_y(run.desired_y);
+    let bottom_y = y + height;
+
+    if to_y < from_y {
+        /* Scrolling up.  Make sure we don't copy part of the mode
+        line at the bottom.  */
+        if (from_y + run.height) > bottom_y {
+            height = bottom_y - from_y;
+        } else {
+            height = run.height;
+        }
+    } else {
+        /* Scrolling down.  Make sure we don't copy over the mode line.
+        at the bottom.  */
+        if (to_y + run.height) > bottom_y {
+            height = bottom_y - to_y;
+        } else {
+            height = run.height;
+        }
+    }
+
+    unsafe { block_input() };
+    /* Cursor off.  Will be switched on again in gui_update_window_end.  */
+    unsafe { gui_clear_cursor(w.as_mut()) };
+
+    let diff_y = to_y - from_y;
+    let viewport = (x, to_y).by(width, height);
+    let new_frame_position = (0, 0 + diff_y).by(f.pixel_width, f.pixel_height);
+
+    if let Some(image_key) = f.renderer().get_previous_frame() {
+        f.renderer().display(|builder, space_and_clip, scale| {
+            builder.push_image(
+                &CommonItemProperties::new(viewport * scale, space_and_clip),
+                new_frame_position * scale,
+                ImageRendering::Auto,
+                AlphaType::PremultipliedAlpha,
+                image_key,
+                ColorF::WHITE,
+            );
+        });
+    }
+
+    unsafe { unblock_input() };
 }
 
 #[allow(unused_variables)]

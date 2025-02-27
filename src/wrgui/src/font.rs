@@ -1,12 +1,8 @@
-use crate::types::{DeviceLength, GlyphSize, WrFontMetrics};
-use webrender::api::units::LayoutToDeviceScale;
+use crate::types::{font, frame, EmacsLength, EmacsToLayoutScale, FontRef, FrameRef, GlyphSize};
 use webrender::api::{
     FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontTemplate,
-    FontVariation, IdNamespace, NativeFontHandle,
+    FontVariation, IdNamespace,
 };
-
-use core_foundation::base::TCFType;
-use core_text::font::{CTFont, CTFontRef};
 
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -96,21 +92,19 @@ fn wr_font_instance(
     instance.clone()
 }
 
-/// cbindgen:ignore
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn wr_font_metrics_impl(
-    font_tpl: FontTemplate,
-    glyph_size: ::libc::c_int,
-    scale_factor: f64,
-    font_metrics: &mut WrFontMetrics,
-) {
-    // let font_tpl = read_font_tpl(font_template, data, index);
+pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
+    let mut font = FontRef::new(font);
+    let mut f = FrameRef::new(f);
+    let font_tpl = font.font_template();
     let mut rasterizer = WR_GLYPH_RASTERIZER.lock();
+
     let key = wr_font_key(font_tpl, Some(&mut rasterizer));
-    let scale_factor = LayoutToDeviceScale::new(1.0 / (scale_factor as f32));
-    let glyph_size: DeviceLength = DeviceLength::new(glyph_size as f32);
-    let glyph_size = GlyphSize::from_layout_length(glyph_size / scale_factor);
+    let scale_factor = EmacsToLayoutScale::new(f.scale_factor() as f32);
+
+    let glyph_size: EmacsLength = EmacsLength::new(font.pixel_size as f32);
+    let glyph_size = GlyphSize::from_layout_length(glyph_size * scale_factor);
     let instance = wr_font_instance(key, glyph_size, Some(&mut rasterizer));
 
     let mut n = 0;
@@ -123,67 +117,21 @@ pub extern "C" fn wr_font_metrics_impl(
         if let Some(dimensions) = rasterizer.get_glyph_dimensions(&instance, glyph_index) {
             let this_width = dimensions.advance as i32;
             if this_width > 0 {
-                if font_metrics.min_width == 0 || font_metrics.min_width > this_width {
-                    font_metrics.min_width = this_width;
+                if font.min_width == 0 || font.min_width > this_width {
+                    font.min_width = this_width;
                 }
-                if this_width > font_metrics.max_width {
-                    font_metrics.max_width = this_width;
+                if this_width > font.max_width {
+                    font.max_width = this_width;
                 }
                 if c == 32 {
-                    font_metrics.space_width = this_width;
+                    font.space_width = this_width;
                 }
-                font_metrics.average_width += this_width;
+                font.average_width += this_width;
             }
             n += 1;
             // println!("ch: {ch:?}, dimensions: {dimensions:?}");
         }
     });
 
-    font_metrics.average_width /= n;
-
-    // if f.is_wr_initialized() {
-    //     let wr = f.webrender();
-    //     let font_key = wr.wr_add_font(tpl);
-    //     return f.webrender().get_font_ft_face(font_key);
-    // }
-
-    // let worker = ThreadPoolBuilder::new()
-    //     .thread_name(|idx|{ format!("WRWorker#{}", idx) })
-    //     .build();
-    // let workers = std::sync::Arc::new(worker.unwrap());
-    // let mut glyph_rasterizer = GlyphRasterizer::new(workers, None, true);
-    // let font_key = FontKey::default();
-    // glyph_rasterizer.add_font(font_key, tpl);
-    // glyph_rasterizer.get_font_ft_face(font_key);
-}
-
-// fn wr_to_emacs (d: GlyphDimensions) -> emacs_sys::bindings::font_metrics {
-
-//     emacs_sys::bindings::font_metrics {
-//         // TBD check https://freetype.org/freetype2/docs/glyphs/glyphs-3.html and wr impl details
-//         // lbearing: d.left, // floor
-//         // rbearing: d.width + d.left, // ceil
-//         width: d.advance, // lround
-//         // The subtraction of a small number is to avoid rounding up due
-// 	//  to floating-point inaccuracies with some fonts, which then
-// 	//  could cause unpleasant effects while scrolling (see bug
-// 	//  #44284), since we then think that a glyph row's ascent is too
-// 	//  small to accommodate a glyph with a higher phys_ascent.
-//         // ascent: top - height, //ceil
-//         // descent: top,
-//     }
-// }
-
-pub fn macfont_font_tpl(font: CTFontRef) -> FontTemplate {
-    let ct_font = unsafe { CTFont::wrap_under_get_rule(font) };
-    let point_size = ct_font.pt_size();
-    let descriptor = ct_font.copy_descriptor();
-    let font_path = descriptor.font_path();
-    let mut font_metrics = WrFontMetrics::default();
-    FontTemplate::Native(NativeFontHandle {
-        name: ct_font.postscript_name(),
-        path: font_path
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or("".to_string()),
-    })
+    font.average_width /= n;
 }

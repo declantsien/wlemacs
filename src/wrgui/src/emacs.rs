@@ -244,6 +244,12 @@ pub type modiff_count = intmax_t;
 pub struct tty_display_info {
     _unused: [u8; 0],
 }
+unsafe extern "C" {
+    pub fn block_input();
+}
+unsafe extern "C" {
+    pub fn unblock_input();
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Emacs_Color {
@@ -7538,6 +7544,16 @@ const _: () = {
         [::std::mem::offset_of!(image_cache, scaling_col_width) - 40usize];
 };
 unsafe extern "C" {
+    pub fn window_box(
+        arg1: *mut window,
+        arg2: glyph_row_area,
+        arg3: *mut ::libc::c_int,
+        arg4: *mut ::libc::c_int,
+        arg5: *mut ::libc::c_int,
+        arg6: *mut ::libc::c_int,
+    );
+}
+unsafe extern "C" {
     pub fn gui_get_glyph_overhangs(
         arg1: *mut glyph,
         arg2: *mut frame,
@@ -7581,6 +7597,9 @@ unsafe extern "C" {
         arg3: glyph_row_area,
         arg4: ::libc::c_int,
     );
+}
+unsafe extern "C" {
+    pub fn gui_clear_cursor(arg1: *mut window);
 }
 unsafe extern "C" {
     pub fn gui_clear_window_mouse_face(arg1: *mut window);
@@ -7691,9 +7710,6 @@ const _: () = {
     ["Offset of field: font_bitmap::advance"]
         [::std::mem::offset_of!(font_bitmap, advance) - 32usize];
 };
-unsafe extern "C" {
-    pub fn XFONT_OBJECT(p: Lisp_Object) -> *mut font;
-}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct font_driver {
@@ -9628,6 +9644,9 @@ impl window {
         });
         __bindgen_bitfield_unit
     }
+}
+unsafe extern "C" {
+    pub fn window_to_frame_pixel_y(w: *mut window, y: ::libc::c_int) -> ::libc::c_int;
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -11759,6 +11778,9 @@ impl frame {
         });
         __bindgen_bitfield_unit
     }
+}
+unsafe extern "C" {
+    pub fn XFRAME(p: Lisp_Object) -> *mut frame;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

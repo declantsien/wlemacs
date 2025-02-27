@@ -908,8 +908,12 @@ default_pixels_per_inch_y (void)
 /* Return a pointer to the image cache of frame F.  */
 #define FRAME_IMAGE_CACHE(F) ((F)->image_cache)
 
-#define XFRAME(p) \
-  (eassert (FRAMEP (p)), XUNTAG (p, Lisp_Vectorlike, struct frame))
+INLINE struct frame *
+XFRAME (Lisp_Object p)
+{
+  eassert (FRAMEP (p));
+  return XUNTAG (p, Lisp_Vectorlike, struct frame);
+}
 #define XSETFRAME(a, b) XSETPSEUDOVECTOR (a, b, PVEC_FRAME)
 
 /* Given a window, return its frame as a Lisp_Object.  */

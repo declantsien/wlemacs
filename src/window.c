@@ -9346,3 +9346,10 @@ name to `'ignore'.  */);
   defsubr (&Swindow_cursor_type);
   defsubr (&Sset_window_cursor_type);
 }
+
+#ifdef USE_WEBRENDER
+int
+window_to_frame_pixel_y (struct window *w, int y) {
+  return WINDOW_TO_FRAME_PIXEL_Y (w, y);
+}
+#endif

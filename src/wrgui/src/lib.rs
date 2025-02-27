@@ -2,10 +2,11 @@
 #![feature(concat_idents)]
 #![allow(non_upper_case_globals)]
 
-// mod frame;
+mod frame;
 
 // pub mod bindings;
 pub mod color;
+mod window;
 // mod image;
 // pub mod output;
 
@@ -86,10 +87,8 @@ pub mod gfx {
 }
 
 use crate::canvas::WrCanvas;
-use crate::font::macfont_font_tpl;
 use crate::types::{Emacs_Rectangle, WrVecU32};
 use crate::util::HandyDandyRectBuilder;
-use core_text::font::CTFontRef;
 use types::{EmacsLength, EmacsPoint, EmacsRect, LayoutLength};
 use webrender_api::FontTemplate;
 
@@ -135,39 +134,6 @@ pub extern "C" fn wr_flush(canvas: &mut WrCanvas) {
 #[no_mangle]
 pub extern "C" fn wr_vec_u32_free(v: WrVecU32) {
     v.into_vec();
-}
-
-/// cbindgen:ignore
-#[no_mangle]
-pub extern "C" fn wr_macfont_draw(
-    canvas: &mut WrCanvas,
-    color_pixel: ::libc::c_ulong,
-    ct_font_ref: CTFontRef,
-    char2b: &mut WrVecU32,
-    from: ::libc::c_int,
-    to: ::libc::c_int,
-    x: ::libc::c_int,
-    y: ::libc::c_int,
-    width: ::libc::c_int,
-    height: ::libc::c_int,
-    glyph_size: ::libc::c_int,
-    padding_p: bool,
-) {
-    let font_tpl = macfont_font_tpl(ct_font_ref);
-    wr_font_draw(
-        canvas,
-        color_pixel,
-        font_tpl,
-        char2b,
-        from,
-        to,
-        x,
-        y,
-        width,
-        height,
-        glyph_size,
-        padding_p,
-    );
 }
 
 /// cbindgen:ignore

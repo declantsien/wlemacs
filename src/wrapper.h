@@ -5,7 +5,7 @@
 #include "lisp.h"
 
 /* #include "atimer.h" */
-/* #include "blockinput.h" */
+#include "blockinput.h"
 /* #include "buffer.h" */
 /* #include "category.h" */
 /* #include "ccl.h" */

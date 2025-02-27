@@ -141,6 +141,6 @@ struct wr_bitmap_record
 };
 
 extern void wrgui_init (struct frame *f);
-extern void wr_add_font(struct font *font);
+extern void wr_prepare_font(struct frame *f, struct font *font);
 
 #endif /* EMACS_WRGUI_H */

@@ -2672,8 +2672,10 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
   int size;
   CTFontRef macfont;
   CTFontSymbolicTraits sym_traits;
+#ifndef USE_WEBRENDER
   int i, total_width;
   CGGlyph glyph;
+#endif
   CGFloat ascent, descent, leading;
 
   val = assq_no_quit (QCfont_entity, AREF (entity, FONT_EXTRA_INDEX));
@@ -2698,8 +2700,6 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
   if (! macfont)
     return Qnil;
 
-  int fontsize = (int) [((NSFont *) macfont) pointSize];
-
   font_object = font_build_object (VECSIZE (struct macfont_info),
                                    Qmac_ct, entity, size);
   font = XFONT_OBJECT (font_object);
@@ -2714,14 +2714,18 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
 
   macfont_info = (struct macfont_info *) font;
   macfont_info->macfont = macfont;
+#ifdef USE_WEBRENDER
+  macfont_info->cgfont = NULL;
+#else
   macfont_info->cgfont = CTFontCopyGraphicsFont (macfont, NULL);
-
+#endif
   val = assq_no_quit (QCdestination, AREF (entity, FONT_EXTRA_INDEX));
   if (CONSP (val) && BASE_EQ (XCDR (val), make_fixnum (1)))
     macfont_info->screen_font = mac_screen_font_create_with_name (font_name,
                                                                   size);
   else
     macfont_info->screen_font = NULL;
+
   macfont_info->cache = macfont_lookup_cache (font_name);
   macfont_retain_cache (macfont_info->cache);
   macfont_info->metrics = NULL;
@@ -2756,10 +2760,8 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
     macfont_info->color_bitmap_p = 1;
 
 #ifdef USE_WEBRENDER
-  wr_add_font(font);
-  // wr_get_font_metrics_by_descriptor(font_name, 0);
-#endif
-
+  wr_prepare_font(f, font);
+#else
   glyph = macfont_get_glyph_for_character (font, ' ');
   if (glyph != kCGFontIndexInvalid)
     font->space_width = macfont_glyph_extents (font, glyph, NULL, NULL, 0);
@@ -2779,6 +2781,7 @@ macfont_open (struct frame * f, Lisp_Object entity, int pixel_size)
     font->average_width = total_width / 95;
   else
     font->average_width = font->space_width; /* XXX */
+#endif /* USE_WEBRENDER */
 
   if (!(macfont_info->screen_font
         && mac_screen_font_get_metrics (macfont_info->screen_font,
