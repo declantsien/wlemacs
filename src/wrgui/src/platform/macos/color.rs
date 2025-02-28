@@ -1,3 +1,4 @@
+use objc2::rc::Retained;
 use objc2_app_kit::NSColor;
 use webrender::api::ColorF;
 
@@ -9,7 +10,7 @@ pub fn pixel_to_color(c: u64) -> ColorF {
     ColorF::new(r, g, b, a)
 }
 
-pub fn ns_color_to_color_f(c: &NSColor) -> ColorF {
+pub fn ns_color_to_color_f(c: Retained<NSColor>) -> ColorF {
     let mut r: f64 = 0.0;
     let mut g: f64 = 0.0;
     let mut b: f64 = 0.0;

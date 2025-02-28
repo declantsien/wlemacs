@@ -1,8 +1,8 @@
 use std::cmp::max;
 
 use crate::types::{
-    frame, glyph_row, glyph_row_area, window, window_box, window_to_frame_pixel_y, EmacsIntRect,
-    XFRAME,
+    frame, get_phys_cursor_geometry, get_phys_cursor_glyph, glyph, glyph_row, glyph_row_area,
+    text_cursor_kinds, window, window_box, window_to_frame_pixel_y, EmacsIntRect, XFRAME,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -70,4 +70,29 @@ impl<'a> window {
         let height = row.visible_height;
         (x, y).by(width, height).to_i32()
     }
+
+    pub fn phys_cursor_glyph(&mut self) -> Option<&mut glyph> {
+        unsafe { get_phys_cursor_glyph(self).as_mut() }
+    }
+
+    pub fn phys_cursor_geometry(
+        &mut self,
+        row: &mut glyph_row,
+        cursor_glyph: &mut glyph,
+    ) -> EmacsIntRect {
+        let mut rect = EmacsIntRect::zero().to_rect();
+        unsafe {
+            get_phys_cursor_geometry(
+                self,
+                row,
+                cursor_glyph,
+                &mut rect.origin.x,
+                &mut rect.origin.y,
+                &mut rect.size.height,
+            )
+        };
+        rect.to_box2d()
+    }
+
+    pub fn draw_bar_cursor(&self, row: &glyph_row, width: ::libc::c_int, kind: text_cursor_kinds) {}
 }

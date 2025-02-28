@@ -22,6 +22,8 @@
 /* #include "emacs-module.h" */
 /* #include "epaths.h" */
 #include "font.h"
+#include "xwidget.h"
+
 /* #ifdef HAVE_FREETYPE */
 /* #include <fontconfig/fontconfig.h> */
 /* #include "ftfont.h" */

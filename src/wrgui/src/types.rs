@@ -346,3 +346,24 @@ impl<T> PartialOrd for ExternalPtr<T> {
 }
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
+
+impl glyph_string {
+    pub fn face(&self) -> &face {
+        unsafe { self.face.as_ref().unwrap() }
+    }
+}
+
+impl From<u32> for glyph_type {
+    fn from(value: u32) -> Self {
+        use glyph_type::*;
+        match value {
+            0 => CHAR_GLYPH,
+            1 => COMPOSITE_GLYPH,
+            2 => GLYPHLESS_GLYPH,
+            3 => IMAGE_GLYPH,
+            4 => STRETCH_GLYPH,
+            5 => XWIDGET_GLYPH,
+            _ => unreachable!(),
+        }
+    }
+}

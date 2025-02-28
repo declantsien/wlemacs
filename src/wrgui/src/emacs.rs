@@ -7624,10 +7624,32 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn draw_phys_cursor_glyph(arg1: *mut window, arg2: *mut glyph_row, arg3: draw_glyphs_face);
+}
+unsafe extern "C" {
+    pub fn get_phys_cursor_geometry(
+        arg1: *mut window,
+        arg2: *mut glyph_row,
+        arg3: *mut glyph,
+        arg4: *mut ::libc::c_int,
+        arg5: *mut ::libc::c_int,
+        arg6: *mut ::libc::c_int,
+    );
+}
+unsafe extern "C" {
     pub fn gui_clear_cursor(arg1: *mut window);
 }
 unsafe extern "C" {
     pub fn gui_clear_window_mouse_face(arg1: *mut window);
+}
+unsafe extern "C" {
+    pub fn draw_fringe_bitmap(arg1: *mut window, arg2: *mut glyph_row, arg3: ::libc::c_int);
+}
+unsafe extern "C" {
+    pub static mut max_used_fringe_bitmap: ::libc::c_int;
+}
+unsafe extern "C" {
+    pub fn prepare_face_for_display(arg1: *mut frame, arg2: *mut face);
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -7915,6 +7937,14 @@ const _: () = {
     ["Offset of field: font_driver_list::next"]
         [::std::mem::offset_of!(font_driver_list, next) - 16usize];
 };
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct xwidget {
+    _unused: [u8; 0],
+}
+unsafe extern "C" {
+    pub fn x_draw_xwidget_glyph_string(s: *mut glyph_string);
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _EmacsScreenFont {
@@ -9672,6 +9702,9 @@ impl window {
 }
 unsafe extern "C" {
     pub fn XWINDOW(a: Lisp_Object) -> *mut window;
+}
+unsafe extern "C" {
+    pub fn get_phys_cursor_glyph(w: *mut window) -> *mut glyph;
 }
 unsafe extern "C" {
     pub fn mark_window_cursors_off(arg1: *mut window);
@@ -12096,11 +12129,6 @@ pub struct buffer {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct composition {
-    pub _address: u8,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct xwidget {
     pub _address: u8,
 }
 #[repr(C)]

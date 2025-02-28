@@ -6,6 +6,7 @@ mod frame;
 
 // pub mod bindings;
 pub mod color;
+mod dispnew;
 mod window;
 // mod image;
 // pub mod output;

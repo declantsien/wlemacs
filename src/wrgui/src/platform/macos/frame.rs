@@ -1,5 +1,7 @@
 use std::ptr::NonNull;
 
+use objc2::rc::{Id, Retained};
+use objc2_app_kit::NSColor;
 use raw_window_handle::{
     AppKitDisplayHandle, AppKitWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
     HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,
@@ -8,6 +10,7 @@ use webrender_api::ColorF;
 
 use crate::types::{frame, ns_frame_scale_factor};
 
+use super::color::ns_color_to_color_f;
 use super::types::OutputData;
 
 impl frame {
@@ -20,8 +23,9 @@ impl frame {
     }
 
     pub fn cursor_color(&self) -> ColorF {
-        // f->output_data.ns->cursor_color;
-        todo!()
+        let ns_color = self.output_data().unwrap().cursor_color;
+        let ns_color: Retained<NSColor> = unsafe { Retained::retain(ns_color.cast()) }.unwrap();
+        ns_color_to_color_f(ns_color)
     }
 
     pub fn scale_factor(&mut self) -> f64 {

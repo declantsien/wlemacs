@@ -1,8 +1,9 @@
 use crate::canvas::WrCanvas;
 use crate::types::{
-    block_input, frame, mark_window_cursors_off, ns_default_font_parameter, ns_define_frame_cursor,
-    unblock_input, window, EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect, Emacs_Cursor,
-    Emacs_Pixmap, Lisp_Object, XWINDOW,
+    block_input, draw_glyphs_face, frame, glyph_string, mark_window_cursors_off,
+    ns_default_font_parameter, ns_define_frame_cursor, prepare_face_for_display, unblock_input,
+    window, EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect, Emacs_Cursor, Emacs_Pixmap,
+    Lisp_Object, XWINDOW,
 };
 use crate::util::HandyDandyRectBuilder;
 use objc2_app_kit::NSColor;
@@ -23,63 +24,101 @@ pub struct EmacsView {}
 //     }
 // }
 
-/// cbindgen:ignore
-#[no_mangle]
-pub extern "C" fn wr_draw_fringe_bitmap(
-    canvas: &mut WrCanvas,
-    which: ::libc::c_int,
-    pos_x: ::libc::c_int,
-    pos_y: ::libc::c_int,
-    width: ::libc::c_int,
-    height: ::libc::c_int,
-    bitmap_width: ::libc::c_int,
-    bitmap_height: ::libc::c_int,
-    bits: *mut ::libc::c_ushort,
-    foreground: &NSColor,
-    clip_bounds: &NSRect,
-) {
-    println!("draw fringe");
-    let clip_bounds: EmacsRect = ns_rect_to_emacs(clip_bounds);
+// /// cbindgen:ignore
+// #[no_mangle]
+// pub extern "C" fn wr_draw_fringe_bitmap(
+//     canvas: &mut WrCanvas,
+//     which: ::libc::c_int,
+//     pos_x: ::libc::c_int,
+//     pos_y: ::libc::c_int,
+//     width: ::libc::c_int,
+//     height: ::libc::c_int,
+//     bitmap_width: ::libc::c_int,
+//     bitmap_height: ::libc::c_int,
+//     bits: *mut ::libc::c_ushort,
+//     foreground: &NSColor,
+//     clip_bounds: &NSRect,
+// ) {
+//     println!("draw fringe");
+//     let clip_bounds: EmacsRect = ns_rect_to_emacs(clip_bounds);
 
-    let pos = EmacsIntPoint::new(pos_x, pos_y).to_f32();
+//     let pos = EmacsIntPoint::new(pos_x, pos_y).to_f32();
 
-    let image_clip_rect: EmacsRect = {
-        if which > 0 {
-            (pos_x, pos_y).by(width, height)
+//     let image_clip_rect: EmacsRect = {
+//         if which > 0 {
+//             (pos_x, pos_y).by(width, height)
+//         } else {
+//             EmacsRect::zero()
+//         }
+//     };
+
+//     let image = canvas.get_or_create_fringe_bitmap(
+//         which,
+//         EmacsIntSize::new(bitmap_width, bitmap_height),
+//         bits,
+//     );
+
+//     // Fixed image_clip_rect
+//     let image_clip_rect = image_clip_rect
+//         .intersection(&clip_bounds)
+//         .unwrap_or_else(|| EmacsRect::zero());
+
+//     canvas.display(|builder, space_and_clip, scale| {
+//         if let Some(image) = &image {
+//             println!("draw fringe has image");
+//             let image_display_rect = EmacsRect::new(
+//                 pos,
+//                 EmacsPoint::new(image.width as f32, image.height as f32),
+//             );
+//             // render image
+//             builder.push_image(
+//                 &CommonItemProperties::new(image_clip_rect * scale, space_and_clip),
+//                 image_display_rect * scale,
+//                 ImageRendering::Auto,
+//                 AlphaType::Alpha,
+//                 image.image_key,
+//                 ns_color_to_color_f(foreground),
+//             );
+//         }
+//     });
+// }
+
+impl glyph_string {
+    pub fn set_gc(&mut self) {
+        use draw_glyphs_face::*;
+        let gc = unsafe { self.gc.as_mut().unwrap() };
+        unsafe { prepare_face_for_display(self.f, self.face) };
+        match self.hl {
+            DRAW_NORMAL_TEXT | DRAW_IMAGE_RAISED | DRAW_IMAGE_SUNKEN | DRAW_INVERSE_VIDEO => {
+                gc.foreground = self.face().foreground;
+                gc.background = self.face().background;
+                self.set_stippled_p(self.face().stipple != 0);
+            }
+            DRAW_CURSOR => {
+                self.set_cursor_gc();
+                self.set_stippled_p(false);
+            }
+            DRAW_MOUSE_FACE => {
+                self.set_mouse_face_gc();
+                self.set_stippled_p(self.face().stipple != 0);
+            }
+        }
+    }
+
+    pub fn set_cursor_gc(&mut self) {
+        let f = unsafe { self.f.as_ref().unwrap() };
+        if self.font == unsafe { f.output_data().unwrap().font }
+            && self.face().background == f.background_pixel
+            && self.face().foreground == f.foreground_pixel
+            && !self.cmp.is_null()
+        {
+            // ns_output doesn't have this
+            // self.gc = unsafe { f.output_data().unwrap().cursor_gc }
         } else {
-            EmacsRect::zero()
+            // ns todo
         }
-    };
-
-    let image = canvas.get_or_create_fringe_bitmap(
-        which,
-        EmacsIntSize::new(bitmap_width, bitmap_height),
-        bits,
-    );
-
-    // Fixed image_clip_rect
-    let image_clip_rect = image_clip_rect
-        .intersection(&clip_bounds)
-        .unwrap_or_else(|| EmacsRect::zero());
-
-    canvas.display(|builder, space_and_clip, scale| {
-        if let Some(image) = &image {
-            println!("draw fringe has image");
-            let image_display_rect = EmacsRect::new(
-                pos,
-                EmacsPoint::new(image.width as f32, image.height as f32),
-            );
-            // render image
-            builder.push_image(
-                &CommonItemProperties::new(image_clip_rect * scale, space_and_clip),
-                image_display_rect * scale,
-                ImageRendering::Auto,
-                AlphaType::Alpha,
-                image.image_key,
-                ns_color_to_color_f(foreground),
-            );
-        }
-    });
+    }
+    pub fn set_mouse_face_gc(&mut self) {}
 }
 
 /// cbindgen:ignore

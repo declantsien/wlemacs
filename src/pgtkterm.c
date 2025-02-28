@@ -1108,7 +1108,7 @@ pgtk_initialize_display_info (struct pgtk_display_info *dpyinfo)
 static void
 pgtk_set_cursor_gc (struct glyph_string *s)
 {
-  if (s->font == FRAME_FONT (s->f)
+  if (s->font == oFRAME_FONT (s->f)
       && s->face->background == FRAME_BACKGROUND_PIXEL (s->f)
       && s->face->foreground == FRAME_FOREGROUND_PIXEL (s->f) && !s->cmp)
       s->xgcv = FRAME_X_OUTPUT (s->f)->cursor_xgcv;
@@ -1198,7 +1198,7 @@ pgtk_set_glyph_string_gc (struct glyph_string *s)
   else if (s->hl == DRAW_INVERSE_VIDEO)
     {
       pgtk_set_mode_line_face_gc (s);
-      s->stippled_p = s->face->stipple != 0;
+      s->stippled_p = s->face->stipple != 0;o
     }
   else if (s->hl == DRAW_CURSOR)
     {
@@ -2905,7 +2905,6 @@ pgtk_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
   /* Experimental avoidance of cursor on xwidget.  */
   if (cursor_glyph->type == XWIDGET_GLYPH)
     return;
-
   /* If on an image, draw like a normal cursor.  That's usually better
      visible than drawing a bar, esp. if the image is large so that
      the bar might not be in the window.  */
