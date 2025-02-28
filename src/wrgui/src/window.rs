@@ -1,19 +1,32 @@
 use std::cmp::max;
 
 use crate::types::{
-    glyph_row, glyph_row_area, window_box, window_to_frame_pixel_y, EmacsIntRect, FrameRef,
-    WindowRef, XFRAME,
+    frame, glyph_row, glyph_row_area, window, window_box, window_to_frame_pixel_y, EmacsIntRect,
+    XFRAME,
 };
 use crate::util::HandyDandyRectBuilder;
 
-impl WindowRef {
-    pub fn x_frame(&mut self) -> FrameRef {
+impl<'a> window {
+    pub fn from_ptr(f: *mut window) -> Option<&'a window> {
+        unsafe { f.as_ref() }
+    }
+
+    pub fn from_ptr_mut(f: *mut window) -> Option<&'a mut window> {
+        unsafe { f.as_mut() }
+    }
+
+    pub fn x_frame(&self) -> Option<&frame> {
         let f = unsafe { XFRAME(self.frame) };
-        FrameRef::new(f)
+        unsafe { f.as_ref() }
+    }
+
+    pub fn x_frame_mut(&self) -> Option<&mut frame> {
+        let f = unsafe { XFRAME(self.frame) };
+        unsafe { f.as_mut() }
     }
 
     pub fn to_frame_pixel_y(&mut self, y: ::libc::c_int) -> ::libc::c_int {
-        unsafe { window_to_frame_pixel_y(self.as_mut(), y) }
+        unsafe { window_to_frame_pixel_y(self, y) }
     }
 
     pub fn window_box(&mut self, area: impl Into<glyph_row_area>) -> EmacsIntRect {
@@ -21,7 +34,7 @@ impl WindowRef {
 
         unsafe {
             window_box(
-                self.as_mut(),
+                self,
                 area.into(),
                 &mut r.origin.x,
                 &mut r.origin.y,
@@ -42,7 +55,7 @@ impl WindowRef {
 
         unsafe {
             window_box(
-                self.as_mut(),
+                self,
                 area.into(),
                 &mut r.origin.x,
                 &mut r.origin.y,

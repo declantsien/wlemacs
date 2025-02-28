@@ -1,4 +1,5 @@
 use euclid::{Point2D, Rect, Size2D};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
 
 use crate::canvas::WrCanvas;
@@ -10,7 +11,6 @@ use crate::types::{
     gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face, gui_fix_overlapping_area,
     gui_get_glyph_overhangs, gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs,
     ns_frame_parm_handlers, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    FaceRef, FrameRef, WindowRef,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -22,18 +22,18 @@ unsafe impl Send for redisplay_interface {}
 #[no_mangle]
 pub extern "C" fn wrgui_init(f: *mut frame) {
     use crate::types::{EmacsIntSize, EmacsToDeviceScale};
-    let mut f = FrameRef::new(f);
+    let f = frame::from_ptr(f).unwrap();
     let scale_factor = f.scale_factor();
 
-    let display_handle = f.raw_display_handle();
-    let window_handle = f.raw_window_handle();
+    let display_handle = f.display_handle().unwrap().as_raw();
+    let window_handle = f.window_handle().unwrap().as_raw();
     println!("window handle: {window_handle:?}");
     let size = EmacsIntSize::new(f.pixel_width, f.pixel_height);
     let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
     let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
 
     let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
-    f.output_data().wr_data = Box::into_raw(data);
+    f.output_data_mut().unwrap().wr_data = Box::into_raw(data);
 }
 
 /// cbindgen:ignore
@@ -73,17 +73,18 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
 
 #[allow(unused_variables)]
 extern "C" fn scroll_run(w: *mut window, run: *mut run) {
-    let mut w = WindowRef::new(w);
-    let mut f = w.x_frame();
+    let win = window::from_ptr(w).unwrap();
+    let win_mut = window::from_ptr_mut(w).unwrap();
+    let f = win.x_frame_mut().unwrap();
     let run = unsafe { run.as_ref().unwrap() };
     let Rect {
         origin: Point2D { x, y, .. },
         size: Size2D {
             width, mut height, ..
         },
-    } = w.window_box(glyph_row_area::ANY_AREA).to_rect();
-    let from_y = w.to_frame_pixel_y(run.current_y);
-    let to_y = w.to_frame_pixel_y(run.desired_y);
+    } = win_mut.window_box(glyph_row_area::ANY_AREA).to_rect();
+    let from_y = win_mut.to_frame_pixel_y(run.current_y);
+    let to_y = win_mut.to_frame_pixel_y(run.desired_y);
     let bottom_y = y + height;
 
     if to_y < from_y {
@@ -106,23 +107,25 @@ extern "C" fn scroll_run(w: *mut window, run: *mut run) {
 
     unsafe { block_input() };
     /* Cursor off.  Will be switched on again in gui_update_window_end.  */
-    unsafe { gui_clear_cursor(w.as_mut()) };
+    unsafe { gui_clear_cursor(w) };
 
     let diff_y = to_y - from_y;
     let viewport = (x, to_y).by(width, height);
     let new_frame_position = (0, 0 + diff_y).by(f.pixel_width, f.pixel_height);
 
-    if let Some(image_key) = f.renderer().get_previous_frame() {
-        f.renderer().display(|builder, space_and_clip, scale| {
-            builder.push_image(
-                &CommonItemProperties::new(viewport * scale, space_and_clip),
-                new_frame_position * scale,
-                ImageRendering::Auto,
-                AlphaType::PremultipliedAlpha,
-                image_key,
-                ColorF::WHITE,
-            );
-        });
+    if let Some(image_key) = f.renderer().unwrap().get_previous_frame() {
+        f.renderer()
+            .unwrap()
+            .display(|builder, space_and_clip, scale| {
+                builder.push_image(
+                    &CommonItemProperties::new(viewport * scale, space_and_clip),
+                    new_frame_position * scale,
+                    ImageRendering::Auto,
+                    AlphaType::PremultipliedAlpha,
+                    image_key,
+                    ColorF::WHITE,
+                );
+            });
     }
 
     unsafe { unblock_input() };
@@ -151,16 +154,16 @@ extern "C" fn draw_fringe_bitmap(
     row: *mut glyph_row,
     p: *mut draw_fringe_bitmap_params,
 ) {
-    let mut w = WindowRef::new(w);
-    let mut f = w.x_frame();
+    let w = window::from_ptr_mut(w).unwrap();
+    let f = window::from_ptr(w).unwrap().x_frame_mut().unwrap();
     let row = unsafe { row.as_ref().unwrap() };
     let p = unsafe { p.as_ref().unwrap() };
-    let face = FaceRef::new(p.face);
+    let face = unsafe { p.face.as_ref().unwrap() };
     let clip = w.row_clip_bounds(row, glyph_row_area::ANY_AREA);
 
     if p.bx >= 0 && !p.overlay_p() {
         let rect = (p.bx, p.by).by(p.nx, p.ny);
-        f.renderer().dp_push_rect(
+        f.renderer().unwrap().dp_push_rect(
             rect,
             Some(clip.to_f32()),
             false,
@@ -193,8 +196,9 @@ extern "C" fn draw_fringe_bitmap(
 
 #[allow(unused_variables)]
 extern "C" fn flush_display(f: *mut frame) {
-    let mut f = FrameRef::new(f);
-    f.renderer().flush();
+    if let Some(r) = frame::from_ptr(f).and_then(|f| f.renderer()) {
+        r.flush();
+    }
 }
 
 #[allow(unused_variables)]
@@ -205,6 +209,9 @@ extern "C" fn clear_frame_area(
     width: ::libc::c_int,
     height: ::libc::c_int,
 ) {
+    let f = frame::from_ptr(f).unwrap();
+    let r = (x, y).by(width, height);
+    f.clear_area(r.to_i32());
 }
 
 #[allow(unused_variables)]

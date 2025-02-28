@@ -346,9 +346,3 @@ impl<T> PartialOrd for ExternalPtr<T> {
 }
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
-
-pub type FrameRef = ExternalPtr<frame>;
-pub type WindowRef = ExternalPtr<window>;
-pub type GlyphStringRef = ExternalPtr<glyph_string>;
-pub type FaceRef = ExternalPtr<face>;
-pub type FontRef = ExternalPtr<font>;

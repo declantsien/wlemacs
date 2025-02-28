@@ -1,42 +1,27 @@
 use crate::canvas::WrCanvas;
 use crate::types::{
     block_input, frame, mark_window_cursors_off, ns_default_font_parameter, ns_define_frame_cursor,
-    ns_frame_scale_factor, unblock_input, window, EmacsIntPoint, EmacsIntSize, EmacsPoint,
-    EmacsRect, Emacs_Cursor, Emacs_Pixmap, FrameRef, Lisp_Object, XWINDOW,
+    unblock_input, window, EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect, Emacs_Cursor,
+    Emacs_Pixmap, Lisp_Object, XWINDOW,
 };
 use crate::util::HandyDandyRectBuilder;
 use objc2_app_kit::NSColor;
 use objc2_foundation::NSRect;
-use raw_window_handle::{
-    AppKitDisplayHandle, AppKitWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
-use std::ptr::NonNull;
-use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
+use webrender_api::{AlphaType, CommonItemProperties, ImageRendering};
 
 use super::color::{ns_color_to_color_f, pixel_to_color};
-use super::types::{ns_rect_to_emacs, OutputDataRef};
+use super::types::ns_rect_to_emacs;
 
 pub struct EmacsView {}
 
-impl FrameRef {
-    pub fn output_data(&mut self) -> OutputDataRef {
-        OutputDataRef::new(unsafe { self.output_data.ns })
-    }
-    pub fn scale_factor(&mut self) -> f64 {
-        unsafe { ns_frame_scale_factor(self.as_mut()) }
-    }
-
-    pub fn raw_display_handle(&mut self) -> raw_window_handle::RawDisplayHandle {
-        let raw = AppKitDisplayHandle::new();
-        RawDisplayHandle::AppKit(raw)
-    }
-
-    pub fn raw_window_handle(&mut self) -> raw_window_handle::RawWindowHandle {
-        let handle =
-            AppKitWindowHandle::new(unsafe { NonNull::new_unchecked(self.output_data().view) });
-        RawWindowHandle::AppKit(handle)
-    }
-}
+// impl FrameRef {
+//     pub fn output_data(&mut self) -> OutputDataRef {
+//         OutputDataRef::new(unsafe { self.output_data.ns })
+//     }
+//     pub fn scale_factor(&mut self) -> f64 {
+//         unsafe { ns_frame_scale_factor(self.as_mut()) }
+//     }
+// }
 
 /// cbindgen:ignore
 #[no_mangle]
@@ -101,19 +86,23 @@ pub extern "C" fn wr_draw_fringe_bitmap(
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn ns_clear_frame(f: *mut frame) {
-    let mut f = FrameRef::new(f);
+    let frame = frame::from_ptr(f);
+    let face = frame::from_ptr(f).and_then(|f| f.default_face());
 
-    if f.default_face().is_null() {
+    if frame.is_none() && face.is_none() {
         return;
     }
+    let f = frame.unwrap();
+    let face = face.unwrap();
 
     unsafe { mark_window_cursors_off(XWINDOW(f.root_window)) };
 
     unsafe { block_input() };
     let rect = (0, 0).by(f.pixel_width, f.pixel_height);
-    let clear_color = pixel_to_color(f.default_face().background);
+    let clear_color = pixel_to_color(face.background);
     println!("clear frame clear_color: {clear_color:?}");
     f.renderer()
+        .unwrap()
         .dp_push_rect(rect, None, false, false, false, clear_color);
     unsafe { unblock_input() };
 }
@@ -128,21 +117,10 @@ pub extern "C" fn ns_clear_frame_area(
     width: ::libc::c_int,
     height: ::libc::c_int,
 ) {
-    let mut f = FrameRef::new(f);
-
-    if f.default_face().is_null() {
-        return;
+    if let Some(f) = frame::from_ptr(f) {
+        let r = (x, y).by(width, height);
+        f.clear_area(r.to_i32());
     }
-
-    unsafe { block_input() };
-    let rect = (x, y).by(width, height);
-    let clip = (0, 0).by(f.pixel_width, f.pixel_height);
-    let clear_color = pixel_to_color(f.default_face().background);
-    println!("clear frame area clear_color: {clear_color:?}");
-    f.renderer()
-        .dp_push_rect(rect, Some(clip), false, false, false, clear_color);
-    unsafe { unblock_input() };
-    //todo
 }
 
 /// cbindgen:ignore
@@ -201,6 +179,7 @@ pub extern "C" fn default_font_parameter(f: *mut frame, parms: Lisp_Object) {
 }
 
 // #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn wr_new_font(
     f: *mut frame,
     font_object: Lisp_Object,

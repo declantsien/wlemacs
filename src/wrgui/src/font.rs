@@ -1,4 +1,4 @@
-use crate::types::{font, frame, EmacsLength, EmacsToLayoutScale, FontRef, FrameRef, GlyphSize};
+use crate::types::{font, frame, EmacsLength, EmacsToLayoutScale, GlyphSize};
 use webrender::api::{
     FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontTemplate,
     FontVariation, IdNamespace,
@@ -8,6 +8,16 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
+
+impl<'a> font {
+    pub fn from_ptr(f: *mut font) -> Option<&'a font> {
+        unsafe { f.as_ref() }
+    }
+
+    pub fn from_ptr_mut(f: *mut font) -> Option<&'a mut font> {
+        unsafe { f.as_mut() }
+    }
+}
 
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()
@@ -95,8 +105,8 @@ fn wr_font_instance(
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
-    let mut font = FontRef::new(font);
-    let mut f = FrameRef::new(f);
+    let font = font::from_ptr_mut(font).unwrap();
+    let f = frame::from_ptr(f).unwrap();
     let font_tpl = font.font_template();
     let mut rasterizer = WR_GLYPH_RASTERIZER.lock();
 
