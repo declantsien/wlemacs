@@ -71,11 +71,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <gdk/gdkwayland.h>
 #endif
 
-#ifndef USE_WEBRENDER
 #define FRAME_CR_CONTEXT(f)		((f)->output_data.pgtk->cr_context)
 #define FRAME_CR_ACTIVE_CONTEXT(f)	((f)->output_data.pgtk->cr_active)
 #define FRAME_CR_SURFACE(f)		(cairo_get_target (FRAME_CR_CONTEXT (f)))
-#endif
 
 /* Non-zero means that a HELP_EVENT has been generated since Emacs
    start.  */
@@ -248,8 +246,6 @@ pgtk_get_device_for_event (struct pgtk_display_info *dpyinfo,
   return Qt;
 }
 
-#ifndef USE_WEBRENDER
-
 /* This is not a flip context in the same sense as gpu rendering
    scenes, it only occurs when a new context was required due to a
    resize or other fundamental change.  This is called when that
@@ -270,7 +266,6 @@ flip_cr_context (struct frame *f)
     }
   unblock_input ();
 }
-#endif
 
 
 static void
@@ -514,13 +509,11 @@ pgtk_free_frame_resources (struct frame *f)
 
   gtk_widget_destroy (FRAME_WIDGET (f));
 
-#ifdef USE_CAIRO
   if (FRAME_X_OUTPUT (f)->cr_surface_visible_bell != NULL)
     {
       cairo_surface_destroy (FRAME_X_OUTPUT (f)->cr_surface_visible_bell);
       FRAME_X_OUTPUT (f)->cr_surface_visible_bell = NULL;
     }
-#endif
 
   if (FRAME_X_OUTPUT (f)->atimer_visible_bell != NULL)
     {
@@ -543,9 +536,6 @@ pgtk_destroy_window (struct frame *f)
   struct pgtk_display_info *dpyinfo = FRAME_DISPLAY_INFO (f);
 
   check_window_system (f);
-#ifdef USE_WEBRENDER
-  wr_free_frame_resources(f);
-#endif /*USE_WEBRENDER*/
   if (dpyinfo->gdpy != NULL)
     pgtk_free_frame_resources (f);
 
@@ -1101,14 +1091,13 @@ pgtk_initialize_display_info (struct pgtk_display_info *dpyinfo)
   reset_mouse_highlight (&dpyinfo->mouse_highlight);
 }
 
-#ifndef USE_WEBRENDER
 /* Set S->gc to a suitable GC for drawing glyph string S in cursor
    face.  */
 
 static void
 pgtk_set_cursor_gc (struct glyph_string *s)
 {
-  if (s->font == oFRAME_FONT (s->f)
+  if (s->font == FRAME_FONT (s->f)
       && s->face->background == FRAME_BACKGROUND_PIXEL (s->f)
       && s->face->foreground == FRAME_FOREGROUND_PIXEL (s->f) && !s->cmp)
       s->xgcv = FRAME_X_OUTPUT (s->f)->cursor_xgcv;
@@ -1198,7 +1187,7 @@ pgtk_set_glyph_string_gc (struct glyph_string *s)
   else if (s->hl == DRAW_INVERSE_VIDEO)
     {
       pgtk_set_mode_line_face_gc (s);
-      s->stippled_p = s->face->stipple != 0;o
+      s->stippled_p = s->face->stipple != 0;
     }
   else if (s->hl == DRAW_CURSOR)
     {
@@ -2789,7 +2778,6 @@ pgtk_draw_glyph_string (struct glyph_string *s)
   pgtk_end_cr_clip (s->f);
   s->num_clips = 0;
 }
-#endif  /* USE_WEBRENDER */
 
 /* RIF: Define cursor CURSOR on frame F.  */
 
@@ -2802,7 +2790,6 @@ pgtk_define_frame_cursor (struct frame *f, Emacs_Cursor cursor)
   FRAME_X_OUTPUT (f)->current_cursor = cursor;
 }
 
-#ifndef USE_WEBRENDER
 static void
 pgtk_after_update_window_line (struct window *w,
 			       struct glyph_row *desired_row)
@@ -2905,6 +2892,7 @@ pgtk_draw_bar_cursor (struct window *w, struct glyph_row *row, int width,
   /* Experimental avoidance of cursor on xwidget.  */
   if (cursor_glyph->type == XWIDGET_GLYPH)
     return;
+
   /* If on an image, draw like a normal cursor.  That's usually better
      visible than drawing a bar, esp. if the image is large so that
      the bar might not be in the window.  */
@@ -3210,7 +3198,6 @@ pgtk_scroll_run (struct window *w, struct run *run)
 
   unblock_input ();
 }
-#endif  /* USE_WEBRENDER */
 
 /* Icons.  */
 
@@ -3312,14 +3299,9 @@ pgtk_text_icon (struct frame *f, const char *icon_name)
 static void
 pgtk_update_begin (struct frame *f)
 {
-#ifdef USE_WEBRENDER
-  wr_clear_under_internal_border (f);
-#else
   pgtk_clear_under_internal_border (f);
-#endif
 }
 
-#ifndef USE_WEBRENDER
 /* Draw a vertical window border from (x,y0) to (x,y1)  */
 
 static void
@@ -3396,7 +3378,6 @@ pgtk_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
 
   pgtk_end_cr_clip (f);
 }
-#endif  /* USE_WEBRENDER */
 
 /* End update of frame F.  This function is installed as a hook in
    update_end.  */
@@ -3415,11 +3396,7 @@ pgtk_frame_up_to_date (struct frame *f)
   FRAME_MOUSE_UPDATE (f);
   if (!buffer_flipping_blocked_p ())
     {
-#ifdef USE_CAIRO
       flip_cr_context (f);
-#else
-      //TODO webrender
-#endif
       gtk_widget_queue_draw (FRAME_GTK_WIDGET (f));
     }
   unblock_input ();
@@ -3605,7 +3582,6 @@ pgtk_clip_to_row (struct window *w, struct glyph_row *row,
   cairo_clip (cr);
 }
 
-#ifndef USE_WEBRENDER
 static void
 pgtk_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 			 struct draw_fringe_bitmap_params *p)
@@ -3649,7 +3625,6 @@ pgtk_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 
   pgtk_end_cr_clip (f);
 }
-#endif  /* USE_WEBRENDER */
 
 static struct atimer *hourglass_atimer = NULL;
 static int hourglass_enter_count = 0;
@@ -3716,38 +3691,6 @@ pgtk_flush_display (struct frame *f)
 
 extern frame_parm_handler pgtk_frame_parm_handlers[];
 
-#ifdef USE_WEBRENDER
-static struct redisplay_interface pgtk_redisplay_interface = {
-  pgtk_frame_parm_handlers,
-  gui_produce_glyphs,
-  gui_write_glyphs,
-  gui_insert_glyphs,
-  gui_clear_end_of_line,
-  wr_scroll_run,
-  wr_after_update_window_line,
-  NULL, /* update_window_begin */
-  NULL, /* update_window_end   */
-  wr_flush_display,
-  gui_clear_window_mouse_face,
-  gui_get_glyph_overhangs,
-  gui_fix_overlapping_area,
-  wr_draw_fringe_bitmap,
-  NULL,
-  NULL,
-  NULL,
-  wr_draw_glyph_string,
-  pgtk_define_frame_cursor,
-  wr_clear_frame_area,
-  wr_clear_under_internal_border,
-  wr_draw_window_cursor,
-  wr_draw_vertical_window_border,
-  wr_draw_window_divider,
-  NULL,				/* pgtk_shift_glyphs_for_insert, */
-  pgtk_show_hourglass,
-  pgtk_hide_hourglass,
-  pgtk_default_font_parameter,
-};
-#else
 static struct redisplay_interface pgtk_redisplay_interface = {
   pgtk_frame_parm_handlers,
   gui_produce_glyphs,
@@ -3778,7 +3721,6 @@ static struct redisplay_interface pgtk_redisplay_interface = {
   pgtk_hide_hourglass,
   pgtk_default_font_parameter,
 };
-#endif  /* USE_WEBRENDER */
 
 void
 pgtk_clear_frame (struct frame *f)
@@ -3798,13 +3740,11 @@ recover_from_visible_bell (struct atimer *timer)
 {
   struct frame *f = timer->client_data;
 
-#ifdef USE_CAIRO
   if (FRAME_X_OUTPUT (f)->cr_surface_visible_bell != NULL)
     {
       cairo_surface_destroy (FRAME_X_OUTPUT (f)->cr_surface_visible_bell);
       FRAME_X_OUTPUT (f)->cr_surface_visible_bell = NULL;
     }
-#endif
 
   if (FRAME_X_OUTPUT (f)->atimer_visible_bell != NULL)
     FRAME_X_OUTPUT (f)->atimer_visible_bell = NULL;
@@ -3815,7 +3755,6 @@ recover_from_visible_bell (struct atimer *timer)
 static void
 pgtk_flash (struct frame *f)
 {
-#ifndef USE_WEBRENDER
   cairo_surface_t *surface_orig, *surface;
   cairo_t *cr;
   int width, height, flash_height, flash_left, flash_right;
@@ -3896,7 +3835,6 @@ pgtk_flash (struct frame *f)
 
   cairo_destroy (cr);
   unblock_input ();
-#endif
 }
 
 /* Make audible bell.  */
@@ -4615,7 +4553,6 @@ pgtk_query_frame_background_color (struct frame *f, Emacs_Color * bgcolor)
   pgtk_query_color (f, bgcolor);
 }
 
-#ifndef USE_WEBRENDER
 static void
 pgtk_free_pixmap (struct frame *f, Emacs_Pixmap pixmap)
 {
@@ -4625,7 +4562,6 @@ pgtk_free_pixmap (struct frame *f, Emacs_Pixmap pixmap)
       xfree (pixmap);
     }
 }
-#endif  /* USE_WEBRENDER */
 
 void
 pgtk_focus_frame (struct frame *f, bool noactivate)
@@ -4857,11 +4793,7 @@ static void
 pgtk_buffer_flipping_unblocked_hook (struct frame *f)
 {
   block_input ();
-#ifdef USE_CAIRO
   flip_cr_context (f);
-#else
-  /* TODO */
-#endif
   gtk_widget_queue_draw (FRAME_GTK_WIDGET (f));
   unblock_input ();
 }
@@ -4916,11 +4848,7 @@ pgtk_create_terminal (struct pgtk_display_info *dpyinfo)
   terminal->get_focus_frame = pgtk_get_focus_frame;
   terminal->focus_frame_hook = pgtk_focus_frame;
   terminal->set_frame_offset_hook = pgtk_set_offset;
-#ifndef USE_WEBRENDER
   terminal->free_pixmap = pgtk_free_pixmap;
-#else
-  terminal->free_pixmap = wr_free_pixmap;
-#endif  /* USE_WEBRENDER */
 
   /* Other hooks are NULL by default.  */
 
@@ -4966,16 +4894,6 @@ pgtk_window_is_of_frame (struct frame *f, GdkWindow *window)
   pgtk_window_is_of_frame_recursive (FRAME_WIDGET (f), &data);
   return data.result;
 }
-
-#ifdef USE_WEBRENDER
-struct frame *
-pgtk_fixed_to_frame (GtkWidget *fixed)
-{
-  struct frame *f;
-  f = pgtk_any_window_to_frame (gtk_widget_get_window (fixed));
-  return f;
-}
-#endif
 
 /* Like x_window_to_frame but also compares the window with the widget's
    windows.  */
@@ -5045,7 +4963,6 @@ pgtk_handle_event (GtkWidget *widget, GdkEvent *event, gpointer *data)
   return FALSE;
 }
 
-#ifndef USE_WEBRENDER
 static void
 pgtk_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
 		     int width, int height, bool respect_alpha_background)
@@ -5057,7 +4974,6 @@ pgtk_fill_rectangle (struct frame *f, unsigned long color, int x, int y,
   cairo_fill (cr);
   pgtk_end_cr_clip (f);
 }
-#endif  /* USE_WEBRENDER */
 
 void
 pgtk_clear_under_internal_border (struct frame *f)
@@ -5066,9 +4982,6 @@ pgtk_clear_under_internal_border (struct frame *f)
       && (!FRAME_GTK_OUTER_WIDGET (f)
 	  || gtk_widget_get_realized (FRAME_GTK_OUTER_WIDGET (f))))
     {
-#ifdef USE_WEBRENDER
-      wr_clear_under_internal_border(f);
-#else
       int border = FRAME_INTERNAL_BORDER_WIDTH (f);
       int width = FRAME_PIXEL_WIDTH (f);
       int height = FRAME_PIXEL_HEIGHT (f);
@@ -5108,7 +5021,6 @@ pgtk_clear_under_internal_border (struct frame *f)
 	}
 
       unblock_input ();
-#endif  /* USE_WEBRENDER */
     }
 }
 
@@ -5121,11 +5033,8 @@ pgtk_handle_draw (GtkWidget *widget, cairo_t *cr, gpointer *data)
 
   if (win != NULL)
     {
-      f = pgtk_any_window_to_frame (win);
-#ifdef USE_WEBRENDER
-    /* redraw_frame (f); */
-#else
       cairo_surface_t *src = NULL;
+      f = pgtk_any_window_to_frame (win);
       if (f != NULL)
 	{
 	  src = FRAME_X_OUTPUT (f)->cr_surface_visible_bell;
@@ -5137,7 +5046,6 @@ pgtk_handle_draw (GtkWidget *widget, cairo_t *cr, gpointer *data)
 	  cairo_set_source_surface (cr, src, 0, 0);
 	  cairo_paint (cr);
 	}
-#endif  /* USE_WEBRENDER */
     }
   return FALSE;
 }
@@ -5154,9 +5062,7 @@ size_allocate (GtkWidget *widget, GtkAllocation *alloc,
   if (f)
     {
       xg_frame_resized (f, alloc->width, alloc->height);
-#ifdef USE_CAIRO
       pgtk_cr_update_surface_desired_size (f, alloc->width, alloc->height, false);
-#endif
     }
 }
 
@@ -7419,11 +7325,7 @@ pgtk_defined_color (struct frame *f, const char *name,
   block_input ();
   r = xg_check_special_colors (f, name, color_def);
   if (!r)
-#ifndef USE_WEBRENDER
     r = pgtk_parse_color (f, name, color_def);
-#else
-    r = wr_parse_color (name, color_def);
-#endif
   unblock_input ();
   return r;
 }
@@ -7484,7 +7386,6 @@ pgtk_query_color (struct frame *f, Emacs_Color * color)
 void
 pgtk_clear_area (struct frame *f, int x, int y, int width, int height)
 {
-#ifdef USE_CAIRO
   cairo_t *cr;
 
   eassert (width > 0 && height > 0);
@@ -7495,9 +7396,6 @@ pgtk_clear_area (struct frame *f, int x, int y, int width, int height)
   cairo_rectangle (cr, x, y, width, height);
   cairo_fill (cr);
   pgtk_end_cr_clip (f);
-#else
-  //TODO wr_clear_area
-#endif
 }
 
 
@@ -7593,7 +7491,6 @@ If set to a non-float value, there will be no wait at all.  */);
   Fprovide (Qpgtk, Qnil);
 }
 
-#ifndef USE_WEBRENDER
 /* Cairo does not allow resizing a surface/context after it is
    created, so we need to trash the old context, create a new context
    on the next cr_clip_begin with the new dimensions and request a
@@ -7812,4 +7709,3 @@ pgtk_cr_export_frames (Lisp_Object frames, cairo_surface_type_t surface_type)
 
   return CALLN (Fapply, Qconcat, Fnreverse (acc));
 }
-#endif
