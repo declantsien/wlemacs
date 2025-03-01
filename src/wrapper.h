@@ -14,7 +14,7 @@
 /* #include "cm.h" */
 /* #include "coding.h" */
 /* #include "commands.h" */
-/* #include "composite.h" */
+#include "composite.h"
 #include "dispextern.h"
 /* #include "disptab.h" */
 /* #include "dynlib.h" */

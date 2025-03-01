@@ -140,7 +140,7 @@ pub extern "C" fn ns_clear_frame(f: *mut frame) {
     let rect = (0, 0).by(f.pixel_width, f.pixel_height);
     let clear_color = pixel_to_color(face.background);
     println!("clear frame clear_color: {clear_color:?}");
-    f.renderer()
+    f.renderer_mut()
         .unwrap()
         .dp_push_rect(rect, None, false, false, false, clear_color);
     unsafe { unblock_input() };

@@ -10,7 +10,8 @@ pub fn pixel_to_color(c: u64) -> ColorF {
     ColorF::new(r, g, b, a)
 }
 
-pub fn ns_color_to_color_f(c: Retained<NSColor>) -> ColorF {
+pub fn ns_color_to_color_f(c: *mut ::libc::c_void) -> ColorF {
+    let c: Retained<NSColor> = unsafe { Retained::retain(c.cast()) }.unwrap();
     let mut r: f64 = 0.0;
     let mut g: f64 = 0.0;
     let mut b: f64 = 0.0;

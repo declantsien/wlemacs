@@ -347,9 +347,31 @@ impl<T> PartialOrd for ExternalPtr<T> {
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
 
-impl glyph_string {
-    pub fn face(&self) -> &face {
-        unsafe { self.face.as_ref().unwrap() }
+pub type GlyphStringRef = ExternalPtr<glyph_string>;
+
+impl composition {
+    pub fn char(&self, n: usize) -> Option<char> {
+        let i = if self.method == composition_method::COMPOSITION_WITH_RULE_ALTCHARS {
+            n * 2
+        } else {
+            n
+        };
+        let c = unsafe { XFIXNUM(AREF(self.key, i as isize)) as u32 };
+        char::from_u32(c)
+    }
+
+    pub fn is_tab(&self, n: usize) -> bool {
+        self.char(n).map(|c| c == '\t').unwrap_or(false)
+    }
+
+    pub fn offsets(&self, j: isize) -> &i16 {
+        unsafe { self.offsets.offset(j).as_ref().unwrap() }
+    }
+}
+
+impl font {
+    pub fn driver(&mut self) -> &font_driver {
+        unsafe { self.driver.as_ref().unwrap() }
     }
 }
 
@@ -365,5 +387,11 @@ impl From<u32> for glyph_type {
             5 => XWIDGET_GLYPH,
             _ => unreachable!(),
         }
+    }
+}
+
+impl font {
+    pub fn is_too_hight(&self) -> bool {
+        self.pixel_size > 0 && (self.ascent + self.descent) > 3 * self.pixel_size
     }
 }

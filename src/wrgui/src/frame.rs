@@ -11,8 +11,12 @@ impl<'a> frame {
         unsafe { f.as_mut() }
     }
 
-    pub fn renderer(&mut self) -> Option<&mut WrCanvas> {
+    pub fn renderer_mut(&mut self) -> Option<&mut WrCanvas> {
         unsafe { self.output_data().and_then(|d| d.wr_data.as_mut()) }
+    }
+
+    pub fn renderer(&self) -> Option<&WrCanvas> {
+        unsafe { self.output_data().and_then(|d| d.wr_data.as_ref()) }
     }
 
     pub fn default_face(&mut self) -> Option<&mut face> {
@@ -30,14 +34,14 @@ impl<'a> frame {
     }
 
     pub fn clear_area(&mut self, r: EmacsIntRect) {
-        if self.default_face().is_none() || self.renderer().is_none() {
+        if self.default_face().is_none() || self.renderer_mut().is_none() {
             return;
         }
 
         unsafe { block_input() };
         let clip = (0, 0).by(self.pixel_width, self.pixel_height);
         let clear_color = pixel_to_color(self.default_face().unwrap().background);
-        self.renderer().unwrap().dp_push_rect(
+        self.renderer_mut().unwrap().dp_push_rect(
             r.to_f32(),
             Some(clip),
             false,

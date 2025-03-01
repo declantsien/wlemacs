@@ -5,8 +5,10 @@
 mod frame;
 
 // pub mod bindings;
+mod bitmap;
 pub mod color;
 mod dispnew;
+mod glyph_string;
 mod window;
 // mod image;
 // pub mod output;

@@ -7,6 +7,7 @@ use webrender::api::{
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
+use webrender_api::GlyphDimensions;
 use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
 
 impl<'a> font {
@@ -144,4 +145,19 @@ pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
     });
 
     font.average_width /= n;
+}
+
+//TODO
+// font-driver has_char/encode_char may needs to use wr api
+// so that  glyphdimensions
+
+impl font {
+    pub fn vcenter_baseline_offset(&self, f: &frame) -> i32 {
+        // check C macro VCENTER_BASELINE_OFFSET
+        todo!();
+    }
+
+    pub fn glyph_dimensions(&self, indices: Vec<u32>) -> Vec<Option<GlyphDimensions>> {
+        todo!()
+    }
 }

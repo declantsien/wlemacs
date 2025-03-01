@@ -8,9 +8,9 @@ use raw_window_handle::{
 };
 use webrender_api::ColorF;
 
-use crate::types::{frame, ns_frame_scale_factor};
+use crate::types::{face, frame, ns_frame_scale_factor};
 
-use super::color::ns_color_to_color_f;
+use super::color::{ns_color_to_color_f, pixel_to_color};
 use super::types::OutputData;
 
 impl frame {
@@ -23,13 +23,35 @@ impl frame {
     }
 
     pub fn cursor_color(&self) -> ColorF {
-        let ns_color = self.output_data().unwrap().cursor_color;
-        let ns_color: Retained<NSColor> = unsafe { Retained::retain(ns_color.cast()) }.unwrap();
-        ns_color_to_color_f(ns_color)
+        ns_color_to_color_f(self.output_data().unwrap().cursor_color)
+    }
+
+    pub fn fg_color(&self) -> ColorF {
+        ns_color_to_color_f(self.output_data().unwrap().foreground_color)
+    }
+
+    pub fn bg_color(&self) -> ColorF {
+        ns_color_to_color_f(self.output_data().unwrap().background_color)
     }
 
     pub fn scale_factor(&mut self) -> f64 {
         unsafe { ns_frame_scale_factor(self) }
+    }
+}
+
+impl face {
+    pub fn fg_color(&self) -> Option<ColorF> {
+        if self.foreground != 0 {
+            return Some(pixel_to_color(self.foreground));
+        }
+        None
+    }
+
+    pub fn bg_color(&self) -> Option<ColorF> {
+        if self.background != 0 {
+            return Some(pixel_to_color(self.background));
+        }
+        None
     }
 }
 

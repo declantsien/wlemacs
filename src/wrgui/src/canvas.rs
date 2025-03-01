@@ -674,8 +674,8 @@ impl WrCanvas {
 
     pub fn dp_push_border(
         &mut self,
-        rect: LayoutRect,
-        clip: LayoutRect,
+        rect: EmacsRect,
+        clip: Option<EmacsRect>,
         is_backface_visible: bool,
         do_aa: AntialiasBorder,
         widths: EmacsIntSideOffsets,
@@ -686,6 +686,7 @@ impl WrCanvas {
         radius: BorderRadius,
     ) {
         // debug_assert!(unsafe { is_in_main_thread() });
+        let clip = clip.unwrap_or(rect);
 
         let border_details = BorderDetails::Normal(NormalBorder {
             left,
@@ -696,9 +697,9 @@ impl WrCanvas {
             do_aa: do_aa == AntialiasBorder::Yes,
         });
 
-        self.display(|dl_builder, space_and_clip, scale_factor| {
+        self.display(|dl_builder, space_and_clip, scale| {
             let prim_info = CommonItemProperties {
-                clip_rect: clip,
+                clip_rect: clip * scale,
                 clip_chain_id: space_and_clip.clip_chain_id,
                 spatial_id: space_and_clip.spatial_id,
                 flags: prim_flags(
@@ -709,8 +710,8 @@ impl WrCanvas {
 
             dl_builder.push_border(
                 &prim_info,
-                rect,
-                emacs_int_to_layout_side_offsets(widths, scale_factor),
+                rect * scale,
+                emacs_int_to_layout_side_offsets(widths, scale),
                 border_details,
             );
         });
