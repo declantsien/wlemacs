@@ -192,6 +192,12 @@ pub struct Lisp_X {
 }
 pub type Lisp_Word = *mut Lisp_X;
 pub type Lisp_Object = Lisp_Word;
+unsafe extern "C" {
+    pub fn XLI(o: Lisp_Object) -> EMACS_INT;
+}
+unsafe extern "C" {
+    pub static Qnil: Lisp_Object;
+}
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union vectorlike_header {
@@ -204,6 +210,9 @@ const _: () = {
     ["Offset of field: vectorlike_header::size"]
         [::std::mem::offset_of!(vectorlike_header, size) - 0usize];
 };
+unsafe extern "C" {
+    pub fn builtin_lisp_symbol(index: ::libc::c_int) -> Lisp_Object;
+}
 unsafe extern "C" {
     pub fn XFIXNUM(a: Lisp_Object) -> EMACS_INT;
 }
@@ -7989,6 +7998,24 @@ const _: () = {
     ["Offset of field: composition::offsets"]
         [::std::mem::offset_of!(composition, offsets) - 40usize];
 };
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum lglyph_indices {
+    LGLYPH_IX_FROM = 0,
+    LGLYPH_IX_TO = 1,
+    LGLYPH_IX_CHAR = 2,
+    LGLYPH_IX_CODE = 3,
+    LGLYPH_IX_WIDTH = 4,
+    LGLYPH_IX_LBEARING = 5,
+    LGLYPH_IX_RBEARING = 6,
+    LGLYPH_IX_ASCENT = 7,
+    LGLYPH_IX_DESCENT = 8,
+    LGLYPH_IX_ADJUSTMENT = 9,
+    LGLYPH_SIZE = 10,
+}
+unsafe extern "C" {
+    pub fn composition_gstring_from_id(arg1: isize) -> Lisp_Object;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct xwidget {

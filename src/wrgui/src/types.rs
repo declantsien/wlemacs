@@ -395,3 +395,13 @@ impl font {
         self.pixel_size > 0 && (self.ascent + self.descent) > 3 * self.pixel_size
     }
 }
+
+pub fn BASE_EQ(x: Lisp_Object, y: Lisp_Object) -> bool {
+    let x = unsafe { XLI(x) };
+    let y = unsafe { XLI(y) };
+    x == y
+}
+
+pub fn NILP(x: Lisp_Object) -> bool {
+    BASE_EQ(x, unsafe { Qnil })
+}
