@@ -1,4 +1,3 @@
-use crate::canvas::WrCanvas;
 use crate::util::HandyDandyRectBuilder;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};

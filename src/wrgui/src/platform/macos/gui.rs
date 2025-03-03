@@ -1,91 +1,15 @@
-use crate::canvas::WrCanvas;
 use crate::types::{
-    block_input, draw_glyphs_face, frame, glyph_string, mark_window_cursors_off,
-    ns_default_font_parameter, ns_define_frame_cursor, prepare_face_for_display, unblock_input,
-    window, EmacsIntPoint, EmacsIntSize, EmacsPoint, EmacsRect, Emacs_Cursor, Emacs_Pixmap,
-    Lisp_Object, XWINDOW,
+    block_input, frame, mark_window_cursors_off, ns_default_font_parameter, ns_define_frame_cursor,
+    unblock_input, window, Emacs_Cursor, Emacs_Pixmap, Lisp_Object, XWINDOW,
 };
 use crate::util::HandyDandyRectBuilder;
-use objc2_app_kit::NSColor;
-use objc2_foundation::NSRect;
-use webrender_api::{AlphaType, CommonItemProperties, ImageRendering};
 
-use super::color::{ns_color_to_color_f, pixel_to_color};
-use super::types::ns_rect_to_emacs;
+use super::color::pixel_to_color;
 
 pub struct EmacsView {}
 
-// impl FrameRef {
-//     pub fn output_data(&mut self) -> OutputDataRef {
-//         OutputDataRef::new(unsafe { self.output_data.ns })
-//     }
-//     pub fn scale_factor(&mut self) -> f64 {
-//         unsafe { ns_frame_scale_factor(self.as_mut()) }
-//     }
-// }
-
-// /// cbindgen:ignore
-// #[no_mangle]
-// pub extern "C" fn wr_draw_fringe_bitmap(
-//     canvas: &mut WrCanvas,
-//     which: ::libc::c_int,
-//     pos_x: ::libc::c_int,
-//     pos_y: ::libc::c_int,
-//     width: ::libc::c_int,
-//     height: ::libc::c_int,
-//     bitmap_width: ::libc::c_int,
-//     bitmap_height: ::libc::c_int,
-//     bits: *mut ::libc::c_ushort,
-//     foreground: &NSColor,
-//     clip_bounds: &NSRect,
-// ) {
-//     println!("draw fringe");
-//     let clip_bounds: EmacsRect = ns_rect_to_emacs(clip_bounds);
-
-//     let pos = EmacsIntPoint::new(pos_x, pos_y).to_f32();
-
-//     let image_clip_rect: EmacsRect = {
-//         if which > 0 {
-//             (pos_x, pos_y).by(width, height)
-//         } else {
-//             EmacsRect::zero()
-//         }
-//     };
-
-//     let image = canvas.get_or_create_fringe_bitmap(
-//         which,
-//         EmacsIntSize::new(bitmap_width, bitmap_height),
-//         bits,
-//     );
-
-//     // Fixed image_clip_rect
-//     let image_clip_rect = image_clip_rect
-//         .intersection(&clip_bounds)
-//         .unwrap_or_else(|| EmacsRect::zero());
-
-//     canvas.display(|builder, space_and_clip, scale| {
-//         if let Some(image) = &image {
-//             println!("draw fringe has image");
-//             let image_display_rect = EmacsRect::new(
-//                 pos,
-//                 EmacsPoint::new(image.width as f32, image.height as f32),
-//             );
-//             // render image
-//             builder.push_image(
-//                 &CommonItemProperties::new(image_clip_rect * scale, space_and_clip),
-//                 image_display_rect * scale,
-//                 ImageRendering::Auto,
-//                 AlphaType::Alpha,
-//                 image.image_key,
-//                 ns_color_to_color_f(foreground),
-//             );
-//         }
-//     });
-// }
-
 /// cbindgen:ignore
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern "C" fn ns_clear_frame(f: *mut frame) {
     let frame = frame::from_ptr(f);
     let face = frame::from_ptr(f).and_then(|f| f.default_face());
@@ -110,7 +34,6 @@ pub extern "C" fn ns_clear_frame(f: *mut frame) {
 
 /// cbindgen:ignore
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern "C" fn ns_clear_frame_area(
     f: *mut frame,
     x: ::libc::c_int,

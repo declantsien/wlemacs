@@ -94,5 +94,6 @@ impl<'a> window {
         rect.to_box2d()
     }
 
+    #[allow(unused_variables)]
     pub fn draw_bar_cursor(&self, row: &glyph_row, width: ::libc::c_int, kind: text_cursor_kinds) {}
 }

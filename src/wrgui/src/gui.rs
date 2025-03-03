@@ -170,9 +170,10 @@ extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_ov
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     use glyph_type::*;
     let relief_drawn_p = false;
-    let gs = || unsafe { s.as_mut().unwrap() };
-    let first_glyph = unsafe { gs().first_glyph.as_ref().unwrap() };
-    let type_ = glyph_type::from(first_glyph.type_());
+    let gs = unsafe { s.as_ref().unwrap() };
+    let gs_mut = || unsafe { s.as_mut().unwrap() };
+    let first_glyph = gs.first_glyph().unwrap();
+    let type_ = gs.glyph_type();
 
     /* If S draws into the background of its successors, draw the
     background of the successors first so that S can draw into it.
@@ -181,7 +182,7 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     /* If S draws into the background of its successors, draw the
     background of the successors first so that S can draw into it.
     This makes S->next use XDrawString instead of XDrawImageString.  */
-    if !gs().next.is_null() && gs().right_overhang != 0 && !gs().for_overlaps() != 0 {
+    if !gs.next.is_null() && gs.right_overhang != 0 && !gs.for_overlaps() != 0 {
         let width: i32;
         let next: &mut glyph_string;
         // TODO
@@ -203,7 +204,7 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     }
 
     /* Set up S->gc, set clipping and draw S.  */
-    gs().set_gc();
+    gs_mut().set_gc();
 
     // /* Draw relief (if any) in advance for char/composition so that the
     //    glyph string can be drawn over it.  */
@@ -232,12 +233,11 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     match type_ {
         CHAR_GLYPH | COMPOSITE_GLYPH => {
             let is_composite = type_ == COMPOSITE_GLYPH;
-            if gs().for_overlaps() != 0
-                || (is_composite && gs().cmp_from > 0 && !unsafe { first_glyph.u.cmp.automatic() })
+            if gs.for_overlaps() != 0 || (is_composite && gs.cmp_from > 0 && !gs.cmp_is_automatic())
             {
-                gs().set_background_filled_p(true);
+                gs_mut().set_background_filled_p(true);
             } else {
-                gs().draw_glyph_string_background(is_composite);
+                gs_mut().draw_glyph_string_background(is_composite);
             }
             if is_composite {
                 unsafe { gui_draw_composite_glyph_string_foreground(s) };
@@ -246,15 +246,15 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
             }
 
             /* Draw underline, overline, strike-through. */
-            let face = gs().face().unwrap();
-            let color = face.fg_color().unwrap_or(gs().f().fg_color());
-            gs().draw_text_decoration(face, color, gs().width, gs().x);
+            let face = gs.face().unwrap();
+            let color = face.fg_color().unwrap_or(gs.f().fg_color());
+            gs_mut().draw_text_decoration(face, color, gs_mut().width, gs_mut().x);
         }
         GLYPHLESS_GLYPH => {
-            if gs().for_overlaps() != 0 {
-                gs().set_background_filled_p(true);
+            if gs.for_overlaps() != 0 {
+                gs_mut().set_background_filled_p(true);
             } else {
-                gs().draw_glyph_string_background(true);
+                gs_mut().draw_glyph_string_background(true);
             }
             unsafe { gui_draw_glyphless_glyph_string_foreground(s) };
         }

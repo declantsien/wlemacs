@@ -1,7 +1,5 @@
 use std::ptr::NonNull;
 
-use objc2::rc::{Id, Retained};
-use objc2_app_kit::NSColor;
 use raw_window_handle::{
     AppKitDisplayHandle, AppKitWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
     HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,

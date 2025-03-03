@@ -839,6 +839,7 @@ fn prim_flags(is_backface_visible: bool, prefer_compositor_surface: bool) -> Pri
     flags
 }
 
+#[allow(dead_code)]
 fn prim_flags2(
     is_backface_visible: bool,
     prefer_compositor_surface: bool,
@@ -853,7 +854,7 @@ fn prim_flags2(
     flags | prim_flags(is_backface_visible, prefer_compositor_surface)
 }
 
-fn common_item_properties_for_rect(
+pub fn common_item_properties_for_rect(
     clip_rect: LayoutRect,
     is_backface_visible: bool,
     space_and_clip: &SpaceAndClipInfo,
@@ -884,6 +885,7 @@ fn emacs_int_to_layout_side_offsets(
     )
 }
 
+#[allow(dead_code)]
 fn emacs_int_to_layout_length(
     length: EmacsIntLength,
     scale_factor: EmacsToLayoutScale,

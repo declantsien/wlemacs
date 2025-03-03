@@ -17,7 +17,6 @@ impl glyph_string {
             DRAW_CURSOR => {
                 self.set_stippled_p(false);
             }
-            _ => unreachable!(),
         }
     }
 
