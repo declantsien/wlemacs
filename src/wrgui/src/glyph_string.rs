@@ -1,12 +1,11 @@
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::slice;
 
 use webrender_api::GlyphInstance;
 
 use crate::types::{
     composition, composition_gstring_from_id, face, face_box_type, font, frame, glyph,
-    glyph_string, glyph_type, lglyph_indices, EmacsIntPoint, EmacsLength, EmacsToLayoutScale,
-    Lisp_Object, AREF, NILP,
+    glyph_string, glyph_type, EmacsIntPoint, EmacsLength, Lisp_Object,
 };
 
 impl glyph_string {
@@ -86,96 +85,33 @@ impl glyph_string {
         unsafe { composition_gstring_from_id(self.cmp_id) }
     }
 
-    pub fn glyph_instances_(&self) -> Option<Vec<GlyphInstance>> {
-        use glyph_type::*;
+    pub fn glyph_instances(&self, from: usize, to: usize, x: i32, y: i32) -> Vec<GlyphInstance> {
         let scale = self.f().renderer().unwrap().emacs_to_layout_scale();
-        let is_overstrike = self.face().map(|f| f.overstrike()).unwrap_or(false);
+        let origin = EmacsIntPoint::new(x, y).to_f32() * scale;
 
-        match self.glyph_type() {
-            CHAR_GLYPH => {
-                let x = self.x();
-                let y = self.y();
+        let indices: Vec<u32> = self.glyph_indices()[from..to].iter().map(|c| *c).collect();
+        let dimensions = self
+            .font()
+            .unwrap()
+            .glyph_dimensions(self.f_mut(), indices.clone());
+        let (instances, _) = indices.into_iter().zip(dimensions.into_iter()).fold(
+            (Vec::new(), origin),
+            |(mut instances, mut point), (index, dimension)| {
+                instances.push(GlyphInstance { index, point });
 
-                let origin = EmacsIntPoint::new(x, y).to_f32() * scale;
-
-                let from = 0 as usize;
-                let to = self.nchars as usize;
-                let indices: Vec<u32> = self.glyph_indices()[from..to].iter().map(|c| *c).collect();
-                let dimensions = self.font().unwrap().glyph_dimensions(indices.clone());
-                let (instances, _) = indices.into_iter().zip(dimensions.into_iter()).fold(
-                    (Vec::new(), origin),
-                    |(mut instances, mut point), (index, dimension)| {
-                        instances.push(GlyphInstance { index, point });
-                        if is_overstrike {
-                            let mut instance = GlyphInstance { index, point };
-                            overstrike_glyph_instance(&mut instance, scale);
-                            instances.push(instance);
-                        }
-
-                        if let Some(d) = dimension {
-                            point.x += d.advance;
-                        }
-
-                        (instances, point)
-                    },
-                );
-                return Some(instances);
-            }
-            COMPOSITE_GLYPH => {
-                if !unsafe { self.first_glyph().unwrap().u.cmp.automatic() } {
-                    let from = self.cmp_from as usize;
-                    let to = min(self.nchars, self.cmp_to) as usize;
-                    let cmp = self.cmp().unwrap();
-                    let instances = self.glyph_indices()[from..to]
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(n, glyph)| {
-                            if cmp.is_tab(n) {
-                                return None;
-                            }
-                            return Some((n, glyph));
-                        })
-                        .fold(Vec::new(), |mut instances, (n, index)| {
-                            let xx = self.x() + *cmp.offsets((n * 2) as isize) as i32;
-                            let yy = self.y() - *cmp.offsets((n * 2 + 1) as isize) as i32;
-                            let point = EmacsIntPoint::new(xx, yy).to_f32() * scale;
-                            instances.push(GlyphInstance {
-                                index: *index,
-                                point,
-                            });
-
-                            if is_overstrike {
-                                let mut instance = GlyphInstance {
-                                    index: *index,
-                                    point,
-                                };
-                                overstrike_glyph_instance(&mut instance, scale);
-                                instances.push(instance);
-                            }
-
-                            instances
-                        });
-
-                    return Some(instances);
+                if self.padding_p() {
+                    point.x += (EmacsLength::new(1.0) * scale).get();
                 } else {
-                    use lglyph_indices::*;
-                    let lgs = self.lgstring();
-                    let mut width: i32 = 0;
-                    for i in self.cmp_from..self.cmp_to {
-                        let lglyph = unsafe { AREF(lgs, (i + 2) as isize) };
-                        let adjustment = unsafe { AREF(lglyph, LGLYPH_IX_ADJUSTMENT as isize) };
-                        if NILP(adjustment) {
-                            // width += LGLYPH_WIDTH (lglyph);
-                        }
+                    // wr get_glyph_dimensions return none for ‘empty’ textures (height or width = 0)
+                    // spaces (’ ’) will mostly be None
+                    if let Some(d) = dimension {
+                        point.x += d.advance;
                     }
-                    todo!()
                 }
-            }
-            _ => None,
-        }
-    }
-}
 
-fn overstrike_glyph_instance(instance: &mut GlyphInstance, scale: EmacsToLayoutScale) {
-    instance.point.x += (EmacsLength::new(1.0) * scale).get();
+                (instances, point)
+            },
+        );
+        return instances;
+    }
 }

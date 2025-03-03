@@ -4,10 +4,7 @@ use bit_vec::BitVec;
 use euclid::{Point2D, Rect, Size2D};
 use image::{DynamicImage, Rgba, RgbaImage};
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use tracing::Instrument;
-use webrender_api::{
-    AlphaType, BorderRadius, BorderSide, BorderStyle, ColorF, CommonItemProperties, ImageRendering,
-};
+use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
 
 use crate::canvas::WrCanvas;
 use crate::gfx::context::{GLContext, GLContextTrait};
@@ -15,11 +12,13 @@ use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 use crate::platform::pixel_to_color;
 use crate::types::{
     block_input, draw_fringe_bitmap_params, draw_glyphs_face, draw_phys_cursor_glyph, face,
-    face_box_type, face_id, frame, get_phys_cursor_glyph, glyph_row, glyph_row_area, glyph_string,
-    glyph_type, gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face,
-    gui_fix_overlapping_area, gui_get_glyph_overhangs, gui_insert_glyphs, gui_produce_glyphs,
-    gui_write_glyphs, ns_frame_parm_handlers, redisplay_interface, run, text_cursor_kinds,
-    unblock_input, window, x_draw_xwidget_glyph_string, AntialiasBorder, EmacsIntSideOffsets,
+    face_id, frame, get_phys_cursor_glyph, glyph_row, glyph_row_area, glyph_string, glyph_type,
+    gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face,
+    gui_draw_char_glyph_string_foreground, gui_draw_composite_glyph_string_foreground,
+    gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
+    gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
+    redisplay_interface, run, text_cursor_kinds, unblock_input, window,
+    x_draw_xwidget_glyph_string,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -90,6 +89,7 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
     show_hourglass: Some(show_hourglass),
     hide_hourglass: Some(hide_hourglass),
     default_font_parameter: Some(default_font_parameter),
+    draw_border: Some(draw_border),
 };
 
 #[allow(unused_variables)]
@@ -240,9 +240,9 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
                 gs().draw_glyph_string_background(is_composite);
             }
             if is_composite {
-                gs().draw_composite_glyph_string_foreground()
+                unsafe { gui_draw_composite_glyph_string_foreground(s) };
             } else {
-                gs().draw_glyph_string_foreground()
+                unsafe { gui_draw_char_glyph_string_foreground(s) };
             }
 
             /* Draw underline, overline, strike-through. */
@@ -250,7 +250,14 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
             let color = face.fg_color().unwrap_or(gs().f().fg_color());
             gs().draw_text_decoration(face, color, gs().width, gs().x);
         }
-        GLYPHLESS_GLYPH => {}
+        GLYPHLESS_GLYPH => {
+            if gs().for_overlaps() != 0 {
+                gs().set_background_filled_p(true);
+            } else {
+                gs().draw_glyph_string_background(true);
+            }
+            unsafe { gui_draw_glyphless_glyph_string_foreground(s) };
+        }
         IMAGE_GLYPH => {}
         STRETCH_GLYPH => {}
         XWIDGET_GLYPH => unsafe { x_draw_xwidget_glyph_string(s) },
@@ -389,7 +396,7 @@ extern "C" fn draw_window_cursor(
         }
     };
 
-    let mut draw_bar_cursor = |kind: text_cursor_kinds| {
+    let draw_bar_cursor = |kind: text_cursor_kinds| {
         let cursor_glyph = unsafe { get_phys_cursor_glyph(w).as_mut() };
         if let Some(cursor_glyph) = cursor_glyph {
             /* Experimental avoidance of cursor on xwidget.  */
@@ -558,7 +565,7 @@ extern "C" fn define_fringe_bitmap(
     });
 
     let image = DynamicImage::ImageRgba8(image_buffer);
-    todo!()
+    // todo!()
 }
 
 #[allow(unused_variables)]
@@ -613,9 +620,9 @@ impl glyph_string {
                         color,
                     );
                 })
-            } else if self.font().height < self.height - 2 * box_line_width
-                || self.font().is_too_hight()
-                || self.font_not_found_p()
+            } else if self.font().is_none()
+                || self.font().unwrap().height < self.height - 2 * box_line_width
+                || self.font().unwrap().is_too_hight()
                 || self.extends_to_end_of_line_p()
                 || force_p
             {
@@ -630,73 +637,9 @@ impl glyph_string {
         }
     }
 
-    pub fn draw_composite_glyph_string_foreground(&mut self) {
-        let face = self.face();
-        let mut x = self.x;
-        let wr = || self.f_mut().renderer_mut().unwrap();
-
-        /* If first glyph of S has a left box line, start drawing the text
-        of S to the right of that box line.  */
-        if let Some(face) = face {
-            if face.box_() == face_box_type::FACE_NO_BOX && self.first_glyph().left_box_line_p() {
-                x = self.x + max(face.box_vertical_line_width, 0);
-            }
-        }
-
-        /* S is a glyph string for a composition.  S->cmp_from is the index
-        of the first character drawn for glyphs of this composition.
-        S->cmp_from == 0 means we are drawing the very first character of
-        this composition.  */
-
-        /* Draw a rectangle for the composition if the font for the very
-        first character of the composition could not be loaded.  */
-        if self.font_not_found_p() {
-            if self.cmp_from == 0 {
-                let r = (x, self.y).by(self.width, self.height);
-                let widths = EmacsIntSideOffsets::new(1, 1, 1, 1);
-
-                let default_border_side = BorderSide {
-                    color: self.f().cursor_color(),
-                    style: BorderStyle::Solid,
-                };
-                wr().dp_push_border(
-                    r,
-                    None,
-                    false,
-                    AntialiasBorder::Yes,
-                    widths,
-                    default_border_side,
-                    default_border_side,
-                    default_border_side,
-                    default_border_side,
-                    BorderRadius::default(),
-                );
-            }
-        } else if !unsafe { self.first_glyph().u.cmp.automatic() } {
-            let y = self.ybase;
-            for j in self.cmp_from..(self.cmp_from + self.nchars) {
-                /* TAB in a composition means display glyphs with padding
-                space on the left or right.  */
-                if !self.cmp().is_tab(j) {
-                    let xx = x + *self.cmp().offsets((j * 2) as isize) as i32;
-                    let yy = y - *self.cmp().offsets((j * 2 + 1) as isize) as i32;
-                    font_draw(self, j, j + 1, xx, yy, false);
-                    if let Some(face) = face {
-                        if face.overstrike() {
-                            font_draw(self, j, j + 1, xx + 1, yy, false);
-                        }
-                    }
-                }
-            }
-        } else {
-            let gstring = composition_gstring_from_id(self.cmp_id);
-        }
-
-        todo!()
-    }
-
     pub fn draw_glyph_string_foreground(&mut self) {}
 
+    #[allow(unused_variables)]
     /* Draw underline, overline, strike-through. */
     pub fn draw_text_decoration(
         &mut self,
@@ -708,13 +651,62 @@ impl glyph_string {
     }
 }
 
-fn font_draw(
-    s: &glyph_string,
+#[no_mangle]
+pub extern "C" fn wr_font_draw(
+    s: *mut glyph_string,
     from: ::libc::c_int,
     to: ::libc::c_int,
     x: ::libc::c_int,
     y: ::libc::c_int,
     with_background: bool,
 ) {
-    todo!()
+    let gs = || unsafe { s.as_ref().unwrap() };
+    let gs_mut = || unsafe { s.as_mut().unwrap() };
+    let f_mut = || gs_mut().f_mut();
+    let font = gs().font().unwrap();
+    let canvas = f_mut().renderer_mut().unwrap();
+
+    // println!("{:?}", font_tpl);
+    let font_instance_key = font.font_instance_key(f_mut());
+    let glyph_instances = gs().glyph_instances(from as usize, to as usize, x, y);
+    let visible_rect = (x, y).by(gs().width, gs().font().unwrap().height);
+    println!("visible_rect {visible_rect:?}");
+    // // FIXME visible_rect set above is not correct here, hard code it for now
+    let visible_rect = (0, 0).by(f_mut().pixel_width, f_mut().pixel_height);
+    if with_background {
+        let bg_color = gs().bg_color();
+        let rect = (x, y - font.base()).by(gs().width, font.height).to_f32();
+        canvas.dp_push_rect(rect, None, false, false, false, bg_color);
+    }
+
+    canvas.display(|builder, space_and_clip, scale| {
+        let foreground_color = gs().fg_color();
+
+        // draw foreground
+        if !glyph_instances.is_empty() {
+            let visible_rect = visible_rect * scale;
+
+            builder.push_text(
+                &CommonItemProperties::new(visible_rect, space_and_clip),
+                visible_rect,
+                &glyph_instances,
+                font_instance_key,
+                foreground_color,
+                None,
+            );
+        }
+    });
+}
+
+#[allow(unused_variables)]
+extern "C" fn draw_border(
+    f: *mut frame,
+    color: ::libc::c_ulong,
+    x: ::libc::c_int,
+    y: ::libc::c_int,
+    width: ::libc::c_int,
+    height: ::libc::c_int,
+    respect_alpha_background: bool,
+) {
+    // todo!()
 }

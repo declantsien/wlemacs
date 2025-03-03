@@ -7582,10 +7582,21 @@ pub struct redisplay_interface {
     pub hide_hourglass: ::std::option::Option<unsafe extern "C" fn(f: *mut frame)>,
     pub default_font_parameter:
         ::std::option::Option<unsafe extern "C" fn(f: *mut frame, parms: Lisp_Object)>,
+    pub draw_border: ::std::option::Option<
+        unsafe extern "C" fn(
+            f: *mut frame,
+            color: ::libc::c_ulong,
+            x: ::libc::c_int,
+            y: ::libc::c_int,
+            width: ::libc::c_int,
+            height: ::libc::c_int,
+            respect_alpha_background: bool,
+        ),
+    >,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of redisplay_interface"][::std::mem::size_of::<redisplay_interface>() - 224usize];
+    ["Size of redisplay_interface"][::std::mem::size_of::<redisplay_interface>() - 232usize];
     ["Alignment of redisplay_interface"][::std::mem::align_of::<redisplay_interface>() - 8usize];
     ["Offset of field: redisplay_interface::frame_parm_handlers"]
         [::std::mem::offset_of!(redisplay_interface, frame_parm_handlers) - 0usize];
@@ -7643,6 +7654,8 @@ const _: () = {
         [::std::mem::offset_of!(redisplay_interface, hide_hourglass) - 208usize];
     ["Offset of field: redisplay_interface::default_font_parameter"]
         [::std::mem::offset_of!(redisplay_interface, default_font_parameter) - 216usize];
+    ["Offset of field: redisplay_interface::draw_border"]
+        [::std::mem::offset_of!(redisplay_interface, draw_border) - 224usize];
 };
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -7939,6 +7952,15 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn gui_clear_cursor(arg1: *mut window);
+}
+unsafe extern "C" {
+    pub fn gui_draw_char_glyph_string_foreground(arg1: *mut glyph_string);
+}
+unsafe extern "C" {
+    pub fn gui_draw_composite_glyph_string_foreground(arg1: *mut glyph_string);
+}
+unsafe extern "C" {
+    pub fn gui_draw_glyphless_glyph_string_foreground(arg1: *mut glyph_string);
 }
 unsafe extern "C" {
     pub fn gui_clear_window_mouse_face(arg1: *mut window);

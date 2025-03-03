@@ -7502,3 +7502,10 @@ syms_of_display_for_pdumper (void)
 {
   Vinitial_window_system = Qnil;
 }
+
+#ifdef USE_WEBRENDER
+int
+vcenter_baseline_offset (struct font *ft, struct frame *f) {
+  return VCENTER_BASELINE_OFFSET (ft, f);
+}
+#endif

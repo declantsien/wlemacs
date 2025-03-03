@@ -3169,6 +3169,12 @@ struct redisplay_interface
   /* Called to (re)calculate the default face when changing the font
      backend.  */
   void (*default_font_parameter) (struct frame *f, Lisp_Object parms);
+
+#ifdef USE_WEBRENDER
+  /* Draw border for a rectangle box */
+  void (*draw_border) (struct frame *f, unsigned long color, int x, int y,
+		     int width, int height, bool respect_alpha_background);
+#endif /* USE_WEBRENDER */
 #endif /* HAVE_WINDOW_SYSTEM */
 };
 
@@ -3647,6 +3653,11 @@ extern void gui_union_rectangles (const Emacs_Rectangle *,
 				  const Emacs_Rectangle *,
 				  Emacs_Rectangle *);
 extern void gui_consider_frame_title (Lisp_Object);
+#ifdef USE_WEBRENDER
+extern void gui_draw_char_glyph_string_foreground (struct glyph_string *);
+extern void gui_draw_composite_glyph_string_foreground (struct glyph_string *);
+extern void gui_draw_glyphless_glyph_string_foreground (struct glyph_string *);
+#endif
 #endif	/* HAVE_WINDOW_SYSTEM */
 
 extern void note_mouse_highlight (struct frame *, int, int);

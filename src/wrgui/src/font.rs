@@ -152,12 +152,46 @@ pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
 // so that  glyphdimensions
 
 impl font {
-    pub fn vcenter_baseline_offset(&self, f: &frame) -> i32 {
-        // check C macro VCENTER_BASELINE_OFFSET
-        todo!();
+    #[inline(always)]
+    pub fn base(&self) -> i32 {
+        self.ascent
     }
 
-    pub fn glyph_dimensions(&self, indices: Vec<u32>) -> Vec<Option<GlyphDimensions>> {
-        todo!()
+    #[inline(always)]
+    pub fn vcenter_baseline_offset(&self, f: &frame) -> i32 {
+        // check C macro VCENTER_BASELINE_OFFSET
+        let x = if f.line_height > self.height { 1 } else { 0 };
+        self.descent + (f.line_height - self.height + x) / 2
+            - f.font().map(|ft| ft.descent).unwrap_or(0)
+            - f.baseline_offset()
+    }
+
+    pub fn font_key(&self, f: &mut frame) -> FontKey {
+        let wr = f.renderer_mut().unwrap();
+        let font_tpl = self.font_template();
+        wr.wr_add_font(font_tpl)
+    }
+
+    pub fn font_instance_key(&self, f: &mut frame) -> FontInstanceKey {
+        let font_key = self.font_key(f);
+        let glyph_size = EmacsLength::new(self.pixel_size as f32);
+        let wr = f.renderer_mut().unwrap();
+        wr.wr_add_font_instance(
+            font_key,
+            glyph_size,
+            Some(FontInstanceOptions::default()),
+            Some(FontInstancePlatformOptions::default()),
+            Vec::new(),
+        )
+    }
+
+    pub fn glyph_dimensions(
+        &self,
+        f: &mut frame,
+        indices: Vec<u32>,
+    ) -> Vec<Option<GlyphDimensions>> {
+        let instance_key = self.font_instance_key(f);
+        let wr = f.renderer_mut().unwrap();
+        wr.glyph_dimensions(instance_key, indices)
     }
 }

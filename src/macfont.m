@@ -1767,7 +1767,7 @@ static void macfont_text_extents (struct font *, const unsigned int *, int,
                                   struct font_metrics *);
 static int macfont_draw (struct glyph_string *, int, int, int, int, bool);
 #ifdef USE_WEBRENDER
-// static int macwrfont_draw (struct glyph_string *, CTFontRef, int, int, int, int, bool);
+extern int wr_font_draw (struct glyph_string *, int, int, int, int, bool);
 #endif
 static Lisp_Object macfont_shape (Lisp_Object, Lisp_Object);
 static int macfont_variation_glyphs (struct font *, int c,
@@ -1787,7 +1787,11 @@ static struct font_driver macfont_driver =
   .has_char = macfont_has_char,
   .encode_char = macfont_encode_char,
   .text_extents = macfont_text_extents,
+#ifdef USE_WEBRENDER
+  .draw = wr_font_draw,
+#else
   .draw = macfont_draw,
+#endif
   .shape = macfont_shape,
   .get_variation_glyphs = macfont_variation_glyphs,
   .filter_properties = macfont_filter_properties,

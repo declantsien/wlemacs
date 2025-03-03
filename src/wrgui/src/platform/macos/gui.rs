@@ -83,44 +83,6 @@ pub struct EmacsView {}
 //     });
 // }
 
-impl glyph_string {
-    pub fn set_gc(&mut self) {
-        use draw_glyphs_face::*;
-        let gc = unsafe { self.gc.as_mut().unwrap() };
-        unsafe { prepare_face_for_display(self.f, self.face) };
-        match self.hl {
-            DRAW_NORMAL_TEXT | DRAW_IMAGE_RAISED | DRAW_IMAGE_SUNKEN | DRAW_INVERSE_VIDEO => {
-                gc.foreground = self.face().foreground;
-                gc.background = self.face().background;
-                self.set_stippled_p(self.face().stipple != 0);
-            }
-            DRAW_CURSOR => {
-                self.set_cursor_gc();
-                self.set_stippled_p(false);
-            }
-            DRAW_MOUSE_FACE => {
-                self.set_mouse_face_gc();
-                self.set_stippled_p(self.face().stipple != 0);
-            }
-        }
-    }
-
-    pub fn set_cursor_gc(&mut self) {
-        let f = unsafe { self.f.as_ref().unwrap() };
-        if self.font == unsafe { f.output_data().unwrap().font }
-            && self.face().background == f.background_pixel
-            && self.face().foreground == f.foreground_pixel
-            && !self.cmp.is_null()
-        {
-            // ns_output doesn't have this
-            // self.gc = unsafe { f.output_data().unwrap().cursor_gc }
-        } else {
-            // ns todo
-        }
-    }
-    pub fn set_mouse_face_gc(&mut self) {}
-}
-
 /// cbindgen:ignore
 #[no_mangle]
 #[allow(unused_variables)]

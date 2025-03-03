@@ -1,7 +1,7 @@
 use crate::canvas::WrCanvas;
 use crate::platform::pixel_to_color;
 use crate::types::{
-    block_input, face, face_id, frame, unblock_input, EmacsIntRect, FACE_FROM_ID,
+    block_input, face, face_id, font, frame, unblock_input, EmacsIntRect, FACE_FROM_ID,
     FACE_FROM_ID_OR_NULL,
 };
 use crate::util::HandyDandyRectBuilder;
@@ -50,5 +50,13 @@ impl<'a> frame {
             clear_color,
         );
         unsafe { unblock_input() };
+    }
+
+    pub fn baseline_offset(&self) -> i32 {
+        self.output_data().map(|d| d.baseline_offset).unwrap_or(0)
+    }
+
+    pub fn font(&self) -> Option<&font> {
+        self.output_data().and_then(|d| unsafe { d.font.as_ref() })
     }
 }
