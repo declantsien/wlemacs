@@ -12076,7 +12076,7 @@ const _: () = {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ns_output {
-    pub wr_data: *mut WrCanvas,
+    pub wr_data: *mut ::libc::c_void,
     pub view: *mut ::libc::c_void,
     pub miniimage: *mut ::libc::c_void,
     pub cursor_color: *mut ::libc::c_void,

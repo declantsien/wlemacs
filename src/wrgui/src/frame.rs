@@ -12,11 +12,17 @@ impl<'a> frame {
     }
 
     pub fn renderer_mut(&mut self) -> Option<&mut WrCanvas> {
-        unsafe { self.output_data().and_then(|d| d.wr_data.as_mut()) }
+        unsafe {
+            self.output_data()
+                .and_then(|d| (d.wr_data as *mut WrCanvas).as_mut())
+        }
     }
 
     pub fn renderer(&self) -> Option<&WrCanvas> {
-        unsafe { self.output_data().and_then(|d| d.wr_data.as_ref()) }
+        unsafe {
+            self.output_data()
+                .and_then(|d| (d.wr_data as *const WrCanvas).as_ref())
+        }
     }
 
     pub fn default_face(&mut self) -> Option<&mut face> {

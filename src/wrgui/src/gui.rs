@@ -53,7 +53,7 @@ pub extern "C" fn wrgui_init(f: *mut frame) {
     let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
 
     let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
-    f.output_data_mut().unwrap().wr_data = Box::into_raw(data);
+    f.output_data_mut().unwrap().wr_data = Box::into_raw(data) as *mut ::libc::c_void;
 }
 
 /// cbindgen:ignore
