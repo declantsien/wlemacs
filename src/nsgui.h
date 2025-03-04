@@ -79,6 +79,7 @@ typedef struct _NSSize  { CGFloat width, height; } NSSize;
 typedef struct _NSRect  { NSPoint origin; NSSize size; } NSRect;
 #endif  /* NOT OBJC */
 
+#ifndef USE_WEBRENDER
 #define NativeRectangle NSRect
 
 #define CONVERT_TO_EMACS_RECT(xr, nr)		\
@@ -98,6 +99,7 @@ typedef struct _NSRect  { NSPoint origin; NSSize size; } NSRect;
    (nr).origin.y    = (py),			\
    (nr).size.width  = (pwidth),			\
    (nr).size.height = (pheight))
+#endif
 
 
 

@@ -1,4 +1,5 @@
 use crate::util::HandyDandyRectBuilder;
+use euclid::Rect;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -13,6 +14,8 @@ use core_text::font::CTFontRef;
 /// Geometry in a stacking context's local coordinate space (logical pixels).
 #[derive(Hash, Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct EmacsPixel;
+
+pub type WrRect = Rect<f32, EmacsPixel>;
 
 pub type EmacsRect = Box2D<f32, EmacsPixel>;
 pub type EmacsPoint = Point2D<f32, EmacsPixel>;
@@ -384,6 +387,36 @@ impl From<u32> for glyph_type {
             3 => IMAGE_GLYPH,
             4 => STRETCH_GLYPH,
             5 => XWIDGET_GLYPH,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl From<i32> for face_id {
+    fn from(value: i32) -> Self {
+        use face_id::*;
+        match value {
+            0 => DEFAULT_FACE_ID,
+            1 => MODE_LINE_ACTIVE_FACE_ID,
+            2 => MODE_LINE_INACTIVE_FACE_ID,
+            3 => TOOL_BAR_FACE_ID,
+            4 => FRINGE_FACE_ID,
+            5 => HEADER_LINE_ACTIVE_FACE_ID,
+            6 => HEADER_LINE_INACTIVE_FACE_ID,
+            7 => SCROLL_BAR_FACE_ID,
+            8 => BORDER_FACE_ID,
+            9 => CURSOR_FACE_ID,
+            10 => MOUSE_FACE_ID,
+            11 => MENU_FACE_ID,
+            12 => VERTICAL_BORDER_FACE_ID,
+            13 => WINDOW_DIVIDER_FACE_ID,
+            14 => WINDOW_DIVIDER_FIRST_PIXEL_FACE_ID,
+            15 => WINDOW_DIVIDER_LAST_PIXEL_FACE_ID,
+            16 => INTERNAL_BORDER_FACE_ID,
+            17 => CHILD_FRAME_BORDER_FACE_ID,
+            18 => TAB_BAR_FACE_ID,
+            19 => TAB_LINE_FACE_ID,
+            20 => BASIC_FACE_ID_SENTINEL,
             _ => unreachable!(),
         }
     }

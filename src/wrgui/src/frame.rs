@@ -1,8 +1,8 @@
 use crate::canvas::WrCanvas;
 use crate::platform::pixel_to_color;
 use crate::types::{
-    block_input, face, face_id, font, frame, unblock_input, EmacsIntRect, FACE_FROM_ID,
-    FACE_FROM_ID_OR_NULL,
+    block_input, face, face_cache, face_id, font, frame, unblock_input, EmacsIntRect, Mouse_HLInfo,
+    FACE_FROM_ID, FACE_FROM_ID_OR_NULL,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -27,6 +27,42 @@ impl<'a> frame {
 
     pub fn default_face(&mut self) -> Option<&mut face> {
         self.face_from_id_or_null(face_id::DEFAULT_FACE_ID)
+    }
+
+    pub fn mouse_hl_info(&self) -> &Mouse_HLInfo {
+        unsafe {
+            &self
+                .output_data()
+                .unwrap()
+                .display_info
+                .as_ref()
+                .unwrap()
+                .mouse_highlight
+        }
+    }
+
+    pub fn face_cache(&self) -> &face_cache {
+        unsafe { self.face_cache.as_ref().unwrap() }
+    }
+
+    pub fn face_from_id_or_none(&self, id: usize) -> Option<&mut face> {
+        let cache = self.face_cache;
+
+        let faces_map: &[*mut face] =
+            unsafe { std::slice::from_raw_parts_mut((*cache).faces_by_id, (*cache).used as usize) };
+
+        faces_map
+            .get(id)
+            .copied()
+            .and_then(|f| unsafe { f.as_mut() })
+    }
+
+    pub fn mouse_face(&self) -> &mut face {
+        let id = self.mouse_hl_info().mouse_face_face_id as usize;
+        self.face_from_id_or_none(id).unwrap_or(
+            self.face_from_id_or_none(face_id::MOUSE_FACE_ID as usize)
+                .unwrap(),
+        )
     }
 
     pub fn face_from_id(&mut self, face: face_id) -> Option<&mut face> {

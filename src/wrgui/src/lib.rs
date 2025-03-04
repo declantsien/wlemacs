@@ -25,11 +25,6 @@ pub mod types;
 mod texture;
 mod util;
 
-#[no_mangle]
-pub extern "C" fn test() {
-    todo!()
-}
-
 pub mod platform {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use super::platform::macos::color::*;

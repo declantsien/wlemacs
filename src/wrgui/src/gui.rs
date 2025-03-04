@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 
 use bit_vec::BitVec;
 use euclid::{Point2D, Rect, Size2D};
@@ -12,13 +12,13 @@ use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 use crate::platform::pixel_to_color;
 use crate::types::{
     block_input, draw_fringe_bitmap_params, draw_glyphs_face, draw_phys_cursor_glyph, face,
-    face_id, frame, get_phys_cursor_glyph, glyph_row, glyph_row_area, glyph_string, glyph_type,
-    gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face,
+    face_box_type, face_id, frame, get_phys_cursor_glyph, globals, glyph_row, glyph_row_area,
+    glyph_string, glyph_type, gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face,
     gui_draw_char_glyph_string_foreground, gui_draw_composite_glyph_string_foreground,
     gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
-    redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    x_draw_xwidget_glyph_string,
+    prepare_face_for_display, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
+    x_draw_xwidget_glyph_string, EmacsIntRect, EmacsRect, WrRect,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -169,57 +169,58 @@ extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_ov
 #[allow(unused_variables)]
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     use glyph_type::*;
-    let relief_drawn_p = false;
-    let gs = unsafe { s.as_ref().unwrap() };
+    let mut r: [WrRect; 2] = [WrRect::zero(), WrRect::zero()];
+    let mut n: i32;
+    let mut relief_drawn_p = false;
+
+    let gs = glyph_string::from_ptr(s).unwrap();
     let gs_mut = || unsafe { s.as_mut().unwrap() };
-    let first_glyph = gs.first_glyph().unwrap();
+
+    let font = gs.font().unwrap_or(gs.f().font().unwrap());
+
     let type_ = gs.glyph_type();
 
     /* If S draws into the background of its successors, draw the
     background of the successors first so that S can draw into it.
     This makes S->next use XDrawString instead of XDrawImageString.  */
-
-    /* If S draws into the background of its successors, draw the
-    background of the successors first so that S can draw into it.
-    This makes S->next use XDrawString instead of XDrawImageString.  */
-    if !gs.next.is_null() && gs.right_overhang != 0 && !gs.for_overlaps() != 0 {
-        let width: i32;
-        let next: &mut glyph_string;
-        // TODO
-        // for (width = 0, next = s->next;
-        //      next && width < s->right_overhang;
-        //      width += next->width, next = next->next)
-        //   if (next->first_glyph->type != IMAGE_GLYPH)
-        //     {
-        //       cairo_t *cr = pgtk_begin_cr_clip (next->f);
-        //       pgtk_set_glyph_string_gc (next);
-        //       pgtk_set_glyph_string_clipping (next, cr);
-        //       if (next->first_glyph->type == STRETCH_GLYPH)
-        //         pgtk_draw_stretch_glyph_string (next);
-        //       else
-        //         pgtk_draw_glyph_string_background (next, true);
-        //       next->num_clips = 0;
-        //       pgtk_end_cr_clip (next->f);
-        //     }
+    if gs.next().is_some() && gs.is_right_overhang() && !gs.is_for_overlaps() {
+        let mut width: i32 = 0;
+        let mut next = gs.next();
+        loop {
+            if next.is_none() || width >= gs.right_overhang {
+                break;
+            }
+            let nxt = next.unwrap();
+            let type_ = nxt.glyph_type();
+            if type_ != IMAGE_GLYPH {
+                nxt.set_gc();
+                with_glyph_string_clipping(nxt, |s, clips, n| {
+                    println!("clips: {r:?}");
+                    match type_ {
+                        STRETCH_GLYPH => draw_stretch_glyph_string(s),
+                        _ => s.draw_background(true),
+                    }
+                });
+            }
+            width += nxt.width;
+            next = nxt.next();
+        }
     }
 
-    /* Set up S->gc, set clipping and draw S.  */
-    gs_mut().set_gc();
+    // /* Set up S->gc, set clipping and draw S.  */
+    // gs_mut().set_gc();
 
-    // /* Draw relief (if any) in advance for char/composition so that the
-    //    glyph string can be drawn over it.  */
-    // if (!s->for_overlaps
-    //     && s->face->box != FACE_NO_BOX
-    //     && (s->first_glyph->type == CHAR_GLYPH
-    //         || s->first_glyph->type == COMPOSITE_GLYPH))
-
-    //   {
-    //     pgtk_set_glyph_string_clipping (s, cr);
-    //     pgtk_draw_glyph_string_background (s, true);
-    //     pgtk_draw_glyph_string_box (s);
-    //     pgtk_set_glyph_string_clipping (s, cr);
-    //     relief_drawn_p = true;
-    //   }
+    /* Draw relief (if any) in advance for char/composition so that the
+    glyph string can be drawn over it.  */
+    if !(gs.for_overlaps() != 0)
+        && gs.face().unwrap().box_() != face_box_type::FACE_NO_BOX
+        && (gs.glyph_type() == CHAR_GLYPH || gs.glyph_type() == COMPOSITE_GLYPH)
+    {
+        // set_glyph_string_clipping (s,
+        gs_mut().draw_background(true);
+        // draw_glyph_string_box(s)
+        relief_drawn_p = true;
+    }
     // else if (!s->clip_head	/* draw_glyphs didn't specify a clip mask. */
     //          && !s->clip_tail
     //          && ((s->prev && s->prev->hl != s->hl && s->left_overhang)
@@ -230,6 +231,7 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     //   pgtk_set_glyph_string_clipping_exactly (s, s, cr);
     // else
     //   pgtk_set_glyph_string_clipping (s, cr);
+
     match type_ {
         CHAR_GLYPH | COMPOSITE_GLYPH => {
             let is_composite = type_ == COMPOSITE_GLYPH;
@@ -237,7 +239,7 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
             {
                 gs_mut().set_background_filled_p(true);
             } else {
-                gs_mut().draw_glyph_string_background(is_composite);
+                gs_mut().draw_background(is_composite);
             }
             if is_composite {
                 unsafe { gui_draw_composite_glyph_string_foreground(s) };
@@ -254,12 +256,12 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
             if gs.for_overlaps() != 0 {
                 gs_mut().set_background_filled_p(true);
             } else {
-                gs_mut().draw_glyph_string_background(true);
+                gs_mut().draw_background(true);
             }
             unsafe { gui_draw_glyphless_glyph_string_foreground(s) };
         }
         IMAGE_GLYPH => {}
-        STRETCH_GLYPH => {}
+        STRETCH_GLYPH => draw_stretch_glyph_string(s),
         XWIDGET_GLYPH => unsafe { x_draw_xwidget_glyph_string(s) },
     }
 }
@@ -597,44 +599,50 @@ extern "C" fn show_hourglass(f: *mut frame) {}
 extern "C" fn hide_hourglass(f: *mut frame) {}
 
 impl glyph_string {
-    pub fn draw_glyph_string_background(&mut self, force_p: bool) {
-        let face = self.face().unwrap();
-        let background_filled_p = self.background_filled_p();
-        let wr = || self.f_mut().renderer_mut().unwrap();
-        if !background_filled_p {
-            let box_line_width = max(face.box_horizontal_line_width, 0);
-            let r = (self.x, self.y + box_line_width)
-                .by(self.background_width, self.height - 2 * box_line_width);
-            if self.stippled_p() {
-                let image_key = face.stipple_bitmap();
-                let mut color = face.bg_color().unwrap();
-                color.a = self.f().alpha_background as f32;
-                wr().display(|builder, space_and_clip, scale| {
-                    let r = r * scale;
-                    builder.push_image(
-                        &CommonItemProperties::new(r, space_and_clip),
-                        r,
-                        ImageRendering::Auto,
-                        AlphaType::Alpha,
-                        image_key,
-                        color,
-                    );
-                })
-            } else if self.font().is_none()
-                || self.font().unwrap().height < self.height - 2 * box_line_width
-                || self.font().unwrap().is_too_hight()
-                || self.extends_to_end_of_line_p()
-                || force_p
-            {
-                let color = if self.hl != draw_glyphs_face::DRAW_CURSOR {
-                    face.bg_color().unwrap_or(self.f().bg_color())
-                } else {
-                    self.f().cursor_color()
-                };
-                wr().dp_push_rect(r, None, false, false, false, color);
-            }
-            self.set_background_filled_p(true);
+    pub fn draw_background(&mut self, force_p: bool) {
+        // Nothing to do if background has already been drawn or if it
+        // shouldn't be drawn in the first place.
+        if self.background_filled_p() {
+            return;
         }
+
+        let wr = || self.f_mut().renderer_mut().unwrap();
+
+        let face = self.face().unwrap();
+        let box_line_width = max(face.box_horizontal_line_width, 0);
+
+        let r = (self.x, self.y + box_line_width)
+            .by(self.background_width, self.height - 2 * box_line_width);
+
+        if self.stippled_p() {
+            let image_key = face.stipple_bitmap();
+            let mut color = face.bg_color().unwrap();
+            color.a = self.f().alpha_background as f32;
+            wr().display(|builder, space_and_clip, scale| {
+                let r = r * scale;
+                builder.push_image(
+                    &CommonItemProperties::new(r, space_and_clip),
+                    r,
+                    ImageRendering::Auto,
+                    AlphaType::Alpha,
+                    image_key,
+                    color,
+                );
+            })
+        } else if self.font().is_none()
+            || self.font().unwrap().height < self.height - 2 * box_line_width
+            || self.font().unwrap().is_too_hight()
+            || self.extends_to_end_of_line_p()
+            || force_p
+        {
+            let color = if self.hl != draw_glyphs_face::DRAW_CURSOR {
+                face.bg_color().unwrap_or(self.f().bg_color())
+            } else {
+                self.f().cursor_color()
+            };
+            wr().dp_push_rect(r, None, false, false, false, color);
+        }
+        self.set_background_filled_p(true);
     }
 
     pub fn draw_glyph_string_foreground(&mut self) {}
@@ -651,6 +659,7 @@ impl glyph_string {
     }
 }
 
+/// cbindgen:ignore
 #[no_mangle]
 pub extern "C" fn wr_font_draw(
     s: *mut glyph_string,
@@ -674,9 +683,7 @@ pub extern "C" fn wr_font_draw(
     // // FIXME visible_rect set above is not correct here, hard code it for now
     let visible_rect = (0, 0).by(f_mut().pixel_width, f_mut().pixel_height);
     if with_background {
-        let bg_color = gs().bg_color();
-        let rect = (x, y - font.base()).by(gs().width, font.height).to_f32();
-        canvas.dp_push_rect(rect, None, false, false, false, bg_color);
+        gs_mut().draw_background(true);
     }
 
     canvas.display(|builder, space_and_clip, scale| {
@@ -709,4 +716,138 @@ extern "C" fn draw_border(
     respect_alpha_background: bool,
 ) {
     // todo!()
+}
+
+fn draw_stretch_glyph_string(s: *mut glyph_string) {
+    let gs = glyph_string::from_ptr(s).unwrap();
+    let wr = glyph_string::from_ptr_mut(s)
+        .and_then(|s| Some(s.f_mut()))
+        .and_then(|f| f.renderer_mut())
+        .unwrap();
+    let row = gs.row().unwrap();
+    let face = gs.face().unwrap();
+    let win = gs.window().unwrap();
+
+    assert!(gs.glyph_type() == glyph_type::STRETCH_GLYPH);
+
+    if gs.hl == draw_glyphs_face::DRAW_CURSOR && !unsafe { globals.f_x_stretch_cursor_p } {
+        /* If `x-stretch-cursor' is nil, don't draw a block cursor as
+        wide as the stretch glyph.  */
+        let mut width = gs.background_width;
+        let mut background_width = gs.background_width;
+        let mut x = gs.x;
+        if !row.reversed_p() {
+            let left_x = win.box_left_offset(glyph_row_area::TEXT_AREA);
+            if x < left_x {
+                background_width -= left_x - x;
+                x = left_x;
+            }
+        } else {
+            /* In R2L rows, draw the cursor on the right edge of the
+            stretch glyph.  */
+            let right_x = win.box_right(glyph_row_area::TEXT_AREA);
+            if x + background_width > right_x {
+                background_width -= x - right_x;
+            }
+            x += background_width;
+        }
+        width += min(gs.f().column_width, background_width);
+
+        if row.reversed_p() {
+            x -= width;
+        }
+
+        /* Draw cursor.  */
+        let color = if gs.hl == draw_glyphs_face::DRAW_CURSOR {
+            gs.f().cursor_color()
+        } else {
+            face.fg_color().unwrap()
+        };
+        wr.dp_push_rect(
+            (x, gs.y).by(width, gs.height),
+            None,
+            false,
+            false,
+            false,
+            color,
+        );
+        // pgtk_draw_glyph_string_bg_rect (s, x, s->y, width, s->height);
+
+        /* Clear rest using the GC of the original non-cursor face.  */
+        if width < background_width {
+            let y = gs.y;
+            let w = background_width - width;
+            let h = gs.height;
+
+            if !row.reversed_p() {
+                x += width;
+            } else {
+                x = gs.x;
+            }
+
+            let color: ColorF;
+            if row.mouse_face_p() && win.cursor_in_mouse_face_p() {
+                let face = gs.f().mouse_face();
+                unsafe { prepare_face_for_display(gs.f, face) };
+                color = face.bg_color().unwrap();
+            } else {
+                color = gs.face().unwrap().bg_color().unwrap();
+            }
+            wr.dp_push_rect((x, y).by(w, h), None, false, false, false, color);
+        }
+    } else if gs.background_filled_p() {
+        let mut background_width = gs.background_width;
+        let mut x = gs.x;
+        let text_left_x = gs.window().unwrap().box_left(glyph_row_area::TEXT_AREA);
+
+        /* Don't draw into left fringe or scrollbar area except for
+        header line and mode line.  */
+        if gs.area == glyph_row_area::TEXT_AREA && x < text_left_x && !row.mode_line_p() {
+            background_width -= text_left_x - x;
+            x = text_left_x;
+        }
+
+        if !row.stipple_p() {
+            gs.row_mut().unwrap().set_stipple_p(gs.stippled_p());
+        }
+
+        if background_width > 0 {
+            draw_glyph_string_bg_rect(gs, x, gs.y, background_width, gs.height);
+        }
+    }
+}
+
+fn draw_glyph_string_bg_rect(s: &glyph_string, x: i32, y: i32, w: i32, h: i32) {
+    // if (s->hl == DRAW_CURSOR)
+    //   [FRAME_CURSOR_COLOR (s->f) set];
+    // else if (s->stippled_p)
+    //   [[dpyinfo->bitmaps[s->face->stipple - 1].img stippleMask] set];
+    // else
+    //   [[NSColor colorWithUnsignedLong: s->face->background] set];
+    if s.stippled_p() {
+        // fill background with bitmap
+        // fill_background (s, x, y, w, h);
+    } else {
+        // pgtk_clear_glyph_string_rect (s, x, y, w, h);
+    }
+}
+
+/// cbindgen:ignore
+unsafe extern "C" {
+    pub fn get_glyph_string_clip_rects(
+        s: *mut glyph_string,
+        rects: *mut WrRect,
+        n: libc::c_int,
+    ) -> ::libc::c_int;
+}
+
+/* Set clipping for output of glyph string S.  S may be part of a mode
+line or menu if we don't have X toolkit support.  */
+fn with_glyph_string_clipping<F, T>(s: &mut glyph_string, f: F) -> T
+where
+    F: Fn(&mut glyph_string, &mut [WrRect; 2], i32) -> T,
+{
+    let mut r: [WrRect; 2] = Default::default();
+    let n = unsafe { get_glyph_string_clip_rects(s, r.as_mut_ptr(), 2) };
+    f(s, &mut r, n)
 }

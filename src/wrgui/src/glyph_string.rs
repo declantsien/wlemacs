@@ -4,11 +4,43 @@ use std::slice;
 use webrender_api::GlyphInstance;
 
 use crate::types::{
-    composition, composition_gstring_from_id, face, face_box_type, font, frame, glyph,
-    glyph_string, glyph_type, EmacsIntPoint, EmacsLength, Lisp_Object,
+    composition, composition_gstring_from_id, face, face_box_type, font, frame, glyph, glyph_row,
+    glyph_string, glyph_type, window, EmacsIntPoint, EmacsLength, Lisp_Object,
 };
 
-impl glyph_string {
+impl<'a> glyph_string {
+    pub fn from_ptr(f: *mut glyph_string) -> Option<&'a glyph_string> {
+        unsafe { f.as_ref() }
+    }
+
+    pub fn from_ptr_mut(f: *mut glyph_string) -> Option<&'a mut glyph_string> {
+        unsafe { f.as_mut() }
+    }
+
+    pub fn next(&self) -> Option<&mut glyph_string> {
+        unsafe { self.next.as_mut() }
+    }
+
+    pub fn is_for_overlaps(&self) -> bool {
+        self.for_overlaps() != 0
+    }
+
+    pub fn is_right_overhang(&self) -> bool {
+        self.right_overhang != 0
+    }
+
+    pub fn row(&self) -> Option<&glyph_row> {
+        unsafe { self.row.as_ref() }
+    }
+
+    pub fn row_mut(&self) -> Option<&mut glyph_row> {
+        unsafe { self.row.as_mut() }
+    }
+
+    pub fn window(&self) -> Option<&window> {
+        unsafe { self.w.as_ref() }
+    }
+
     pub fn x(&self) -> i32 {
         /* If first glyph of S has a left box line, start drawing the text
         of S to the right of that box line.  */
@@ -105,7 +137,7 @@ impl glyph_string {
                     // wr get_glyph_dimensions return none for ‘empty’ textures (height or width = 0)
                     // spaces (’ ’) will mostly be None
                     if let Some(d) = dimension {
-                        point.x += d.advance;
+                        point.x += d.advance.floor();
                     }
                 }
 

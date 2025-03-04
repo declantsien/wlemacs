@@ -195,6 +195,2000 @@ pub type Lisp_Object = Lisp_Word;
 unsafe extern "C" {
     pub fn XLI(o: Lisp_Object) -> EMACS_INT;
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct emacs_globals {
+    pub f_V_comp_no_native_file_h: Lisp_Object,
+    pub f_Vafter_change_functions: Lisp_Object,
+    pub f_Vafter_delete_frame_functions: Lisp_Object,
+    pub f_Vafter_init_time: Lisp_Object,
+    pub f_Vafter_insert_file_functions: Lisp_Object,
+    pub f_Vafter_load_alist: Lisp_Object,
+    pub f_Valternate_fontname_alist: Lisp_Object,
+    pub f_Vambiguous_width_chars: Lisp_Object,
+    pub f_Vauto_composition_emoji_eligible_codepoints: Lisp_Object,
+    pub f_Vauto_composition_function: Lisp_Object,
+    pub f_Vauto_composition_mode: Lisp_Object,
+    pub f_Vauto_fill_chars: Lisp_Object,
+    pub f_Vauto_resize_tab_bars: Lisp_Object,
+    pub f_Vauto_resize_tool_bars: Lisp_Object,
+    pub f_Vauto_save_include_big_deletions: Lisp_Object,
+    pub f_Vauto_save_list_file_name: Lisp_Object,
+    pub f_Vauto_save_timeout: Lisp_Object,
+    pub f_Vauto_save_visited_file_name: Lisp_Object,
+    pub f_Vbefore_change_functions: Lisp_Object,
+    pub f_Vbefore_init_time: Lisp_Object,
+    pub f_Vblink_cursor_alist: Lisp_Object,
+    pub f_Vbuffer_access_fontified_property: Lisp_Object,
+    pub f_Vbuffer_access_fontify_functions: Lisp_Object,
+    pub f_Vbuffer_list_update_hook: Lisp_Object,
+    pub f_Vbuild_files: Lisp_Object,
+    pub f_Vbyte_boolean_vars: Lisp_Object,
+    pub f_Vbyte_code_meter: Lisp_Object,
+    pub f_Vbytecomp_version_regexp: Lisp_Object,
+    pub f_Vcase_fold_search: Lisp_Object,
+    pub f_Vchange_major_mode_hook: Lisp_Object,
+    pub f_Vchar_code_property_alist: Lisp_Object,
+    pub f_Vchar_property_alias_alist: Lisp_Object,
+    pub f_Vchar_script_table: Lisp_Object,
+    pub f_Vchar_width_table: Lisp_Object,
+    pub f_Vcharset_list: Lisp_Object,
+    pub f_Vcharset_map_path: Lisp_Object,
+    pub f_Vcharset_revision_table: Lisp_Object,
+    pub f_Vclear_message_function: Lisp_Object,
+    pub f_Vclone_indirect_buffer_hook: Lisp_Object,
+    pub f_Vcode_conversion_map_vector: Lisp_Object,
+    pub f_Vcoding_category_list: Lisp_Object,
+    pub f_Vcoding_system_alist: Lisp_Object,
+    pub f_Vcoding_system_for_read: Lisp_Object,
+    pub f_Vcoding_system_for_write: Lisp_Object,
+    pub f_Vcoding_system_list: Lisp_Object,
+    pub f_Vcombine_after_change_calls: Lisp_Object,
+    pub f_Vcommand_debug_status: Lisp_Object,
+    pub f_Vcommand_error_function: Lisp_Object,
+    pub f_Vcommand_history: Lisp_Object,
+    pub f_Vcommand_line_args: Lisp_Object,
+    pub f_Vcomment_use_syntax_ppss: Lisp_Object,
+    pub f_Vcomp__hashdollar: Lisp_Object,
+    pub f_Vcomp_abi_hash: Lisp_Object,
+    pub f_Vcomp_ctxt: Lisp_Object,
+    pub f_Vcomp_deferred_pending_h: Lisp_Object,
+    pub f_Vcomp_eln_to_el_h: Lisp_Object,
+    pub f_Vcomp_installed_trampolines_h: Lisp_Object,
+    pub f_Vcomp_loaded_comp_units_h: Lisp_Object,
+    pub f_Vcomp_native_version_dir: Lisp_Object,
+    pub f_Vcomp_subr_arities_h: Lisp_Object,
+    pub f_Vcomp_subr_list: Lisp_Object,
+    pub f_Vcompletion_ignored_extensions: Lisp_Object,
+    pub f_Vcompletion_regexp_list: Lisp_Object,
+    pub f_Vcompose_chars_after_function: Lisp_Object,
+    pub f_Vcomposition_function_table: Lisp_Object,
+    pub f_Vconfigure_info_directory: Lisp_Object,
+    pub f_Vctags_program_name: Lisp_Object,
+    pub f_Vcurrent_iso639_language: Lisp_Object,
+    pub f_Vcurrent_key_remap_sequence: Lisp_Object,
+    pub f_Vcurrent_load_list: Lisp_Object,
+    pub f_Vcurrent_minibuffer_command: Lisp_Object,
+    pub f_Vcurrent_prefix_arg: Lisp_Object,
+    pub f_Vdata_directory: Lisp_Object,
+    pub f_Vdeactivate_mark: Lisp_Object,
+    pub f_Vdebug_ignored_errors: Lisp_Object,
+    pub f_Vdebug_on_error: Lisp_Object,
+    pub f_Vdebug_on_event: Lisp_Object,
+    pub f_Vdebug_on_message: Lisp_Object,
+    pub f_Vdebug_on_signal: Lisp_Object,
+    pub f_Vdebugger: Lisp_Object,
+    pub f_Vdefault_file_name_coding_system: Lisp_Object,
+    pub f_Vdefault_frame_alist: Lisp_Object,
+    pub f_Vdefault_frame_scroll_bars: Lisp_Object,
+    pub f_Vdefault_process_coding_system: Lisp_Object,
+    pub f_Vdefault_text_properties: Lisp_Object,
+    pub f_Vdelayed_warnings_list: Lisp_Object,
+    pub f_Vdelete_frame_functions: Lisp_Object,
+    pub f_Vdelete_terminal_functions: Lisp_Object,
+    pub f_Vdescribe_bindings_check_shadowing_in_ranges: Lisp_Object,
+    pub f_Vdisable_point_adjustment: Lisp_Object,
+    pub f_Vdisplay_fill_column_indicator_character: Lisp_Object,
+    pub f_Vdisplay_fill_column_indicator_column: Lisp_Object,
+    pub f_Vdisplay_line_numbers: Lisp_Object,
+    pub f_Vdisplay_line_numbers_current_absolute: Lisp_Object,
+    pub f_Vdisplay_line_numbers_width: Lisp_Object,
+    pub f_Vdisplay_monitors_changed_functions: Lisp_Object,
+    pub f_Vdisplay_pixels_per_inch: Lisp_Object,
+    pub f_Vdoc_directory: Lisp_Object,
+    pub f_Vdoc_file_name: Lisp_Object,
+    pub f_Vdouble_click_time: Lisp_Object,
+    pub f_Vdump_mode: Lisp_Object,
+    pub f_Vdynamic_library_alist: Lisp_Object,
+    pub f_Vdynamic_library_suffixes: Lisp_Object,
+    pub f_Vebrowse_program_name: Lisp_Object,
+    pub f_Vecho_keystrokes: Lisp_Object,
+    pub f_Vemacs_copyright: Lisp_Object,
+    pub f_Vemacs_version: Lisp_Object,
+    pub f_Vemacsclient_program_name: Lisp_Object,
+    pub f_Vemulation_mode_map_alists: Lisp_Object,
+    pub f_Venable_character_translation: Lisp_Object,
+    pub f_Venable_disabled_menus_and_buttons: Lisp_Object,
+    pub f_Vetags_program_name: Lisp_Object,
+    pub f_Veval_buffer_list: Lisp_Object,
+    pub f_Vexec_directory: Lisp_Object,
+    pub f_Vexec_path: Lisp_Object,
+    pub f_Vexec_suffixes: Lisp_Object,
+    pub f_Vexecuting_kbd_macro: Lisp_Object,
+    pub f_Vface_default_stipple: Lisp_Object,
+    pub f_Vface_font_lax_matched_attributes: Lisp_Object,
+    pub f_Vface_font_rescale_alist: Lisp_Object,
+    pub f_Vface_ignored_fonts: Lisp_Object,
+    pub f_Vface_new_frame_defaults: Lisp_Object,
+    pub f_Vface_remapping_alist: Lisp_Object,
+    pub f_Vfeatures: Lisp_Object,
+    pub f_Vfile_coding_system_alist: Lisp_Object,
+    pub f_Vfile_name_coding_system: Lisp_Object,
+    pub f_Vfile_name_handler_alist: Lisp_Object,
+    pub f_Vfind_word_boundary_function_table: Lisp_Object,
+    pub f_Vfirst_change_hook: Lisp_Object,
+    pub f_Vfloat_output_format: Lisp_Object,
+    pub f_Vfont_encoding_alist: Lisp_Object,
+    pub f_Vfont_encoding_charset_alist: Lisp_Object,
+    pub f_Vfont_log: Lisp_Object,
+    pub f_Vfont_slant_table: Lisp_Object,
+    pub f_Vfont_weight_table: Lisp_Object,
+    pub f_Vfont_width_table: Lisp_Object,
+    pub f_Vfontification_functions: Lisp_Object,
+    pub f_Vfontset_alias_alist: Lisp_Object,
+    pub f_Vforward_comment_function: Lisp_Object,
+    pub f_Vframe_alpha_lower_limit: Lisp_Object,
+    pub f_Vframe_title_format: Lisp_Object,
+    pub f_Vfringe_bitmaps: Lisp_Object,
+    pub f_Vfunction_key_map: Lisp_Object,
+    pub f_Vgc_cons_percentage: Lisp_Object,
+    pub f_Vgc_elapsed: Lisp_Object,
+    pub f_Vglobal_disable_point_adjustment: Lisp_Object,
+    pub f_Vglobal_mode_string: Lisp_Object,
+    pub f_Vglyph_table: Lisp_Object,
+    pub f_Vglyphless_char_display: Lisp_Object,
+    pub f_Vhelp_char: Lisp_Object,
+    pub f_Vhelp_event_list: Lisp_Object,
+    pub f_Vhelp_form: Lisp_Object,
+    pub f_Vhexl_program_name: Lisp_Object,
+    pub f_Vhistory_add_new_input: Lisp_Object,
+    pub f_Vhistory_length: Lisp_Object,
+    pub f_Vhourglass_delay: Lisp_Object,
+    pub f_Vhscroll_step: Lisp_Object,
+    pub f_Vicon_title_format: Lisp_Object,
+    pub f_Vignore_relative_composition: Lisp_Object,
+    pub f_Vimage_cache_eviction_delay: Lisp_Object,
+    pub f_Vimage_scaling_factor: Lisp_Object,
+    pub f_Vimage_types: Lisp_Object,
+    pub f_Vinhibit_changing_match_data: Lisp_Object,
+    pub f_Vinhibit_debugger: Lisp_Object,
+    pub f_Vinhibit_field_text_motion: Lisp_Object,
+    pub f_Vinhibit_file_name_handlers: Lisp_Object,
+    pub f_Vinhibit_file_name_operation: Lisp_Object,
+    pub f_Vinhibit_point_motion_hooks: Lisp_Object,
+    pub f_Vinhibit_quit: Lisp_Object,
+    pub f_Vinhibit_read_only: Lisp_Object,
+    pub f_Vinhibit_redisplay: Lisp_Object,
+    pub f_Vinitial_environment: Lisp_Object,
+    pub f_Vinitial_window_system: Lisp_Object,
+    pub f_Vinput_method_function: Lisp_Object,
+    pub f_Vinput_method_previous_message: Lisp_Object,
+    pub f_Vinstallation_directory: Lisp_Object,
+    pub f_Vinternal__daemon_sockname: Lisp_Object,
+    pub f_Vinternal__top_level_message: Lisp_Object,
+    pub f_Vinternal_interpreter_environment: Lisp_Object,
+    pub f_Vinternal_make_interpreted_closure_function: Lisp_Object,
+    pub f_Vinterrupt_process_functions: Lisp_Object,
+    pub f_Vinvocation_directory: Lisp_Object,
+    pub f_Vinvocation_name: Lisp_Object,
+    pub f_Vkbd_macro_termination_hook: Lisp_Object,
+    pub f_Vkey_translation_map: Lisp_Object,
+    pub f_Vkill_buffer_query_functions: Lisp_Object,
+    pub f_Vkill_emacs_hook: Lisp_Object,
+    pub f_Vlast_code_conversion_error: Lisp_Object,
+    pub f_Vlast_coding_system_used: Lisp_Object,
+    pub f_Vlast_event_device: Lisp_Object,
+    pub f_Vlast_event_frame: Lisp_Object,
+    pub f_Vlatin_extra_code_table: Lisp_Object,
+    pub f_Vlexical_binding: Lisp_Object,
+    pub f_Vlibgnutls_version: Lisp_Object,
+    pub f_Vline_number_display_limit: Lisp_Object,
+    pub f_Vline_prefix: Lisp_Object,
+    pub f_Vload_file_name: Lisp_Object,
+    pub f_Vload_file_rep_suffixes: Lisp_Object,
+    pub f_Vload_history: Lisp_Object,
+    pub f_Vload_path: Lisp_Object,
+    pub f_Vload_read_function: Lisp_Object,
+    pub f_Vload_source_file_function: Lisp_Object,
+    pub f_Vload_suffixes: Lisp_Object,
+    pub f_Vload_true_file_name: Lisp_Object,
+    pub f_Vlocale_coding_system: Lisp_Object,
+    pub f_Vlong_line_threshold: Lisp_Object,
+    pub f_Vlread_unescaped_character_literals: Lisp_Object,
+    pub f_Vmacroexp__dynvars: Lisp_Object,
+    pub f_Vmain_thread: Lisp_Object,
+    pub f_Vmake_cursor_line_fully_visible: Lisp_Object,
+    pub f_Vmake_pointer_invisible: Lisp_Object,
+    pub f_Vmark_even_if_inactive: Lisp_Object,
+    pub f_Vmax_image_size: Lisp_Object,
+    pub f_Vmax_mini_window_height: Lisp_Object,
+    pub f_Vmaximum_scroll_margin: Lisp_Object,
+    pub f_Vmemory_full: Lisp_Object,
+    pub f_Vmemory_signal_data: Lisp_Object,
+    pub f_Vmenu_bar_final_items: Lisp_Object,
+    pub f_Vmenu_bar_mode: Lisp_Object,
+    pub f_Vmenu_bar_update_hook: Lisp_Object,
+    pub f_Vmenu_updating_frame: Lisp_Object,
+    pub f_Vmessage_log_max: Lisp_Object,
+    pub f_Vmessages_buffer_name: Lisp_Object,
+    pub f_Vminibuf_scroll_window: Lisp_Object,
+    pub f_Vminibuffer_completing_file_name: Lisp_Object,
+    pub f_Vminibuffer_completion_confirm: Lisp_Object,
+    pub f_Vminibuffer_completion_predicate: Lisp_Object,
+    pub f_Vminibuffer_completion_table: Lisp_Object,
+    pub f_Vminibuffer_exit_hook: Lisp_Object,
+    pub f_Vminibuffer_help_form: Lisp_Object,
+    pub f_Vminibuffer_history_position: Lisp_Object,
+    pub f_Vminibuffer_history_variable: Lisp_Object,
+    pub f_Vminibuffer_local_map: Lisp_Object,
+    pub f_Vminibuffer_message_timeout: Lisp_Object,
+    pub f_Vminibuffer_prompt_properties: Lisp_Object,
+    pub f_Vminibuffer_setup_hook: Lisp_Object,
+    pub f_Vminor_mode_map_alist: Lisp_Object,
+    pub f_Vminor_mode_overriding_map_alist: Lisp_Object,
+    pub f_Vmode_line_compact: Lisp_Object,
+    pub f_Vmodule_file_suffix: Lisp_Object,
+    pub f_Vmost_negative_fixnum: Lisp_Object,
+    pub f_Vmost_positive_fixnum: Lisp_Object,
+    pub f_Vmouse_autoselect_window: Lisp_Object,
+    pub f_Vmouse_highlight: Lisp_Object,
+    pub f_Vmouse_leave_buffer_hook: Lisp_Object,
+    pub f_Vmouse_position_function: Lisp_Object,
+    pub f_Vmove_frame_functions: Lisp_Object,
+    pub f_Vmovemail_program_name: Lisp_Object,
+    pub f_Vnative_comp_eln_load_path: Lisp_Object,
+    pub f_Vnative_comp_enable_subr_trampolines: Lisp_Object,
+    pub f_Vnetwork_coding_system_alist: Lisp_Object,
+    pub f_Vnobreak_char_display: Lisp_Object,
+    pub f_Vns_drag_motion_function: Lisp_Object,
+    pub f_Vns_icon_type_alist: Lisp_Object,
+    pub f_Vns_scroll_event_delta_factor: Lisp_Object,
+    pub f_Vns_sent_selection_hooks: Lisp_Object,
+    pub f_Vns_version_string: Lisp_Object,
+    pub f_Vobarray: Lisp_Object,
+    pub f_Voperating_system_release: Lisp_Object,
+    pub f_Votf_script_alist: Lisp_Object,
+    pub f_Vother_window_scroll_buffer: Lisp_Object,
+    pub f_Vother_window_scroll_default: Lisp_Object,
+    pub f_Voverflow_newline_into_fringe: Lisp_Object,
+    pub f_Voverlay_arrow_position: Lisp_Object,
+    pub f_Voverlay_arrow_string: Lisp_Object,
+    pub f_Voverlay_arrow_variable_list: Lisp_Object,
+    pub f_Voverriding_local_map: Lisp_Object,
+    pub f_Voverriding_local_map_menu_flag: Lisp_Object,
+    pub f_Voverriding_plist_environment: Lisp_Object,
+    pub f_Vpath_separator: Lisp_Object,
+    pub f_Vpdumper_fingerprint: Lisp_Object,
+    pub f_Vpolling_period: Lisp_Object,
+    pub f_Vpost_command_hook: Lisp_Object,
+    pub f_Vpost_gc_hook: Lisp_Object,
+    pub f_Vpost_select_region_hook: Lisp_Object,
+    pub f_Vpost_self_insert_hook: Lisp_Object,
+    pub f_Vpre_command_hook: Lisp_Object,
+    pub f_Vpre_redisplay_function: Lisp_Object,
+    pub f_Vprefix_help_command: Lisp_Object,
+    pub f_Vpreloaded_file_list: Lisp_Object,
+    pub f_Vprint__unreadable_callback_buffer: Lisp_Object,
+    pub f_Vprint_charset_text_property: Lisp_Object,
+    pub f_Vprint_circle: Lisp_Object,
+    pub f_Vprint_continuous_numbering: Lisp_Object,
+    pub f_Vprint_gensym: Lisp_Object,
+    pub f_Vprint_length: Lisp_Object,
+    pub f_Vprint_level: Lisp_Object,
+    pub f_Vprint_number_table: Lisp_Object,
+    pub f_Vprint_unreadable_function: Lisp_Object,
+    pub f_Vprintable_chars: Lisp_Object,
+    pub f_Vprocess_adaptive_read_buffering: Lisp_Object,
+    pub f_Vprocess_coding_system_alist: Lisp_Object,
+    pub f_Vprocess_connection_type: Lisp_Object,
+    pub f_Vprocess_environment: Lisp_Object,
+    pub f_Vpurify_flag: Lisp_Object,
+    pub f_Vquit_flag: Lisp_Object,
+    pub f_Vrcs2log_program_name: Lisp_Object,
+    pub f_Vread_buffer_function: Lisp_Object,
+    pub f_Vread_circle: Lisp_Object,
+    pub f_Vread_expression_history: Lisp_Object,
+    pub f_Vread_hide_char: Lisp_Object,
+    pub f_Vread_symbol_shorthands: Lisp_Object,
+    pub f_Vreal_this_command: Lisp_Object,
+    pub f_Vrecenter_redisplay: Lisp_Object,
+    pub f_Vredisplay__all_windows_cause: Lisp_Object,
+    pub f_Vredisplay__mode_lines_cause: Lisp_Object,
+    pub f_Vregion_extract_function: Lisp_Object,
+    pub f_Vreport_emacs_bug_address: Lisp_Object,
+    pub f_Vresize_mini_windows: Lisp_Object,
+    pub f_Vresume_tty_functions: Lisp_Object,
+    pub f_Vring_bell_function: Lisp_Object,
+    pub f_Vsaved_region_selection: Lisp_Object,
+    pub f_Vscalable_fonts_allowed: Lisp_Object,
+    pub f_Vscript_representative_chars: Lisp_Object,
+    pub f_Vscroll_preserve_screen_position: Lisp_Object,
+    pub f_Vsearch_spaces_regexp: Lisp_Object,
+    pub f_Vselect_active_regions: Lisp_Object,
+    pub f_Vselect_safe_coding_system_function: Lisp_Object,
+    pub f_Vselection_inhibit_update_commands: Lisp_Object,
+    pub f_Vset_auto_coding_function: Lisp_Object,
+    pub f_Vset_message_function: Lisp_Object,
+    pub f_Vshared_game_score_directory: Lisp_Object,
+    pub f_Vshell_file_name: Lisp_Object,
+    pub f_Vshow_help_function: Lisp_Object,
+    pub f_Vshow_trailing_whitespace: Lisp_Object,
+    pub f_Vsignal_hook_function: Lisp_Object,
+    pub f_Vsignal_process_functions: Lisp_Object,
+    pub f_Vsource_directory: Lisp_Object,
+    pub f_Vspecial_event_map: Lisp_Object,
+    pub f_Vstandard_display_table: Lisp_Object,
+    pub f_Vstandard_input: Lisp_Object,
+    pub f_Vstandard_output: Lisp_Object,
+    pub f_Vstandard_translation_table_for_decode: Lisp_Object,
+    pub f_Vstandard_translation_table_for_encode: Lisp_Object,
+    pub f_Vsuspend_tty_functions: Lisp_Object,
+    pub f_Vsystem_configuration: Lisp_Object,
+    pub f_Vsystem_configuration_features: Lisp_Object,
+    pub f_Vsystem_configuration_options: Lisp_Object,
+    pub f_Vsystem_messages_locale: Lisp_Object,
+    pub f_Vsystem_name: Lisp_Object,
+    pub f_Vsystem_time_locale: Lisp_Object,
+    pub f_Vsystem_type: Lisp_Object,
+    pub f_Vtab_bar_border: Lisp_Object,
+    pub f_Vtab_bar_button_margin: Lisp_Object,
+    pub f_Vtab_bar_mode: Lisp_Object,
+    pub f_Vtab_bar_position: Lisp_Object,
+    pub f_Vtab_bar_separator_image_expression: Lisp_Object,
+    pub f_Vtemp_buffer_show_function: Lisp_Object,
+    pub f_Vtemporary_file_directory: Lisp_Object,
+    pub f_Vterminal_frame: Lisp_Object,
+    pub f_Vtext_property_default_nonsticky: Lisp_Object,
+    pub f_Vtext_quoting_style: Lisp_Object,
+    pub f_Vthis_command: Lisp_Object,
+    pub f_Vthis_command_keys_shift_translated: Lisp_Object,
+    pub f_Vthis_original_command: Lisp_Object,
+    pub f_Vthrow_on_input: Lisp_Object,
+    pub f_Vtimer_idle_list: Lisp_Object,
+    pub f_Vtimer_list: Lisp_Object,
+    pub f_Vtool_bar_border: Lisp_Object,
+    pub f_Vtool_bar_button_margin: Lisp_Object,
+    pub f_Vtool_bar_mode: Lisp_Object,
+    pub f_Vtool_bar_separator_image_expression: Lisp_Object,
+    pub f_Vtool_bar_style: Lisp_Object,
+    pub f_Vtop_level: Lisp_Object,
+    pub f_Vtransient_mark_mode: Lisp_Object,
+    pub f_Vtranslation_hash_table_vector: Lisp_Object,
+    pub f_Vtranslation_table_for_input: Lisp_Object,
+    pub f_Vtranslation_table_vector: Lisp_Object,
+    pub f_Vtreesit_extra_load_path: Lisp_Object,
+    pub f_Vtreesit_language_remap_alist: Lisp_Object,
+    pub f_Vtreesit_load_name_override_list: Lisp_Object,
+    pub f_Vtreesit_thing_settings: Lisp_Object,
+    pub f_Vtruncate_partial_width_windows: Lisp_Object,
+    pub f_Vtty_defined_color_alist: Lisp_Object,
+    pub f_Vtty_erase_char: Lisp_Object,
+    pub f_Vundo_outer_limit: Lisp_Object,
+    pub f_Vundo_outer_limit_function: Lisp_Object,
+    pub f_Vunicode_category_table: Lisp_Object,
+    pub f_Vunread_command_events: Lisp_Object,
+    pub f_Vunread_input_method_events: Lisp_Object,
+    pub f_Vunread_post_input_method_events: Lisp_Object,
+    pub f_Vuse_default_ascent: Lisp_Object,
+    pub f_Vuser_full_name: Lisp_Object,
+    pub f_Vuser_init_file: Lisp_Object,
+    pub f_Vuser_login_name: Lisp_Object,
+    pub f_Vuser_real_login_name: Lisp_Object,
+    pub f_Vvalues: Lisp_Object,
+    pub f_Vvertical_centering_font_regexp: Lisp_Object,
+    pub f_Vvoid_text_area_pointer: Lisp_Object,
+    pub f_Vwhere_is_preferred_modifier: Lisp_Object,
+    pub f_Vwhile_no_input_ignore_events: Lisp_Object,
+    pub f_Vwindow_buffer_change_functions: Lisp_Object,
+    pub f_Vwindow_combination_limit: Lisp_Object,
+    pub f_Vwindow_combination_resize: Lisp_Object,
+    pub f_Vwindow_configuration_change_hook: Lisp_Object,
+    pub f_Vwindow_persistent_parameters: Lisp_Object,
+    pub f_Vwindow_point_insertion_type: Lisp_Object,
+    pub f_Vwindow_scroll_functions: Lisp_Object,
+    pub f_Vwindow_selection_change_functions: Lisp_Object,
+    pub f_Vwindow_size_change_functions: Lisp_Object,
+    pub f_Vwindow_state_change_functions: Lisp_Object,
+    pub f_Vwindow_state_change_hook: Lisp_Object,
+    pub f_Vword_combining_categories: Lisp_Object,
+    pub f_Vword_separating_categories: Lisp_Object,
+    pub f_Vwrap_prefix: Lisp_Object,
+    pub f_Vwrite_region_annotate_functions: Lisp_Object,
+    pub f_Vwrite_region_annotations_so_far: Lisp_Object,
+    pub f_Vwrite_region_post_annotation_function: Lisp_Object,
+    pub f_Vx_bitmap_file_path: Lisp_Object,
+    pub f_Vx_max_tooltip_size: Lisp_Object,
+    pub f_Vx_pre_popup_menu_hook: Lisp_Object,
+    pub f_Vx_resource_class: Lisp_Object,
+    pub f_Vx_resource_name: Lisp_Object,
+    pub f_Vx_show_tooltip_timeout: Lisp_Object,
+    pub f_Vx_toolkit_scroll_bars: Lisp_Object,
+    pub f_Vyes_or_no_prompt: Lisp_Object,
+    pub f_automatic_hscrolling: Lisp_Object,
+    pub f_eol_mnemonic_dos: Lisp_Object,
+    pub f_eol_mnemonic_mac: Lisp_Object,
+    pub f_eol_mnemonic_undecided: Lisp_Object,
+    pub f_eol_mnemonic_unix: Lisp_Object,
+    pub f_expose_hidden_buffer: Lisp_Object,
+    pub f_focus_follows_mouse: Lisp_Object,
+    pub f_frame_inhibit_implied_resize: Lisp_Object,
+    pub f_frame_internal_parameters: Lisp_Object,
+    pub f_frame_size_history: Lisp_Object,
+    pub f_iconify_child_frame: Lisp_Object,
+    pub f_last_command_event: Lisp_Object,
+    pub f_last_input_event: Lisp_Object,
+    pub f_last_nonmenu_event: Lisp_Object,
+    pub f_menu_prompt_more_char: Lisp_Object,
+    pub f_meta_prefix_char: Lisp_Object,
+    pub f_minibuffer_follows_selected_frame: Lisp_Object,
+    pub f_ns_alternate_modifier: Lisp_Object,
+    pub f_ns_antialias_text: Lisp_Object,
+    pub f_ns_auto_hide_menu_bar: Lisp_Object,
+    pub f_ns_command_modifier: Lisp_Object,
+    pub f_ns_confirm_quit: Lisp_Object,
+    pub f_ns_control_modifier: Lisp_Object,
+    pub f_ns_function_modifier: Lisp_Object,
+    pub f_ns_input_file: Lisp_Object,
+    pub f_ns_input_font: Lisp_Object,
+    pub f_ns_input_fontsize: Lisp_Object,
+    pub f_ns_input_line: Lisp_Object,
+    pub f_ns_input_spi_arg: Lisp_Object,
+    pub f_ns_input_spi_name: Lisp_Object,
+    pub f_ns_mwheel_line_height: Lisp_Object,
+    pub f_ns_right_alternate_modifier: Lisp_Object,
+    pub f_ns_right_command_modifier: Lisp_Object,
+    pub f_ns_right_control_modifier: Lisp_Object,
+    pub f_ns_use_thin_smoothing: Lisp_Object,
+    pub f_ns_working_text: Lisp_Object,
+    pub f_resize_mini_frames: Lisp_Object,
+    pub f_track_mouse: Lisp_Object,
+    pub f_window_dead_windows_table: Lisp_Object,
+    pub f_window_restore_killed_buffer_windows: Lisp_Object,
+    pub f_auto_save_interval: intmax_t,
+    pub f_baud_rate: intmax_t,
+    pub f_cons_cells_consed: intmax_t,
+    pub f_debug_end_pos: intmax_t,
+    pub f_display_line_numbers_major_tick: intmax_t,
+    pub f_display_line_numbers_minor_tick: intmax_t,
+    pub f_display_line_numbers_offset: intmax_t,
+    pub f_double_click_fuzz: intmax_t,
+    pub f_emacs_scroll_step: intmax_t,
+    pub f_executing_kbd_macro_index: intmax_t,
+    pub f_extra_keyboard_modifiers: intmax_t,
+    pub f_face_near_same_color_threshold: intmax_t,
+    pub f_floats_consed: intmax_t,
+    pub f_gc_cons_threshold: intmax_t,
+    pub f_gcs_done: intmax_t,
+    pub f_global_gnutls_log_level: intmax_t,
+    pub f_hscroll_margin: intmax_t,
+    pub f_imagemagick_render_type: intmax_t,
+    pub f_integer_width: intmax_t,
+    pub f_intervals_consed: intmax_t,
+    pub f_large_hscroll_threshold: intmax_t,
+    pub f_line_number_display_limit_width: intmax_t,
+    pub f_lisp_eval_depth_reserve: intmax_t,
+    pub f_long_line_optimizations_bol_search_limit: intmax_t,
+    pub f_long_line_optimizations_region_size: intmax_t,
+    pub f_max_lisp_eval_depth: intmax_t,
+    pub f_max_redisplay_ticks: intmax_t,
+    pub f_next_screen_context_lines: intmax_t,
+    pub f_num_input_keys: intmax_t,
+    pub f_num_nonmacro_input_events: intmax_t,
+    pub f_overline_margin: intmax_t,
+    pub f_process_error_pause_time: intmax_t,
+    pub f_profiler_log_size: intmax_t,
+    pub f_profiler_max_stack_depth: intmax_t,
+    pub f_pure_bytes_used: intmax_t,
+    pub f_read_process_output_max: intmax_t,
+    pub f_scroll_conservatively: intmax_t,
+    pub f_scroll_margin: intmax_t,
+    pub f_string_chars_consed: intmax_t,
+    pub f_strings_consed: intmax_t,
+    pub f_symbols_consed: intmax_t,
+    pub f_syntax_propertize__done: intmax_t,
+    pub f_tab_bar_button_relief: intmax_t,
+    pub f_tool_bar_button_relief: intmax_t,
+    pub f_tool_bar_max_label_size: intmax_t,
+    pub f_underline_minimum_offset: intmax_t,
+    pub f_undo_limit: intmax_t,
+    pub f_undo_strong_limit: intmax_t,
+    pub f_vector_cells_consed: intmax_t,
+    pub f_when_entered_debugger: intmax_t,
+    pub f_attempt_orderly_shutdown_on_fatal_signal: bool,
+    pub f_attempt_stack_overflow_recovery: bool,
+    pub f_auto_raise_tab_bar_buttons_p: bool,
+    pub f_auto_raise_tool_bar_buttons_p: bool,
+    pub f_auto_save_no_message: bool,
+    pub f_auto_window_vscroll_p: bool,
+    pub f_backtrace_on_error_noninteractive: bool,
+    pub f_backtrace_on_redisplay_error: bool,
+    pub f_bidi_inhibit_bpa: bool,
+    pub f_binary_as_unsigned: bool,
+    pub f_byte_metering_on: bool,
+    pub f_cannot_suspend: bool,
+    pub f_case_symbols_as_words: bool,
+    pub f_coding_system_require_warning: bool,
+    pub f_comment_end_can_be_escaped: bool,
+    pub f_comp_file_preloaded_p: bool,
+    pub f_comp_sanitizer_active: bool,
+    pub f_completion_ignore_case: bool,
+    pub f_composition_break_at_point: bool,
+    pub f_create_lockfiles: bool,
+    pub f_cross_disabled_images: bool,
+    pub f_current_time_list: bool,
+    pub f_cursor_in_echo_area: bool,
+    pub f_debug_on_next_call: bool,
+    pub f_debug_on_quit: bool,
+    pub f_debugger_may_continue: bool,
+    pub f_debugger_stack_frame_as_list: bool,
+    pub f_delete_auto_save_files: bool,
+    pub f_delete_by_moving_to_trash: bool,
+    pub f_delete_exited_processes: bool,
+    pub f_disable_ascii_optimization: bool,
+    pub f_disable_inhibit_text_conversion: bool,
+    pub f_display_fill_column_indicator: bool,
+    pub f_display_hourglass_p: bool,
+    pub f_display_line_numbers_widen: bool,
+    pub f_display_raw_bytes_as_hex: bool,
+    pub f_echo_keystrokes_help: bool,
+    pub f_enable_recursive_minibuffers: bool,
+    pub f_face_filters_always_match: bool,
+    pub f_fast_but_imprecise_scrolling: bool,
+    pub f_fast_read_process_output: bool,
+    pub f_force_load_messages: bool,
+    pub f_frame_resize_pixelwise: bool,
+    pub f_garbage_collection_messages: bool,
+    pub f_highlight_nonselected_windows: bool,
+    pub f_history_delete_duplicates: bool,
+    pub f_indent_tabs_mode: bool,
+    pub f_inherit_process_coding_system: bool,
+    pub f_inhibit_bidi_mirroring: bool,
+    pub f_inhibit_compacting_font_caches: bool,
+    pub f_inhibit_eol_conversion: bool,
+    pub f_inhibit_eval_during_redisplay: bool,
+    pub f_inhibit_free_realized_faces: bool,
+    pub f_inhibit_interaction: bool,
+    pub f_inhibit_iso_escape_detection: bool,
+    pub f_inhibit_load_charset_map: bool,
+    pub f_inhibit_menubar_update: bool,
+    pub f_inhibit_message: bool,
+    pub f_inhibit_modification_hooks: bool,
+    pub f_inhibit_mouse_event_check: bool,
+    pub f_inhibit_null_byte_detection: bool,
+    pub f_inhibit_record_char: bool,
+    pub f_inhibit_try_cursor_movement: bool,
+    pub f_inhibit_try_window_id: bool,
+    pub f_inhibit_try_window_reusing: bool,
+    pub f_inhibit_x_resources: bool,
+    pub f_input_pending_p_filter_events: bool,
+    pub f_inverse_video: bool,
+    pub f_kill_buffer_delete_auto_save_files: bool,
+    pub f_load_convert_to_unibyte: bool,
+    pub f_load_dangerous_libraries: bool,
+    pub f_load_force_doc_strings: bool,
+    pub f_load_in_progress: bool,
+    pub f_load_no_native: bool,
+    pub f_load_prefer_newer: bool,
+    pub f_lucid__menu_grab_keyboard: bool,
+    pub f_make_window_start_visible: bool,
+    pub f_menu_prompting: bool,
+    pub f_message_truncate_lines: bool,
+    pub f_minibuffer_allow_text_properties: bool,
+    pub f_minibuffer_auto_raise: bool,
+    pub f_mode_line_in_non_selected_windows: bool,
+    pub f_mouse_fine_grained_tracking: bool,
+    pub f_mouse_prefer_closest_glyph: bool,
+    pub f_multibyte_syntax_as_symbol: bool,
+    pub f_multiple_frames: bool,
+    pub f_mwheel_coalesce_scroll_events: bool,
+    pub f_native_comp_jit_compilation: bool,
+    pub f_no_redraw_on_reenter: bool,
+    pub f_nobreak_char_ascii_display: bool,
+    pub f_noninteractive1: bool,
+    pub f_ns_use_fullscreen_animation: bool,
+    pub f_ns_use_mwheel_acceleration: bool,
+    pub f_ns_use_mwheel_momentum: bool,
+    pub f_ns_use_native_fullscreen: bool,
+    pub f_ns_use_proxy_icon: bool,
+    pub f_ns_use_srgb_colorspace: bool,
+    pub f_open_paren_in_column_0_is_defun_start: bool,
+    pub f_parse_sexp_ignore_comments: bool,
+    pub f_parse_sexp_lookup_properties: bool,
+    pub f_print_escape_control_characters: bool,
+    pub f_print_escape_multibyte: bool,
+    pub f_print_escape_newlines: bool,
+    pub f_print_escape_nonascii: bool,
+    pub f_print_integers_as_characters: bool,
+    pub f_print_quoted: bool,
+    pub f_print_symbols_bare: bool,
+    pub f_process_prioritize_lower_fds: bool,
+    pub f_query_all_font_backends: bool,
+    pub f_read_buffer_completion_ignore_case: bool,
+    pub f_read_minibuffer_restore_windows: bool,
+    pub f_record_all_keys: bool,
+    pub f_redisplay__inhibit_bidi: bool,
+    pub f_redisplay_adhoc_scroll_in_resize_mini_windows: bool,
+    pub f_redisplay_skip_fontification_on_input: bool,
+    pub f_redisplay_skip_initial_frame: bool,
+    pub f_scroll_bar_adjust_thumb_portion_p: bool,
+    pub f_scroll_minibuffer_conservatively: bool,
+    pub f_symbols_with_pos_enabled: bool,
+    pub f_system_uses_terminfo: bool,
+    pub f_tab_bar__dragging_in_progress: bool,
+    pub f_text_quoting_flag: bool,
+    pub f_tooltip_reuse_hidden_frame: bool,
+    pub f_translate_upper_case_key_bindings: bool,
+    pub f_tty_menu_calls_mouse_position_function: bool,
+    pub f_undo_inhibit_record_point: bool,
+    pub f_unibyte_display_via_language_environment: bool,
+    pub f_use_default_font_for_symbols: bool,
+    pub f_use_dialog_box: bool,
+    pub f_use_file_dialog: bool,
+    pub f_use_short_answers: bool,
+    pub f_use_system_tooltips: bool,
+    pub f_visible_bell: bool,
+    pub f_visible_cursor: bool,
+    pub f_window_auto_redraw_on_parameter_change: bool,
+    pub f_window_resize_pixelwise: bool,
+    pub f_word_wrap_by_category: bool,
+    pub f_words_include_escapes: bool,
+    pub f_write_region_inhibit_fsync: bool,
+    pub f_x_stretch_cursor_p: bool,
+    pub f_x_underline_at_descent_line: bool,
+    pub f_x_use_underline_position_properties: bool,
+    pub f_xft_ignore_color_fonts: bool,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of emacs_globals"][::std::mem::size_of::<emacs_globals>() - 4192usize];
+    ["Alignment of emacs_globals"][::std::mem::align_of::<emacs_globals>() - 8usize];
+    ["Offset of field: emacs_globals::f_V_comp_no_native_file_h"]
+        [::std::mem::offset_of!(emacs_globals, f_V_comp_no_native_file_h) - 0usize];
+    ["Offset of field: emacs_globals::f_Vafter_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vafter_change_functions) - 8usize];
+    ["Offset of field: emacs_globals::f_Vafter_delete_frame_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vafter_delete_frame_functions) - 16usize];
+    ["Offset of field: emacs_globals::f_Vafter_init_time"]
+        [::std::mem::offset_of!(emacs_globals, f_Vafter_init_time) - 24usize];
+    ["Offset of field: emacs_globals::f_Vafter_insert_file_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vafter_insert_file_functions) - 32usize];
+    ["Offset of field: emacs_globals::f_Vafter_load_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vafter_load_alist) - 40usize];
+    ["Offset of field: emacs_globals::f_Valternate_fontname_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Valternate_fontname_alist) - 48usize];
+    ["Offset of field: emacs_globals::f_Vambiguous_width_chars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vambiguous_width_chars) - 56usize];
+    ["Offset of field: emacs_globals::f_Vauto_composition_emoji_eligible_codepoints"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vauto_composition_emoji_eligible_codepoints
+    ) - 64usize];
+    ["Offset of field: emacs_globals::f_Vauto_composition_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_composition_function) - 72usize];
+    ["Offset of field: emacs_globals::f_Vauto_composition_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_composition_mode) - 80usize];
+    ["Offset of field: emacs_globals::f_Vauto_fill_chars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_fill_chars) - 88usize];
+    ["Offset of field: emacs_globals::f_Vauto_resize_tab_bars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_resize_tab_bars) - 96usize];
+    ["Offset of field: emacs_globals::f_Vauto_resize_tool_bars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_resize_tool_bars) - 104usize];
+    ["Offset of field: emacs_globals::f_Vauto_save_include_big_deletions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_save_include_big_deletions) - 112usize];
+    ["Offset of field: emacs_globals::f_Vauto_save_list_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_save_list_file_name) - 120usize];
+    ["Offset of field: emacs_globals::f_Vauto_save_timeout"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_save_timeout) - 128usize];
+    ["Offset of field: emacs_globals::f_Vauto_save_visited_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vauto_save_visited_file_name) - 136usize];
+    ["Offset of field: emacs_globals::f_Vbefore_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbefore_change_functions) - 144usize];
+    ["Offset of field: emacs_globals::f_Vbefore_init_time"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbefore_init_time) - 152usize];
+    ["Offset of field: emacs_globals::f_Vblink_cursor_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vblink_cursor_alist) - 160usize];
+    ["Offset of field: emacs_globals::f_Vbuffer_access_fontified_property"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbuffer_access_fontified_property) - 168usize];
+    ["Offset of field: emacs_globals::f_Vbuffer_access_fontify_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbuffer_access_fontify_functions) - 176usize];
+    ["Offset of field: emacs_globals::f_Vbuffer_list_update_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbuffer_list_update_hook) - 184usize];
+    ["Offset of field: emacs_globals::f_Vbuild_files"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbuild_files) - 192usize];
+    ["Offset of field: emacs_globals::f_Vbyte_boolean_vars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbyte_boolean_vars) - 200usize];
+    ["Offset of field: emacs_globals::f_Vbyte_code_meter"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbyte_code_meter) - 208usize];
+    ["Offset of field: emacs_globals::f_Vbytecomp_version_regexp"]
+        [::std::mem::offset_of!(emacs_globals, f_Vbytecomp_version_regexp) - 216usize];
+    ["Offset of field: emacs_globals::f_Vcase_fold_search"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcase_fold_search) - 224usize];
+    ["Offset of field: emacs_globals::f_Vchange_major_mode_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vchange_major_mode_hook) - 232usize];
+    ["Offset of field: emacs_globals::f_Vchar_code_property_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vchar_code_property_alist) - 240usize];
+    ["Offset of field: emacs_globals::f_Vchar_property_alias_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vchar_property_alias_alist) - 248usize];
+    ["Offset of field: emacs_globals::f_Vchar_script_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vchar_script_table) - 256usize];
+    ["Offset of field: emacs_globals::f_Vchar_width_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vchar_width_table) - 264usize];
+    ["Offset of field: emacs_globals::f_Vcharset_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcharset_list) - 272usize];
+    ["Offset of field: emacs_globals::f_Vcharset_map_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcharset_map_path) - 280usize];
+    ["Offset of field: emacs_globals::f_Vcharset_revision_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcharset_revision_table) - 288usize];
+    ["Offset of field: emacs_globals::f_Vclear_message_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vclear_message_function) - 296usize];
+    ["Offset of field: emacs_globals::f_Vclone_indirect_buffer_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vclone_indirect_buffer_hook) - 304usize];
+    ["Offset of field: emacs_globals::f_Vcode_conversion_map_vector"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcode_conversion_map_vector) - 312usize];
+    ["Offset of field: emacs_globals::f_Vcoding_category_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcoding_category_list) - 320usize];
+    ["Offset of field: emacs_globals::f_Vcoding_system_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcoding_system_alist) - 328usize];
+    ["Offset of field: emacs_globals::f_Vcoding_system_for_read"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcoding_system_for_read) - 336usize];
+    ["Offset of field: emacs_globals::f_Vcoding_system_for_write"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcoding_system_for_write) - 344usize];
+    ["Offset of field: emacs_globals::f_Vcoding_system_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcoding_system_list) - 352usize];
+    ["Offset of field: emacs_globals::f_Vcombine_after_change_calls"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcombine_after_change_calls) - 360usize];
+    ["Offset of field: emacs_globals::f_Vcommand_debug_status"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcommand_debug_status) - 368usize];
+    ["Offset of field: emacs_globals::f_Vcommand_error_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcommand_error_function) - 376usize];
+    ["Offset of field: emacs_globals::f_Vcommand_history"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcommand_history) - 384usize];
+    ["Offset of field: emacs_globals::f_Vcommand_line_args"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcommand_line_args) - 392usize];
+    ["Offset of field: emacs_globals::f_Vcomment_use_syntax_ppss"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomment_use_syntax_ppss) - 400usize];
+    ["Offset of field: emacs_globals::f_Vcomp__hashdollar"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp__hashdollar) - 408usize];
+    ["Offset of field: emacs_globals::f_Vcomp_abi_hash"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_abi_hash) - 416usize];
+    ["Offset of field: emacs_globals::f_Vcomp_ctxt"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_ctxt) - 424usize];
+    ["Offset of field: emacs_globals::f_Vcomp_deferred_pending_h"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_deferred_pending_h) - 432usize];
+    ["Offset of field: emacs_globals::f_Vcomp_eln_to_el_h"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_eln_to_el_h) - 440usize];
+    ["Offset of field: emacs_globals::f_Vcomp_installed_trampolines_h"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_installed_trampolines_h) - 448usize];
+    ["Offset of field: emacs_globals::f_Vcomp_loaded_comp_units_h"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_loaded_comp_units_h) - 456usize];
+    ["Offset of field: emacs_globals::f_Vcomp_native_version_dir"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_native_version_dir) - 464usize];
+    ["Offset of field: emacs_globals::f_Vcomp_subr_arities_h"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_subr_arities_h) - 472usize];
+    ["Offset of field: emacs_globals::f_Vcomp_subr_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomp_subr_list) - 480usize];
+    ["Offset of field: emacs_globals::f_Vcompletion_ignored_extensions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcompletion_ignored_extensions) - 488usize];
+    ["Offset of field: emacs_globals::f_Vcompletion_regexp_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcompletion_regexp_list) - 496usize];
+    ["Offset of field: emacs_globals::f_Vcompose_chars_after_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcompose_chars_after_function) - 504usize];
+    ["Offset of field: emacs_globals::f_Vcomposition_function_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcomposition_function_table) - 512usize];
+    ["Offset of field: emacs_globals::f_Vconfigure_info_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vconfigure_info_directory) - 520usize];
+    ["Offset of field: emacs_globals::f_Vctags_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vctags_program_name) - 528usize];
+    ["Offset of field: emacs_globals::f_Vcurrent_iso639_language"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcurrent_iso639_language) - 536usize];
+    ["Offset of field: emacs_globals::f_Vcurrent_key_remap_sequence"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcurrent_key_remap_sequence) - 544usize];
+    ["Offset of field: emacs_globals::f_Vcurrent_load_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcurrent_load_list) - 552usize];
+    ["Offset of field: emacs_globals::f_Vcurrent_minibuffer_command"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcurrent_minibuffer_command) - 560usize];
+    ["Offset of field: emacs_globals::f_Vcurrent_prefix_arg"]
+        [::std::mem::offset_of!(emacs_globals, f_Vcurrent_prefix_arg) - 568usize];
+    ["Offset of field: emacs_globals::f_Vdata_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdata_directory) - 576usize];
+    ["Offset of field: emacs_globals::f_Vdeactivate_mark"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdeactivate_mark) - 584usize];
+    ["Offset of field: emacs_globals::f_Vdebug_ignored_errors"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebug_ignored_errors) - 592usize];
+    ["Offset of field: emacs_globals::f_Vdebug_on_error"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebug_on_error) - 600usize];
+    ["Offset of field: emacs_globals::f_Vdebug_on_event"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebug_on_event) - 608usize];
+    ["Offset of field: emacs_globals::f_Vdebug_on_message"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebug_on_message) - 616usize];
+    ["Offset of field: emacs_globals::f_Vdebug_on_signal"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebug_on_signal) - 624usize];
+    ["Offset of field: emacs_globals::f_Vdebugger"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdebugger) - 632usize];
+    ["Offset of field: emacs_globals::f_Vdefault_file_name_coding_system"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdefault_file_name_coding_system) - 640usize];
+    ["Offset of field: emacs_globals::f_Vdefault_frame_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdefault_frame_alist) - 648usize];
+    ["Offset of field: emacs_globals::f_Vdefault_frame_scroll_bars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdefault_frame_scroll_bars) - 656usize];
+    ["Offset of field: emacs_globals::f_Vdefault_process_coding_system"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdefault_process_coding_system) - 664usize];
+    ["Offset of field: emacs_globals::f_Vdefault_text_properties"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdefault_text_properties) - 672usize];
+    ["Offset of field: emacs_globals::f_Vdelayed_warnings_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdelayed_warnings_list) - 680usize];
+    ["Offset of field: emacs_globals::f_Vdelete_frame_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdelete_frame_functions) - 688usize];
+    ["Offset of field: emacs_globals::f_Vdelete_terminal_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdelete_terminal_functions) - 696usize];
+    ["Offset of field: emacs_globals::f_Vdescribe_bindings_check_shadowing_in_ranges"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vdescribe_bindings_check_shadowing_in_ranges
+    )
+        - 704usize];
+    ["Offset of field: emacs_globals::f_Vdisable_point_adjustment"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisable_point_adjustment) - 712usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_fill_column_indicator_character"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vdisplay_fill_column_indicator_character
+    ) - 720usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_fill_column_indicator_column"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisplay_fill_column_indicator_column) - 728usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_line_numbers"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisplay_line_numbers) - 736usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_line_numbers_current_absolute"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vdisplay_line_numbers_current_absolute
+    ) - 744usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_line_numbers_width"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisplay_line_numbers_width) - 752usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_monitors_changed_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisplay_monitors_changed_functions) - 760usize];
+    ["Offset of field: emacs_globals::f_Vdisplay_pixels_per_inch"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdisplay_pixels_per_inch) - 768usize];
+    ["Offset of field: emacs_globals::f_Vdoc_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdoc_directory) - 776usize];
+    ["Offset of field: emacs_globals::f_Vdoc_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdoc_file_name) - 784usize];
+    ["Offset of field: emacs_globals::f_Vdouble_click_time"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdouble_click_time) - 792usize];
+    ["Offset of field: emacs_globals::f_Vdump_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdump_mode) - 800usize];
+    ["Offset of field: emacs_globals::f_Vdynamic_library_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdynamic_library_alist) - 808usize];
+    ["Offset of field: emacs_globals::f_Vdynamic_library_suffixes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vdynamic_library_suffixes) - 816usize];
+    ["Offset of field: emacs_globals::f_Vebrowse_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vebrowse_program_name) - 824usize];
+    ["Offset of field: emacs_globals::f_Vecho_keystrokes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vecho_keystrokes) - 832usize];
+    ["Offset of field: emacs_globals::f_Vemacs_copyright"]
+        [::std::mem::offset_of!(emacs_globals, f_Vemacs_copyright) - 840usize];
+    ["Offset of field: emacs_globals::f_Vemacs_version"]
+        [::std::mem::offset_of!(emacs_globals, f_Vemacs_version) - 848usize];
+    ["Offset of field: emacs_globals::f_Vemacsclient_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vemacsclient_program_name) - 856usize];
+    ["Offset of field: emacs_globals::f_Vemulation_mode_map_alists"]
+        [::std::mem::offset_of!(emacs_globals, f_Vemulation_mode_map_alists) - 864usize];
+    ["Offset of field: emacs_globals::f_Venable_character_translation"]
+        [::std::mem::offset_of!(emacs_globals, f_Venable_character_translation) - 872usize];
+    ["Offset of field: emacs_globals::f_Venable_disabled_menus_and_buttons"]
+        [::std::mem::offset_of!(emacs_globals, f_Venable_disabled_menus_and_buttons) - 880usize];
+    ["Offset of field: emacs_globals::f_Vetags_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vetags_program_name) - 888usize];
+    ["Offset of field: emacs_globals::f_Veval_buffer_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Veval_buffer_list) - 896usize];
+    ["Offset of field: emacs_globals::f_Vexec_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vexec_directory) - 904usize];
+    ["Offset of field: emacs_globals::f_Vexec_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vexec_path) - 912usize];
+    ["Offset of field: emacs_globals::f_Vexec_suffixes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vexec_suffixes) - 920usize];
+    ["Offset of field: emacs_globals::f_Vexecuting_kbd_macro"]
+        [::std::mem::offset_of!(emacs_globals, f_Vexecuting_kbd_macro) - 928usize];
+    ["Offset of field: emacs_globals::f_Vface_default_stipple"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_default_stipple) - 936usize];
+    ["Offset of field: emacs_globals::f_Vface_font_lax_matched_attributes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_font_lax_matched_attributes) - 944usize];
+    ["Offset of field: emacs_globals::f_Vface_font_rescale_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_font_rescale_alist) - 952usize];
+    ["Offset of field: emacs_globals::f_Vface_ignored_fonts"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_ignored_fonts) - 960usize];
+    ["Offset of field: emacs_globals::f_Vface_new_frame_defaults"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_new_frame_defaults) - 968usize];
+    ["Offset of field: emacs_globals::f_Vface_remapping_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vface_remapping_alist) - 976usize];
+    ["Offset of field: emacs_globals::f_Vfeatures"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfeatures) - 984usize];
+    ["Offset of field: emacs_globals::f_Vfile_coding_system_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfile_coding_system_alist) - 992usize];
+    ["Offset of field: emacs_globals::f_Vfile_name_coding_system"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfile_name_coding_system) - 1000usize];
+    ["Offset of field: emacs_globals::f_Vfile_name_handler_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfile_name_handler_alist) - 1008usize];
+    ["Offset of field: emacs_globals::f_Vfind_word_boundary_function_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfind_word_boundary_function_table) - 1016usize];
+    ["Offset of field: emacs_globals::f_Vfirst_change_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfirst_change_hook) - 1024usize];
+    ["Offset of field: emacs_globals::f_Vfloat_output_format"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfloat_output_format) - 1032usize];
+    ["Offset of field: emacs_globals::f_Vfont_encoding_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_encoding_alist) - 1040usize];
+    ["Offset of field: emacs_globals::f_Vfont_encoding_charset_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_encoding_charset_alist) - 1048usize];
+    ["Offset of field: emacs_globals::f_Vfont_log"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_log) - 1056usize];
+    ["Offset of field: emacs_globals::f_Vfont_slant_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_slant_table) - 1064usize];
+    ["Offset of field: emacs_globals::f_Vfont_weight_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_weight_table) - 1072usize];
+    ["Offset of field: emacs_globals::f_Vfont_width_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfont_width_table) - 1080usize];
+    ["Offset of field: emacs_globals::f_Vfontification_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfontification_functions) - 1088usize];
+    ["Offset of field: emacs_globals::f_Vfontset_alias_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfontset_alias_alist) - 1096usize];
+    ["Offset of field: emacs_globals::f_Vforward_comment_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vforward_comment_function) - 1104usize];
+    ["Offset of field: emacs_globals::f_Vframe_alpha_lower_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_Vframe_alpha_lower_limit) - 1112usize];
+    ["Offset of field: emacs_globals::f_Vframe_title_format"]
+        [::std::mem::offset_of!(emacs_globals, f_Vframe_title_format) - 1120usize];
+    ["Offset of field: emacs_globals::f_Vfringe_bitmaps"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfringe_bitmaps) - 1128usize];
+    ["Offset of field: emacs_globals::f_Vfunction_key_map"]
+        [::std::mem::offset_of!(emacs_globals, f_Vfunction_key_map) - 1136usize];
+    ["Offset of field: emacs_globals::f_Vgc_cons_percentage"]
+        [::std::mem::offset_of!(emacs_globals, f_Vgc_cons_percentage) - 1144usize];
+    ["Offset of field: emacs_globals::f_Vgc_elapsed"]
+        [::std::mem::offset_of!(emacs_globals, f_Vgc_elapsed) - 1152usize];
+    ["Offset of field: emacs_globals::f_Vglobal_disable_point_adjustment"]
+        [::std::mem::offset_of!(emacs_globals, f_Vglobal_disable_point_adjustment) - 1160usize];
+    ["Offset of field: emacs_globals::f_Vglobal_mode_string"]
+        [::std::mem::offset_of!(emacs_globals, f_Vglobal_mode_string) - 1168usize];
+    ["Offset of field: emacs_globals::f_Vglyph_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vglyph_table) - 1176usize];
+    ["Offset of field: emacs_globals::f_Vglyphless_char_display"]
+        [::std::mem::offset_of!(emacs_globals, f_Vglyphless_char_display) - 1184usize];
+    ["Offset of field: emacs_globals::f_Vhelp_char"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhelp_char) - 1192usize];
+    ["Offset of field: emacs_globals::f_Vhelp_event_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhelp_event_list) - 1200usize];
+    ["Offset of field: emacs_globals::f_Vhelp_form"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhelp_form) - 1208usize];
+    ["Offset of field: emacs_globals::f_Vhexl_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhexl_program_name) - 1216usize];
+    ["Offset of field: emacs_globals::f_Vhistory_add_new_input"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhistory_add_new_input) - 1224usize];
+    ["Offset of field: emacs_globals::f_Vhistory_length"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhistory_length) - 1232usize];
+    ["Offset of field: emacs_globals::f_Vhourglass_delay"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhourglass_delay) - 1240usize];
+    ["Offset of field: emacs_globals::f_Vhscroll_step"]
+        [::std::mem::offset_of!(emacs_globals, f_Vhscroll_step) - 1248usize];
+    ["Offset of field: emacs_globals::f_Vicon_title_format"]
+        [::std::mem::offset_of!(emacs_globals, f_Vicon_title_format) - 1256usize];
+    ["Offset of field: emacs_globals::f_Vignore_relative_composition"]
+        [::std::mem::offset_of!(emacs_globals, f_Vignore_relative_composition) - 1264usize];
+    ["Offset of field: emacs_globals::f_Vimage_cache_eviction_delay"]
+        [::std::mem::offset_of!(emacs_globals, f_Vimage_cache_eviction_delay) - 1272usize];
+    ["Offset of field: emacs_globals::f_Vimage_scaling_factor"]
+        [::std::mem::offset_of!(emacs_globals, f_Vimage_scaling_factor) - 1280usize];
+    ["Offset of field: emacs_globals::f_Vimage_types"]
+        [::std::mem::offset_of!(emacs_globals, f_Vimage_types) - 1288usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_changing_match_data"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_changing_match_data) - 1296usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_debugger"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_debugger) - 1304usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_field_text_motion"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_field_text_motion) - 1312usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_file_name_handlers"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_file_name_handlers) - 1320usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_file_name_operation"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_file_name_operation) - 1328usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_point_motion_hooks"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_point_motion_hooks) - 1336usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_quit"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_quit) - 1344usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_read_only"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_read_only) - 1352usize];
+    ["Offset of field: emacs_globals::f_Vinhibit_redisplay"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinhibit_redisplay) - 1360usize];
+    ["Offset of field: emacs_globals::f_Vinitial_environment"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinitial_environment) - 1368usize];
+    ["Offset of field: emacs_globals::f_Vinitial_window_system"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinitial_window_system) - 1376usize];
+    ["Offset of field: emacs_globals::f_Vinput_method_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinput_method_function) - 1384usize];
+    ["Offset of field: emacs_globals::f_Vinput_method_previous_message"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinput_method_previous_message) - 1392usize];
+    ["Offset of field: emacs_globals::f_Vinstallation_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinstallation_directory) - 1400usize];
+    ["Offset of field: emacs_globals::f_Vinternal__daemon_sockname"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinternal__daemon_sockname) - 1408usize];
+    ["Offset of field: emacs_globals::f_Vinternal__top_level_message"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinternal__top_level_message) - 1416usize];
+    ["Offset of field: emacs_globals::f_Vinternal_interpreter_environment"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinternal_interpreter_environment) - 1424usize];
+    ["Offset of field: emacs_globals::f_Vinternal_make_interpreted_closure_function"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vinternal_make_interpreted_closure_function
+    )
+        - 1432usize];
+    ["Offset of field: emacs_globals::f_Vinterrupt_process_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinterrupt_process_functions) - 1440usize];
+    ["Offset of field: emacs_globals::f_Vinvocation_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinvocation_directory) - 1448usize];
+    ["Offset of field: emacs_globals::f_Vinvocation_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vinvocation_name) - 1456usize];
+    ["Offset of field: emacs_globals::f_Vkbd_macro_termination_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vkbd_macro_termination_hook) - 1464usize];
+    ["Offset of field: emacs_globals::f_Vkey_translation_map"]
+        [::std::mem::offset_of!(emacs_globals, f_Vkey_translation_map) - 1472usize];
+    ["Offset of field: emacs_globals::f_Vkill_buffer_query_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vkill_buffer_query_functions) - 1480usize];
+    ["Offset of field: emacs_globals::f_Vkill_emacs_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vkill_emacs_hook) - 1488usize];
+    ["Offset of field: emacs_globals::f_Vlast_code_conversion_error"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlast_code_conversion_error) - 1496usize];
+    ["Offset of field: emacs_globals::f_Vlast_coding_system_used"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlast_coding_system_used) - 1504usize];
+    ["Offset of field: emacs_globals::f_Vlast_event_device"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlast_event_device) - 1512usize];
+    ["Offset of field: emacs_globals::f_Vlast_event_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlast_event_frame) - 1520usize];
+    ["Offset of field: emacs_globals::f_Vlatin_extra_code_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlatin_extra_code_table) - 1528usize];
+    ["Offset of field: emacs_globals::f_Vlexical_binding"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlexical_binding) - 1536usize];
+    ["Offset of field: emacs_globals::f_Vlibgnutls_version"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlibgnutls_version) - 1544usize];
+    ["Offset of field: emacs_globals::f_Vline_number_display_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_Vline_number_display_limit) - 1552usize];
+    ["Offset of field: emacs_globals::f_Vline_prefix"]
+        [::std::mem::offset_of!(emacs_globals, f_Vline_prefix) - 1560usize];
+    ["Offset of field: emacs_globals::f_Vload_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_file_name) - 1568usize];
+    ["Offset of field: emacs_globals::f_Vload_file_rep_suffixes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_file_rep_suffixes) - 1576usize];
+    ["Offset of field: emacs_globals::f_Vload_history"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_history) - 1584usize];
+    ["Offset of field: emacs_globals::f_Vload_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_path) - 1592usize];
+    ["Offset of field: emacs_globals::f_Vload_read_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_read_function) - 1600usize];
+    ["Offset of field: emacs_globals::f_Vload_source_file_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_source_file_function) - 1608usize];
+    ["Offset of field: emacs_globals::f_Vload_suffixes"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_suffixes) - 1616usize];
+    ["Offset of field: emacs_globals::f_Vload_true_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vload_true_file_name) - 1624usize];
+    ["Offset of field: emacs_globals::f_Vlocale_coding_system"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlocale_coding_system) - 1632usize];
+    ["Offset of field: emacs_globals::f_Vlong_line_threshold"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlong_line_threshold) - 1640usize];
+    ["Offset of field: emacs_globals::f_Vlread_unescaped_character_literals"]
+        [::std::mem::offset_of!(emacs_globals, f_Vlread_unescaped_character_literals) - 1648usize];
+    ["Offset of field: emacs_globals::f_Vmacroexp__dynvars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmacroexp__dynvars) - 1656usize];
+    ["Offset of field: emacs_globals::f_Vmain_thread"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmain_thread) - 1664usize];
+    ["Offset of field: emacs_globals::f_Vmake_cursor_line_fully_visible"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmake_cursor_line_fully_visible) - 1672usize];
+    ["Offset of field: emacs_globals::f_Vmake_pointer_invisible"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmake_pointer_invisible) - 1680usize];
+    ["Offset of field: emacs_globals::f_Vmark_even_if_inactive"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmark_even_if_inactive) - 1688usize];
+    ["Offset of field: emacs_globals::f_Vmax_image_size"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmax_image_size) - 1696usize];
+    ["Offset of field: emacs_globals::f_Vmax_mini_window_height"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmax_mini_window_height) - 1704usize];
+    ["Offset of field: emacs_globals::f_Vmaximum_scroll_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmaximum_scroll_margin) - 1712usize];
+    ["Offset of field: emacs_globals::f_Vmemory_full"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmemory_full) - 1720usize];
+    ["Offset of field: emacs_globals::f_Vmemory_signal_data"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmemory_signal_data) - 1728usize];
+    ["Offset of field: emacs_globals::f_Vmenu_bar_final_items"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmenu_bar_final_items) - 1736usize];
+    ["Offset of field: emacs_globals::f_Vmenu_bar_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmenu_bar_mode) - 1744usize];
+    ["Offset of field: emacs_globals::f_Vmenu_bar_update_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmenu_bar_update_hook) - 1752usize];
+    ["Offset of field: emacs_globals::f_Vmenu_updating_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmenu_updating_frame) - 1760usize];
+    ["Offset of field: emacs_globals::f_Vmessage_log_max"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmessage_log_max) - 1768usize];
+    ["Offset of field: emacs_globals::f_Vmessages_buffer_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmessages_buffer_name) - 1776usize];
+    ["Offset of field: emacs_globals::f_Vminibuf_scroll_window"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuf_scroll_window) - 1784usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_completing_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_completing_file_name) - 1792usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_completion_confirm"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_completion_confirm) - 1800usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_completion_predicate"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_completion_predicate) - 1808usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_completion_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_completion_table) - 1816usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_exit_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_exit_hook) - 1824usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_help_form"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_help_form) - 1832usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_history_position"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_history_position) - 1840usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_history_variable"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_history_variable) - 1848usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_local_map"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_local_map) - 1856usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_message_timeout"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_message_timeout) - 1864usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_prompt_properties"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_prompt_properties) - 1872usize];
+    ["Offset of field: emacs_globals::f_Vminibuffer_setup_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminibuffer_setup_hook) - 1880usize];
+    ["Offset of field: emacs_globals::f_Vminor_mode_map_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminor_mode_map_alist) - 1888usize];
+    ["Offset of field: emacs_globals::f_Vminor_mode_overriding_map_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vminor_mode_overriding_map_alist) - 1896usize];
+    ["Offset of field: emacs_globals::f_Vmode_line_compact"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmode_line_compact) - 1904usize];
+    ["Offset of field: emacs_globals::f_Vmodule_file_suffix"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmodule_file_suffix) - 1912usize];
+    ["Offset of field: emacs_globals::f_Vmost_negative_fixnum"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmost_negative_fixnum) - 1920usize];
+    ["Offset of field: emacs_globals::f_Vmost_positive_fixnum"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmost_positive_fixnum) - 1928usize];
+    ["Offset of field: emacs_globals::f_Vmouse_autoselect_window"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmouse_autoselect_window) - 1936usize];
+    ["Offset of field: emacs_globals::f_Vmouse_highlight"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmouse_highlight) - 1944usize];
+    ["Offset of field: emacs_globals::f_Vmouse_leave_buffer_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmouse_leave_buffer_hook) - 1952usize];
+    ["Offset of field: emacs_globals::f_Vmouse_position_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmouse_position_function) - 1960usize];
+    ["Offset of field: emacs_globals::f_Vmove_frame_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmove_frame_functions) - 1968usize];
+    ["Offset of field: emacs_globals::f_Vmovemail_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vmovemail_program_name) - 1976usize];
+    ["Offset of field: emacs_globals::f_Vnative_comp_eln_load_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vnative_comp_eln_load_path) - 1984usize];
+    ["Offset of field: emacs_globals::f_Vnative_comp_enable_subr_trampolines"]
+        [::std::mem::offset_of!(emacs_globals, f_Vnative_comp_enable_subr_trampolines) - 1992usize];
+    ["Offset of field: emacs_globals::f_Vnetwork_coding_system_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vnetwork_coding_system_alist) - 2000usize];
+    ["Offset of field: emacs_globals::f_Vnobreak_char_display"]
+        [::std::mem::offset_of!(emacs_globals, f_Vnobreak_char_display) - 2008usize];
+    ["Offset of field: emacs_globals::f_Vns_drag_motion_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vns_drag_motion_function) - 2016usize];
+    ["Offset of field: emacs_globals::f_Vns_icon_type_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vns_icon_type_alist) - 2024usize];
+    ["Offset of field: emacs_globals::f_Vns_scroll_event_delta_factor"]
+        [::std::mem::offset_of!(emacs_globals, f_Vns_scroll_event_delta_factor) - 2032usize];
+    ["Offset of field: emacs_globals::f_Vns_sent_selection_hooks"]
+        [::std::mem::offset_of!(emacs_globals, f_Vns_sent_selection_hooks) - 2040usize];
+    ["Offset of field: emacs_globals::f_Vns_version_string"]
+        [::std::mem::offset_of!(emacs_globals, f_Vns_version_string) - 2048usize];
+    ["Offset of field: emacs_globals::f_Vobarray"]
+        [::std::mem::offset_of!(emacs_globals, f_Vobarray) - 2056usize];
+    ["Offset of field: emacs_globals::f_Voperating_system_release"]
+        [::std::mem::offset_of!(emacs_globals, f_Voperating_system_release) - 2064usize];
+    ["Offset of field: emacs_globals::f_Votf_script_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Votf_script_alist) - 2072usize];
+    ["Offset of field: emacs_globals::f_Vother_window_scroll_buffer"]
+        [::std::mem::offset_of!(emacs_globals, f_Vother_window_scroll_buffer) - 2080usize];
+    ["Offset of field: emacs_globals::f_Vother_window_scroll_default"]
+        [::std::mem::offset_of!(emacs_globals, f_Vother_window_scroll_default) - 2088usize];
+    ["Offset of field: emacs_globals::f_Voverflow_newline_into_fringe"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverflow_newline_into_fringe) - 2096usize];
+    ["Offset of field: emacs_globals::f_Voverlay_arrow_position"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverlay_arrow_position) - 2104usize];
+    ["Offset of field: emacs_globals::f_Voverlay_arrow_string"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverlay_arrow_string) - 2112usize];
+    ["Offset of field: emacs_globals::f_Voverlay_arrow_variable_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverlay_arrow_variable_list) - 2120usize];
+    ["Offset of field: emacs_globals::f_Voverriding_local_map"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverriding_local_map) - 2128usize];
+    ["Offset of field: emacs_globals::f_Voverriding_local_map_menu_flag"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverriding_local_map_menu_flag) - 2136usize];
+    ["Offset of field: emacs_globals::f_Voverriding_plist_environment"]
+        [::std::mem::offset_of!(emacs_globals, f_Voverriding_plist_environment) - 2144usize];
+    ["Offset of field: emacs_globals::f_Vpath_separator"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpath_separator) - 2152usize];
+    ["Offset of field: emacs_globals::f_Vpdumper_fingerprint"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpdumper_fingerprint) - 2160usize];
+    ["Offset of field: emacs_globals::f_Vpolling_period"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpolling_period) - 2168usize];
+    ["Offset of field: emacs_globals::f_Vpost_command_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpost_command_hook) - 2176usize];
+    ["Offset of field: emacs_globals::f_Vpost_gc_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpost_gc_hook) - 2184usize];
+    ["Offset of field: emacs_globals::f_Vpost_select_region_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpost_select_region_hook) - 2192usize];
+    ["Offset of field: emacs_globals::f_Vpost_self_insert_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpost_self_insert_hook) - 2200usize];
+    ["Offset of field: emacs_globals::f_Vpre_command_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpre_command_hook) - 2208usize];
+    ["Offset of field: emacs_globals::f_Vpre_redisplay_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpre_redisplay_function) - 2216usize];
+    ["Offset of field: emacs_globals::f_Vprefix_help_command"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprefix_help_command) - 2224usize];
+    ["Offset of field: emacs_globals::f_Vpreloaded_file_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpreloaded_file_list) - 2232usize];
+    ["Offset of field: emacs_globals::f_Vprint__unreadable_callback_buffer"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint__unreadable_callback_buffer) - 2240usize];
+    ["Offset of field: emacs_globals::f_Vprint_charset_text_property"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_charset_text_property) - 2248usize];
+    ["Offset of field: emacs_globals::f_Vprint_circle"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_circle) - 2256usize];
+    ["Offset of field: emacs_globals::f_Vprint_continuous_numbering"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_continuous_numbering) - 2264usize];
+    ["Offset of field: emacs_globals::f_Vprint_gensym"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_gensym) - 2272usize];
+    ["Offset of field: emacs_globals::f_Vprint_length"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_length) - 2280usize];
+    ["Offset of field: emacs_globals::f_Vprint_level"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_level) - 2288usize];
+    ["Offset of field: emacs_globals::f_Vprint_number_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_number_table) - 2296usize];
+    ["Offset of field: emacs_globals::f_Vprint_unreadable_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprint_unreadable_function) - 2304usize];
+    ["Offset of field: emacs_globals::f_Vprintable_chars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprintable_chars) - 2312usize];
+    ["Offset of field: emacs_globals::f_Vprocess_adaptive_read_buffering"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprocess_adaptive_read_buffering) - 2320usize];
+    ["Offset of field: emacs_globals::f_Vprocess_coding_system_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprocess_coding_system_alist) - 2328usize];
+    ["Offset of field: emacs_globals::f_Vprocess_connection_type"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprocess_connection_type) - 2336usize];
+    ["Offset of field: emacs_globals::f_Vprocess_environment"]
+        [::std::mem::offset_of!(emacs_globals, f_Vprocess_environment) - 2344usize];
+    ["Offset of field: emacs_globals::f_Vpurify_flag"]
+        [::std::mem::offset_of!(emacs_globals, f_Vpurify_flag) - 2352usize];
+    ["Offset of field: emacs_globals::f_Vquit_flag"]
+        [::std::mem::offset_of!(emacs_globals, f_Vquit_flag) - 2360usize];
+    ["Offset of field: emacs_globals::f_Vrcs2log_program_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vrcs2log_program_name) - 2368usize];
+    ["Offset of field: emacs_globals::f_Vread_buffer_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vread_buffer_function) - 2376usize];
+    ["Offset of field: emacs_globals::f_Vread_circle"]
+        [::std::mem::offset_of!(emacs_globals, f_Vread_circle) - 2384usize];
+    ["Offset of field: emacs_globals::f_Vread_expression_history"]
+        [::std::mem::offset_of!(emacs_globals, f_Vread_expression_history) - 2392usize];
+    ["Offset of field: emacs_globals::f_Vread_hide_char"]
+        [::std::mem::offset_of!(emacs_globals, f_Vread_hide_char) - 2400usize];
+    ["Offset of field: emacs_globals::f_Vread_symbol_shorthands"]
+        [::std::mem::offset_of!(emacs_globals, f_Vread_symbol_shorthands) - 2408usize];
+    ["Offset of field: emacs_globals::f_Vreal_this_command"]
+        [::std::mem::offset_of!(emacs_globals, f_Vreal_this_command) - 2416usize];
+    ["Offset of field: emacs_globals::f_Vrecenter_redisplay"]
+        [::std::mem::offset_of!(emacs_globals, f_Vrecenter_redisplay) - 2424usize];
+    ["Offset of field: emacs_globals::f_Vredisplay__all_windows_cause"]
+        [::std::mem::offset_of!(emacs_globals, f_Vredisplay__all_windows_cause) - 2432usize];
+    ["Offset of field: emacs_globals::f_Vredisplay__mode_lines_cause"]
+        [::std::mem::offset_of!(emacs_globals, f_Vredisplay__mode_lines_cause) - 2440usize];
+    ["Offset of field: emacs_globals::f_Vregion_extract_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vregion_extract_function) - 2448usize];
+    ["Offset of field: emacs_globals::f_Vreport_emacs_bug_address"]
+        [::std::mem::offset_of!(emacs_globals, f_Vreport_emacs_bug_address) - 2456usize];
+    ["Offset of field: emacs_globals::f_Vresize_mini_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_Vresize_mini_windows) - 2464usize];
+    ["Offset of field: emacs_globals::f_Vresume_tty_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vresume_tty_functions) - 2472usize];
+    ["Offset of field: emacs_globals::f_Vring_bell_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vring_bell_function) - 2480usize];
+    ["Offset of field: emacs_globals::f_Vsaved_region_selection"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsaved_region_selection) - 2488usize];
+    ["Offset of field: emacs_globals::f_Vscalable_fonts_allowed"]
+        [::std::mem::offset_of!(emacs_globals, f_Vscalable_fonts_allowed) - 2496usize];
+    ["Offset of field: emacs_globals::f_Vscript_representative_chars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vscript_representative_chars) - 2504usize];
+    ["Offset of field: emacs_globals::f_Vscroll_preserve_screen_position"]
+        [::std::mem::offset_of!(emacs_globals, f_Vscroll_preserve_screen_position) - 2512usize];
+    ["Offset of field: emacs_globals::f_Vsearch_spaces_regexp"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsearch_spaces_regexp) - 2520usize];
+    ["Offset of field: emacs_globals::f_Vselect_active_regions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vselect_active_regions) - 2528usize];
+    ["Offset of field: emacs_globals::f_Vselect_safe_coding_system_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vselect_safe_coding_system_function) - 2536usize];
+    ["Offset of field: emacs_globals::f_Vselection_inhibit_update_commands"]
+        [::std::mem::offset_of!(emacs_globals, f_Vselection_inhibit_update_commands) - 2544usize];
+    ["Offset of field: emacs_globals::f_Vset_auto_coding_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vset_auto_coding_function) - 2552usize];
+    ["Offset of field: emacs_globals::f_Vset_message_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vset_message_function) - 2560usize];
+    ["Offset of field: emacs_globals::f_Vshared_game_score_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vshared_game_score_directory) - 2568usize];
+    ["Offset of field: emacs_globals::f_Vshell_file_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vshell_file_name) - 2576usize];
+    ["Offset of field: emacs_globals::f_Vshow_help_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vshow_help_function) - 2584usize];
+    ["Offset of field: emacs_globals::f_Vshow_trailing_whitespace"]
+        [::std::mem::offset_of!(emacs_globals, f_Vshow_trailing_whitespace) - 2592usize];
+    ["Offset of field: emacs_globals::f_Vsignal_hook_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsignal_hook_function) - 2600usize];
+    ["Offset of field: emacs_globals::f_Vsignal_process_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsignal_process_functions) - 2608usize];
+    ["Offset of field: emacs_globals::f_Vsource_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsource_directory) - 2616usize];
+    ["Offset of field: emacs_globals::f_Vspecial_event_map"]
+        [::std::mem::offset_of!(emacs_globals, f_Vspecial_event_map) - 2624usize];
+    ["Offset of field: emacs_globals::f_Vstandard_display_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vstandard_display_table) - 2632usize];
+    ["Offset of field: emacs_globals::f_Vstandard_input"]
+        [::std::mem::offset_of!(emacs_globals, f_Vstandard_input) - 2640usize];
+    ["Offset of field: emacs_globals::f_Vstandard_output"]
+        [::std::mem::offset_of!(emacs_globals, f_Vstandard_output) - 2648usize];
+    ["Offset of field: emacs_globals::f_Vstandard_translation_table_for_decode"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vstandard_translation_table_for_decode
+    ) - 2656usize];
+    ["Offset of field: emacs_globals::f_Vstandard_translation_table_for_encode"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vstandard_translation_table_for_encode
+    ) - 2664usize];
+    ["Offset of field: emacs_globals::f_Vsuspend_tty_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsuspend_tty_functions) - 2672usize];
+    ["Offset of field: emacs_globals::f_Vsystem_configuration"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_configuration) - 2680usize];
+    ["Offset of field: emacs_globals::f_Vsystem_configuration_features"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_configuration_features) - 2688usize];
+    ["Offset of field: emacs_globals::f_Vsystem_configuration_options"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_configuration_options) - 2696usize];
+    ["Offset of field: emacs_globals::f_Vsystem_messages_locale"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_messages_locale) - 2704usize];
+    ["Offset of field: emacs_globals::f_Vsystem_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_name) - 2712usize];
+    ["Offset of field: emacs_globals::f_Vsystem_time_locale"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_time_locale) - 2720usize];
+    ["Offset of field: emacs_globals::f_Vsystem_type"]
+        [::std::mem::offset_of!(emacs_globals, f_Vsystem_type) - 2728usize];
+    ["Offset of field: emacs_globals::f_Vtab_bar_border"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtab_bar_border) - 2736usize];
+    ["Offset of field: emacs_globals::f_Vtab_bar_button_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtab_bar_button_margin) - 2744usize];
+    ["Offset of field: emacs_globals::f_Vtab_bar_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtab_bar_mode) - 2752usize];
+    ["Offset of field: emacs_globals::f_Vtab_bar_position"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtab_bar_position) - 2760usize];
+    ["Offset of field: emacs_globals::f_Vtab_bar_separator_image_expression"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtab_bar_separator_image_expression) - 2768usize];
+    ["Offset of field: emacs_globals::f_Vtemp_buffer_show_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtemp_buffer_show_function) - 2776usize];
+    ["Offset of field: emacs_globals::f_Vtemporary_file_directory"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtemporary_file_directory) - 2784usize];
+    ["Offset of field: emacs_globals::f_Vterminal_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_Vterminal_frame) - 2792usize];
+    ["Offset of field: emacs_globals::f_Vtext_property_default_nonsticky"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtext_property_default_nonsticky) - 2800usize];
+    ["Offset of field: emacs_globals::f_Vtext_quoting_style"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtext_quoting_style) - 2808usize];
+    ["Offset of field: emacs_globals::f_Vthis_command"]
+        [::std::mem::offset_of!(emacs_globals, f_Vthis_command) - 2816usize];
+    ["Offset of field: emacs_globals::f_Vthis_command_keys_shift_translated"]
+        [::std::mem::offset_of!(emacs_globals, f_Vthis_command_keys_shift_translated) - 2824usize];
+    ["Offset of field: emacs_globals::f_Vthis_original_command"]
+        [::std::mem::offset_of!(emacs_globals, f_Vthis_original_command) - 2832usize];
+    ["Offset of field: emacs_globals::f_Vthrow_on_input"]
+        [::std::mem::offset_of!(emacs_globals, f_Vthrow_on_input) - 2840usize];
+    ["Offset of field: emacs_globals::f_Vtimer_idle_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtimer_idle_list) - 2848usize];
+    ["Offset of field: emacs_globals::f_Vtimer_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtimer_list) - 2856usize];
+    ["Offset of field: emacs_globals::f_Vtool_bar_border"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtool_bar_border) - 2864usize];
+    ["Offset of field: emacs_globals::f_Vtool_bar_button_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtool_bar_button_margin) - 2872usize];
+    ["Offset of field: emacs_globals::f_Vtool_bar_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtool_bar_mode) - 2880usize];
+    ["Offset of field: emacs_globals::f_Vtool_bar_separator_image_expression"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtool_bar_separator_image_expression) - 2888usize];
+    ["Offset of field: emacs_globals::f_Vtool_bar_style"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtool_bar_style) - 2896usize];
+    ["Offset of field: emacs_globals::f_Vtop_level"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtop_level) - 2904usize];
+    ["Offset of field: emacs_globals::f_Vtransient_mark_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtransient_mark_mode) - 2912usize];
+    ["Offset of field: emacs_globals::f_Vtranslation_hash_table_vector"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtranslation_hash_table_vector) - 2920usize];
+    ["Offset of field: emacs_globals::f_Vtranslation_table_for_input"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtranslation_table_for_input) - 2928usize];
+    ["Offset of field: emacs_globals::f_Vtranslation_table_vector"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtranslation_table_vector) - 2936usize];
+    ["Offset of field: emacs_globals::f_Vtreesit_extra_load_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtreesit_extra_load_path) - 2944usize];
+    ["Offset of field: emacs_globals::f_Vtreesit_language_remap_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtreesit_language_remap_alist) - 2952usize];
+    ["Offset of field: emacs_globals::f_Vtreesit_load_name_override_list"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtreesit_load_name_override_list) - 2960usize];
+    ["Offset of field: emacs_globals::f_Vtreesit_thing_settings"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtreesit_thing_settings) - 2968usize];
+    ["Offset of field: emacs_globals::f_Vtruncate_partial_width_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtruncate_partial_width_windows) - 2976usize];
+    ["Offset of field: emacs_globals::f_Vtty_defined_color_alist"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtty_defined_color_alist) - 2984usize];
+    ["Offset of field: emacs_globals::f_Vtty_erase_char"]
+        [::std::mem::offset_of!(emacs_globals, f_Vtty_erase_char) - 2992usize];
+    ["Offset of field: emacs_globals::f_Vundo_outer_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_Vundo_outer_limit) - 3000usize];
+    ["Offset of field: emacs_globals::f_Vundo_outer_limit_function"]
+        [::std::mem::offset_of!(emacs_globals, f_Vundo_outer_limit_function) - 3008usize];
+    ["Offset of field: emacs_globals::f_Vunicode_category_table"]
+        [::std::mem::offset_of!(emacs_globals, f_Vunicode_category_table) - 3016usize];
+    ["Offset of field: emacs_globals::f_Vunread_command_events"]
+        [::std::mem::offset_of!(emacs_globals, f_Vunread_command_events) - 3024usize];
+    ["Offset of field: emacs_globals::f_Vunread_input_method_events"]
+        [::std::mem::offset_of!(emacs_globals, f_Vunread_input_method_events) - 3032usize];
+    ["Offset of field: emacs_globals::f_Vunread_post_input_method_events"]
+        [::std::mem::offset_of!(emacs_globals, f_Vunread_post_input_method_events) - 3040usize];
+    ["Offset of field: emacs_globals::f_Vuse_default_ascent"]
+        [::std::mem::offset_of!(emacs_globals, f_Vuse_default_ascent) - 3048usize];
+    ["Offset of field: emacs_globals::f_Vuser_full_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vuser_full_name) - 3056usize];
+    ["Offset of field: emacs_globals::f_Vuser_init_file"]
+        [::std::mem::offset_of!(emacs_globals, f_Vuser_init_file) - 3064usize];
+    ["Offset of field: emacs_globals::f_Vuser_login_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vuser_login_name) - 3072usize];
+    ["Offset of field: emacs_globals::f_Vuser_real_login_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vuser_real_login_name) - 3080usize];
+    ["Offset of field: emacs_globals::f_Vvalues"]
+        [::std::mem::offset_of!(emacs_globals, f_Vvalues) - 3088usize];
+    ["Offset of field: emacs_globals::f_Vvertical_centering_font_regexp"]
+        [::std::mem::offset_of!(emacs_globals, f_Vvertical_centering_font_regexp) - 3096usize];
+    ["Offset of field: emacs_globals::f_Vvoid_text_area_pointer"]
+        [::std::mem::offset_of!(emacs_globals, f_Vvoid_text_area_pointer) - 3104usize];
+    ["Offset of field: emacs_globals::f_Vwhere_is_preferred_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwhere_is_preferred_modifier) - 3112usize];
+    ["Offset of field: emacs_globals::f_Vwhile_no_input_ignore_events"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwhile_no_input_ignore_events) - 3120usize];
+    ["Offset of field: emacs_globals::f_Vwindow_buffer_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_buffer_change_functions) - 3128usize];
+    ["Offset of field: emacs_globals::f_Vwindow_combination_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_combination_limit) - 3136usize];
+    ["Offset of field: emacs_globals::f_Vwindow_combination_resize"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_combination_resize) - 3144usize];
+    ["Offset of field: emacs_globals::f_Vwindow_configuration_change_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_configuration_change_hook) - 3152usize];
+    ["Offset of field: emacs_globals::f_Vwindow_persistent_parameters"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_persistent_parameters) - 3160usize];
+    ["Offset of field: emacs_globals::f_Vwindow_point_insertion_type"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_point_insertion_type) - 3168usize];
+    ["Offset of field: emacs_globals::f_Vwindow_scroll_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_scroll_functions) - 3176usize];
+    ["Offset of field: emacs_globals::f_Vwindow_selection_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_selection_change_functions) - 3184usize];
+    ["Offset of field: emacs_globals::f_Vwindow_size_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_size_change_functions) - 3192usize];
+    ["Offset of field: emacs_globals::f_Vwindow_state_change_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_state_change_functions) - 3200usize];
+    ["Offset of field: emacs_globals::f_Vwindow_state_change_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwindow_state_change_hook) - 3208usize];
+    ["Offset of field: emacs_globals::f_Vword_combining_categories"]
+        [::std::mem::offset_of!(emacs_globals, f_Vword_combining_categories) - 3216usize];
+    ["Offset of field: emacs_globals::f_Vword_separating_categories"]
+        [::std::mem::offset_of!(emacs_globals, f_Vword_separating_categories) - 3224usize];
+    ["Offset of field: emacs_globals::f_Vwrap_prefix"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwrap_prefix) - 3232usize];
+    ["Offset of field: emacs_globals::f_Vwrite_region_annotate_functions"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwrite_region_annotate_functions) - 3240usize];
+    ["Offset of field: emacs_globals::f_Vwrite_region_annotations_so_far"]
+        [::std::mem::offset_of!(emacs_globals, f_Vwrite_region_annotations_so_far) - 3248usize];
+    ["Offset of field: emacs_globals::f_Vwrite_region_post_annotation_function"][::std::mem::offset_of!(
+        emacs_globals,
+        f_Vwrite_region_post_annotation_function
+    ) - 3256usize];
+    ["Offset of field: emacs_globals::f_Vx_bitmap_file_path"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_bitmap_file_path) - 3264usize];
+    ["Offset of field: emacs_globals::f_Vx_max_tooltip_size"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_max_tooltip_size) - 3272usize];
+    ["Offset of field: emacs_globals::f_Vx_pre_popup_menu_hook"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_pre_popup_menu_hook) - 3280usize];
+    ["Offset of field: emacs_globals::f_Vx_resource_class"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_resource_class) - 3288usize];
+    ["Offset of field: emacs_globals::f_Vx_resource_name"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_resource_name) - 3296usize];
+    ["Offset of field: emacs_globals::f_Vx_show_tooltip_timeout"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_show_tooltip_timeout) - 3304usize];
+    ["Offset of field: emacs_globals::f_Vx_toolkit_scroll_bars"]
+        [::std::mem::offset_of!(emacs_globals, f_Vx_toolkit_scroll_bars) - 3312usize];
+    ["Offset of field: emacs_globals::f_Vyes_or_no_prompt"]
+        [::std::mem::offset_of!(emacs_globals, f_Vyes_or_no_prompt) - 3320usize];
+    ["Offset of field: emacs_globals::f_automatic_hscrolling"]
+        [::std::mem::offset_of!(emacs_globals, f_automatic_hscrolling) - 3328usize];
+    ["Offset of field: emacs_globals::f_eol_mnemonic_dos"]
+        [::std::mem::offset_of!(emacs_globals, f_eol_mnemonic_dos) - 3336usize];
+    ["Offset of field: emacs_globals::f_eol_mnemonic_mac"]
+        [::std::mem::offset_of!(emacs_globals, f_eol_mnemonic_mac) - 3344usize];
+    ["Offset of field: emacs_globals::f_eol_mnemonic_undecided"]
+        [::std::mem::offset_of!(emacs_globals, f_eol_mnemonic_undecided) - 3352usize];
+    ["Offset of field: emacs_globals::f_eol_mnemonic_unix"]
+        [::std::mem::offset_of!(emacs_globals, f_eol_mnemonic_unix) - 3360usize];
+    ["Offset of field: emacs_globals::f_expose_hidden_buffer"]
+        [::std::mem::offset_of!(emacs_globals, f_expose_hidden_buffer) - 3368usize];
+    ["Offset of field: emacs_globals::f_focus_follows_mouse"]
+        [::std::mem::offset_of!(emacs_globals, f_focus_follows_mouse) - 3376usize];
+    ["Offset of field: emacs_globals::f_frame_inhibit_implied_resize"]
+        [::std::mem::offset_of!(emacs_globals, f_frame_inhibit_implied_resize) - 3384usize];
+    ["Offset of field: emacs_globals::f_frame_internal_parameters"]
+        [::std::mem::offset_of!(emacs_globals, f_frame_internal_parameters) - 3392usize];
+    ["Offset of field: emacs_globals::f_frame_size_history"]
+        [::std::mem::offset_of!(emacs_globals, f_frame_size_history) - 3400usize];
+    ["Offset of field: emacs_globals::f_iconify_child_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_iconify_child_frame) - 3408usize];
+    ["Offset of field: emacs_globals::f_last_command_event"]
+        [::std::mem::offset_of!(emacs_globals, f_last_command_event) - 3416usize];
+    ["Offset of field: emacs_globals::f_last_input_event"]
+        [::std::mem::offset_of!(emacs_globals, f_last_input_event) - 3424usize];
+    ["Offset of field: emacs_globals::f_last_nonmenu_event"]
+        [::std::mem::offset_of!(emacs_globals, f_last_nonmenu_event) - 3432usize];
+    ["Offset of field: emacs_globals::f_menu_prompt_more_char"]
+        [::std::mem::offset_of!(emacs_globals, f_menu_prompt_more_char) - 3440usize];
+    ["Offset of field: emacs_globals::f_meta_prefix_char"]
+        [::std::mem::offset_of!(emacs_globals, f_meta_prefix_char) - 3448usize];
+    ["Offset of field: emacs_globals::f_minibuffer_follows_selected_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_minibuffer_follows_selected_frame) - 3456usize];
+    ["Offset of field: emacs_globals::f_ns_alternate_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_alternate_modifier) - 3464usize];
+    ["Offset of field: emacs_globals::f_ns_antialias_text"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_antialias_text) - 3472usize];
+    ["Offset of field: emacs_globals::f_ns_auto_hide_menu_bar"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_auto_hide_menu_bar) - 3480usize];
+    ["Offset of field: emacs_globals::f_ns_command_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_command_modifier) - 3488usize];
+    ["Offset of field: emacs_globals::f_ns_confirm_quit"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_confirm_quit) - 3496usize];
+    ["Offset of field: emacs_globals::f_ns_control_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_control_modifier) - 3504usize];
+    ["Offset of field: emacs_globals::f_ns_function_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_function_modifier) - 3512usize];
+    ["Offset of field: emacs_globals::f_ns_input_file"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_file) - 3520usize];
+    ["Offset of field: emacs_globals::f_ns_input_font"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_font) - 3528usize];
+    ["Offset of field: emacs_globals::f_ns_input_fontsize"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_fontsize) - 3536usize];
+    ["Offset of field: emacs_globals::f_ns_input_line"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_line) - 3544usize];
+    ["Offset of field: emacs_globals::f_ns_input_spi_arg"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_spi_arg) - 3552usize];
+    ["Offset of field: emacs_globals::f_ns_input_spi_name"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_input_spi_name) - 3560usize];
+    ["Offset of field: emacs_globals::f_ns_mwheel_line_height"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_mwheel_line_height) - 3568usize];
+    ["Offset of field: emacs_globals::f_ns_right_alternate_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_right_alternate_modifier) - 3576usize];
+    ["Offset of field: emacs_globals::f_ns_right_command_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_right_command_modifier) - 3584usize];
+    ["Offset of field: emacs_globals::f_ns_right_control_modifier"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_right_control_modifier) - 3592usize];
+    ["Offset of field: emacs_globals::f_ns_use_thin_smoothing"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_thin_smoothing) - 3600usize];
+    ["Offset of field: emacs_globals::f_ns_working_text"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_working_text) - 3608usize];
+    ["Offset of field: emacs_globals::f_resize_mini_frames"]
+        [::std::mem::offset_of!(emacs_globals, f_resize_mini_frames) - 3616usize];
+    ["Offset of field: emacs_globals::f_track_mouse"]
+        [::std::mem::offset_of!(emacs_globals, f_track_mouse) - 3624usize];
+    ["Offset of field: emacs_globals::f_window_dead_windows_table"]
+        [::std::mem::offset_of!(emacs_globals, f_window_dead_windows_table) - 3632usize];
+    ["Offset of field: emacs_globals::f_window_restore_killed_buffer_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_window_restore_killed_buffer_windows) - 3640usize];
+    ["Offset of field: emacs_globals::f_auto_save_interval"]
+        [::std::mem::offset_of!(emacs_globals, f_auto_save_interval) - 3648usize];
+    ["Offset of field: emacs_globals::f_baud_rate"]
+        [::std::mem::offset_of!(emacs_globals, f_baud_rate) - 3656usize];
+    ["Offset of field: emacs_globals::f_cons_cells_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_cons_cells_consed) - 3664usize];
+    ["Offset of field: emacs_globals::f_debug_end_pos"]
+        [::std::mem::offset_of!(emacs_globals, f_debug_end_pos) - 3672usize];
+    ["Offset of field: emacs_globals::f_display_line_numbers_major_tick"]
+        [::std::mem::offset_of!(emacs_globals, f_display_line_numbers_major_tick) - 3680usize];
+    ["Offset of field: emacs_globals::f_display_line_numbers_minor_tick"]
+        [::std::mem::offset_of!(emacs_globals, f_display_line_numbers_minor_tick) - 3688usize];
+    ["Offset of field: emacs_globals::f_display_line_numbers_offset"]
+        [::std::mem::offset_of!(emacs_globals, f_display_line_numbers_offset) - 3696usize];
+    ["Offset of field: emacs_globals::f_double_click_fuzz"]
+        [::std::mem::offset_of!(emacs_globals, f_double_click_fuzz) - 3704usize];
+    ["Offset of field: emacs_globals::f_emacs_scroll_step"]
+        [::std::mem::offset_of!(emacs_globals, f_emacs_scroll_step) - 3712usize];
+    ["Offset of field: emacs_globals::f_executing_kbd_macro_index"]
+        [::std::mem::offset_of!(emacs_globals, f_executing_kbd_macro_index) - 3720usize];
+    ["Offset of field: emacs_globals::f_extra_keyboard_modifiers"]
+        [::std::mem::offset_of!(emacs_globals, f_extra_keyboard_modifiers) - 3728usize];
+    ["Offset of field: emacs_globals::f_face_near_same_color_threshold"]
+        [::std::mem::offset_of!(emacs_globals, f_face_near_same_color_threshold) - 3736usize];
+    ["Offset of field: emacs_globals::f_floats_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_floats_consed) - 3744usize];
+    ["Offset of field: emacs_globals::f_gc_cons_threshold"]
+        [::std::mem::offset_of!(emacs_globals, f_gc_cons_threshold) - 3752usize];
+    ["Offset of field: emacs_globals::f_gcs_done"]
+        [::std::mem::offset_of!(emacs_globals, f_gcs_done) - 3760usize];
+    ["Offset of field: emacs_globals::f_global_gnutls_log_level"]
+        [::std::mem::offset_of!(emacs_globals, f_global_gnutls_log_level) - 3768usize];
+    ["Offset of field: emacs_globals::f_hscroll_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_hscroll_margin) - 3776usize];
+    ["Offset of field: emacs_globals::f_imagemagick_render_type"]
+        [::std::mem::offset_of!(emacs_globals, f_imagemagick_render_type) - 3784usize];
+    ["Offset of field: emacs_globals::f_integer_width"]
+        [::std::mem::offset_of!(emacs_globals, f_integer_width) - 3792usize];
+    ["Offset of field: emacs_globals::f_intervals_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_intervals_consed) - 3800usize];
+    ["Offset of field: emacs_globals::f_large_hscroll_threshold"]
+        [::std::mem::offset_of!(emacs_globals, f_large_hscroll_threshold) - 3808usize];
+    ["Offset of field: emacs_globals::f_line_number_display_limit_width"]
+        [::std::mem::offset_of!(emacs_globals, f_line_number_display_limit_width) - 3816usize];
+    ["Offset of field: emacs_globals::f_lisp_eval_depth_reserve"]
+        [::std::mem::offset_of!(emacs_globals, f_lisp_eval_depth_reserve) - 3824usize];
+    ["Offset of field: emacs_globals::f_long_line_optimizations_bol_search_limit"][::std::mem::offset_of!(
+        emacs_globals,
+        f_long_line_optimizations_bol_search_limit
+    ) - 3832usize];
+    ["Offset of field: emacs_globals::f_long_line_optimizations_region_size"]
+        [::std::mem::offset_of!(emacs_globals, f_long_line_optimizations_region_size) - 3840usize];
+    ["Offset of field: emacs_globals::f_max_lisp_eval_depth"]
+        [::std::mem::offset_of!(emacs_globals, f_max_lisp_eval_depth) - 3848usize];
+    ["Offset of field: emacs_globals::f_max_redisplay_ticks"]
+        [::std::mem::offset_of!(emacs_globals, f_max_redisplay_ticks) - 3856usize];
+    ["Offset of field: emacs_globals::f_next_screen_context_lines"]
+        [::std::mem::offset_of!(emacs_globals, f_next_screen_context_lines) - 3864usize];
+    ["Offset of field: emacs_globals::f_num_input_keys"]
+        [::std::mem::offset_of!(emacs_globals, f_num_input_keys) - 3872usize];
+    ["Offset of field: emacs_globals::f_num_nonmacro_input_events"]
+        [::std::mem::offset_of!(emacs_globals, f_num_nonmacro_input_events) - 3880usize];
+    ["Offset of field: emacs_globals::f_overline_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_overline_margin) - 3888usize];
+    ["Offset of field: emacs_globals::f_process_error_pause_time"]
+        [::std::mem::offset_of!(emacs_globals, f_process_error_pause_time) - 3896usize];
+    ["Offset of field: emacs_globals::f_profiler_log_size"]
+        [::std::mem::offset_of!(emacs_globals, f_profiler_log_size) - 3904usize];
+    ["Offset of field: emacs_globals::f_profiler_max_stack_depth"]
+        [::std::mem::offset_of!(emacs_globals, f_profiler_max_stack_depth) - 3912usize];
+    ["Offset of field: emacs_globals::f_pure_bytes_used"]
+        [::std::mem::offset_of!(emacs_globals, f_pure_bytes_used) - 3920usize];
+    ["Offset of field: emacs_globals::f_read_process_output_max"]
+        [::std::mem::offset_of!(emacs_globals, f_read_process_output_max) - 3928usize];
+    ["Offset of field: emacs_globals::f_scroll_conservatively"]
+        [::std::mem::offset_of!(emacs_globals, f_scroll_conservatively) - 3936usize];
+    ["Offset of field: emacs_globals::f_scroll_margin"]
+        [::std::mem::offset_of!(emacs_globals, f_scroll_margin) - 3944usize];
+    ["Offset of field: emacs_globals::f_string_chars_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_string_chars_consed) - 3952usize];
+    ["Offset of field: emacs_globals::f_strings_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_strings_consed) - 3960usize];
+    ["Offset of field: emacs_globals::f_symbols_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_symbols_consed) - 3968usize];
+    ["Offset of field: emacs_globals::f_syntax_propertize__done"]
+        [::std::mem::offset_of!(emacs_globals, f_syntax_propertize__done) - 3976usize];
+    ["Offset of field: emacs_globals::f_tab_bar_button_relief"]
+        [::std::mem::offset_of!(emacs_globals, f_tab_bar_button_relief) - 3984usize];
+    ["Offset of field: emacs_globals::f_tool_bar_button_relief"]
+        [::std::mem::offset_of!(emacs_globals, f_tool_bar_button_relief) - 3992usize];
+    ["Offset of field: emacs_globals::f_tool_bar_max_label_size"]
+        [::std::mem::offset_of!(emacs_globals, f_tool_bar_max_label_size) - 4000usize];
+    ["Offset of field: emacs_globals::f_underline_minimum_offset"]
+        [::std::mem::offset_of!(emacs_globals, f_underline_minimum_offset) - 4008usize];
+    ["Offset of field: emacs_globals::f_undo_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_undo_limit) - 4016usize];
+    ["Offset of field: emacs_globals::f_undo_strong_limit"]
+        [::std::mem::offset_of!(emacs_globals, f_undo_strong_limit) - 4024usize];
+    ["Offset of field: emacs_globals::f_vector_cells_consed"]
+        [::std::mem::offset_of!(emacs_globals, f_vector_cells_consed) - 4032usize];
+    ["Offset of field: emacs_globals::f_when_entered_debugger"]
+        [::std::mem::offset_of!(emacs_globals, f_when_entered_debugger) - 4040usize];
+    ["Offset of field: emacs_globals::f_attempt_orderly_shutdown_on_fatal_signal"][::std::mem::offset_of!(
+        emacs_globals,
+        f_attempt_orderly_shutdown_on_fatal_signal
+    ) - 4048usize];
+    ["Offset of field: emacs_globals::f_attempt_stack_overflow_recovery"]
+        [::std::mem::offset_of!(emacs_globals, f_attempt_stack_overflow_recovery) - 4049usize];
+    ["Offset of field: emacs_globals::f_auto_raise_tab_bar_buttons_p"]
+        [::std::mem::offset_of!(emacs_globals, f_auto_raise_tab_bar_buttons_p) - 4050usize];
+    ["Offset of field: emacs_globals::f_auto_raise_tool_bar_buttons_p"]
+        [::std::mem::offset_of!(emacs_globals, f_auto_raise_tool_bar_buttons_p) - 4051usize];
+    ["Offset of field: emacs_globals::f_auto_save_no_message"]
+        [::std::mem::offset_of!(emacs_globals, f_auto_save_no_message) - 4052usize];
+    ["Offset of field: emacs_globals::f_auto_window_vscroll_p"]
+        [::std::mem::offset_of!(emacs_globals, f_auto_window_vscroll_p) - 4053usize];
+    ["Offset of field: emacs_globals::f_backtrace_on_error_noninteractive"]
+        [::std::mem::offset_of!(emacs_globals, f_backtrace_on_error_noninteractive) - 4054usize];
+    ["Offset of field: emacs_globals::f_backtrace_on_redisplay_error"]
+        [::std::mem::offset_of!(emacs_globals, f_backtrace_on_redisplay_error) - 4055usize];
+    ["Offset of field: emacs_globals::f_bidi_inhibit_bpa"]
+        [::std::mem::offset_of!(emacs_globals, f_bidi_inhibit_bpa) - 4056usize];
+    ["Offset of field: emacs_globals::f_binary_as_unsigned"]
+        [::std::mem::offset_of!(emacs_globals, f_binary_as_unsigned) - 4057usize];
+    ["Offset of field: emacs_globals::f_byte_metering_on"]
+        [::std::mem::offset_of!(emacs_globals, f_byte_metering_on) - 4058usize];
+    ["Offset of field: emacs_globals::f_cannot_suspend"]
+        [::std::mem::offset_of!(emacs_globals, f_cannot_suspend) - 4059usize];
+    ["Offset of field: emacs_globals::f_case_symbols_as_words"]
+        [::std::mem::offset_of!(emacs_globals, f_case_symbols_as_words) - 4060usize];
+    ["Offset of field: emacs_globals::f_coding_system_require_warning"]
+        [::std::mem::offset_of!(emacs_globals, f_coding_system_require_warning) - 4061usize];
+    ["Offset of field: emacs_globals::f_comment_end_can_be_escaped"]
+        [::std::mem::offset_of!(emacs_globals, f_comment_end_can_be_escaped) - 4062usize];
+    ["Offset of field: emacs_globals::f_comp_file_preloaded_p"]
+        [::std::mem::offset_of!(emacs_globals, f_comp_file_preloaded_p) - 4063usize];
+    ["Offset of field: emacs_globals::f_comp_sanitizer_active"]
+        [::std::mem::offset_of!(emacs_globals, f_comp_sanitizer_active) - 4064usize];
+    ["Offset of field: emacs_globals::f_completion_ignore_case"]
+        [::std::mem::offset_of!(emacs_globals, f_completion_ignore_case) - 4065usize];
+    ["Offset of field: emacs_globals::f_composition_break_at_point"]
+        [::std::mem::offset_of!(emacs_globals, f_composition_break_at_point) - 4066usize];
+    ["Offset of field: emacs_globals::f_create_lockfiles"]
+        [::std::mem::offset_of!(emacs_globals, f_create_lockfiles) - 4067usize];
+    ["Offset of field: emacs_globals::f_cross_disabled_images"]
+        [::std::mem::offset_of!(emacs_globals, f_cross_disabled_images) - 4068usize];
+    ["Offset of field: emacs_globals::f_current_time_list"]
+        [::std::mem::offset_of!(emacs_globals, f_current_time_list) - 4069usize];
+    ["Offset of field: emacs_globals::f_cursor_in_echo_area"]
+        [::std::mem::offset_of!(emacs_globals, f_cursor_in_echo_area) - 4070usize];
+    ["Offset of field: emacs_globals::f_debug_on_next_call"]
+        [::std::mem::offset_of!(emacs_globals, f_debug_on_next_call) - 4071usize];
+    ["Offset of field: emacs_globals::f_debug_on_quit"]
+        [::std::mem::offset_of!(emacs_globals, f_debug_on_quit) - 4072usize];
+    ["Offset of field: emacs_globals::f_debugger_may_continue"]
+        [::std::mem::offset_of!(emacs_globals, f_debugger_may_continue) - 4073usize];
+    ["Offset of field: emacs_globals::f_debugger_stack_frame_as_list"]
+        [::std::mem::offset_of!(emacs_globals, f_debugger_stack_frame_as_list) - 4074usize];
+    ["Offset of field: emacs_globals::f_delete_auto_save_files"]
+        [::std::mem::offset_of!(emacs_globals, f_delete_auto_save_files) - 4075usize];
+    ["Offset of field: emacs_globals::f_delete_by_moving_to_trash"]
+        [::std::mem::offset_of!(emacs_globals, f_delete_by_moving_to_trash) - 4076usize];
+    ["Offset of field: emacs_globals::f_delete_exited_processes"]
+        [::std::mem::offset_of!(emacs_globals, f_delete_exited_processes) - 4077usize];
+    ["Offset of field: emacs_globals::f_disable_ascii_optimization"]
+        [::std::mem::offset_of!(emacs_globals, f_disable_ascii_optimization) - 4078usize];
+    ["Offset of field: emacs_globals::f_disable_inhibit_text_conversion"]
+        [::std::mem::offset_of!(emacs_globals, f_disable_inhibit_text_conversion) - 4079usize];
+    ["Offset of field: emacs_globals::f_display_fill_column_indicator"]
+        [::std::mem::offset_of!(emacs_globals, f_display_fill_column_indicator) - 4080usize];
+    ["Offset of field: emacs_globals::f_display_hourglass_p"]
+        [::std::mem::offset_of!(emacs_globals, f_display_hourglass_p) - 4081usize];
+    ["Offset of field: emacs_globals::f_display_line_numbers_widen"]
+        [::std::mem::offset_of!(emacs_globals, f_display_line_numbers_widen) - 4082usize];
+    ["Offset of field: emacs_globals::f_display_raw_bytes_as_hex"]
+        [::std::mem::offset_of!(emacs_globals, f_display_raw_bytes_as_hex) - 4083usize];
+    ["Offset of field: emacs_globals::f_echo_keystrokes_help"]
+        [::std::mem::offset_of!(emacs_globals, f_echo_keystrokes_help) - 4084usize];
+    ["Offset of field: emacs_globals::f_enable_recursive_minibuffers"]
+        [::std::mem::offset_of!(emacs_globals, f_enable_recursive_minibuffers) - 4085usize];
+    ["Offset of field: emacs_globals::f_face_filters_always_match"]
+        [::std::mem::offset_of!(emacs_globals, f_face_filters_always_match) - 4086usize];
+    ["Offset of field: emacs_globals::f_fast_but_imprecise_scrolling"]
+        [::std::mem::offset_of!(emacs_globals, f_fast_but_imprecise_scrolling) - 4087usize];
+    ["Offset of field: emacs_globals::f_fast_read_process_output"]
+        [::std::mem::offset_of!(emacs_globals, f_fast_read_process_output) - 4088usize];
+    ["Offset of field: emacs_globals::f_force_load_messages"]
+        [::std::mem::offset_of!(emacs_globals, f_force_load_messages) - 4089usize];
+    ["Offset of field: emacs_globals::f_frame_resize_pixelwise"]
+        [::std::mem::offset_of!(emacs_globals, f_frame_resize_pixelwise) - 4090usize];
+    ["Offset of field: emacs_globals::f_garbage_collection_messages"]
+        [::std::mem::offset_of!(emacs_globals, f_garbage_collection_messages) - 4091usize];
+    ["Offset of field: emacs_globals::f_highlight_nonselected_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_highlight_nonselected_windows) - 4092usize];
+    ["Offset of field: emacs_globals::f_history_delete_duplicates"]
+        [::std::mem::offset_of!(emacs_globals, f_history_delete_duplicates) - 4093usize];
+    ["Offset of field: emacs_globals::f_indent_tabs_mode"]
+        [::std::mem::offset_of!(emacs_globals, f_indent_tabs_mode) - 4094usize];
+    ["Offset of field: emacs_globals::f_inherit_process_coding_system"]
+        [::std::mem::offset_of!(emacs_globals, f_inherit_process_coding_system) - 4095usize];
+    ["Offset of field: emacs_globals::f_inhibit_bidi_mirroring"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_bidi_mirroring) - 4096usize];
+    ["Offset of field: emacs_globals::f_inhibit_compacting_font_caches"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_compacting_font_caches) - 4097usize];
+    ["Offset of field: emacs_globals::f_inhibit_eol_conversion"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_eol_conversion) - 4098usize];
+    ["Offset of field: emacs_globals::f_inhibit_eval_during_redisplay"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_eval_during_redisplay) - 4099usize];
+    ["Offset of field: emacs_globals::f_inhibit_free_realized_faces"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_free_realized_faces) - 4100usize];
+    ["Offset of field: emacs_globals::f_inhibit_interaction"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_interaction) - 4101usize];
+    ["Offset of field: emacs_globals::f_inhibit_iso_escape_detection"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_iso_escape_detection) - 4102usize];
+    ["Offset of field: emacs_globals::f_inhibit_load_charset_map"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_load_charset_map) - 4103usize];
+    ["Offset of field: emacs_globals::f_inhibit_menubar_update"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_menubar_update) - 4104usize];
+    ["Offset of field: emacs_globals::f_inhibit_message"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_message) - 4105usize];
+    ["Offset of field: emacs_globals::f_inhibit_modification_hooks"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_modification_hooks) - 4106usize];
+    ["Offset of field: emacs_globals::f_inhibit_mouse_event_check"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_mouse_event_check) - 4107usize];
+    ["Offset of field: emacs_globals::f_inhibit_null_byte_detection"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_null_byte_detection) - 4108usize];
+    ["Offset of field: emacs_globals::f_inhibit_record_char"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_record_char) - 4109usize];
+    ["Offset of field: emacs_globals::f_inhibit_try_cursor_movement"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_try_cursor_movement) - 4110usize];
+    ["Offset of field: emacs_globals::f_inhibit_try_window_id"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_try_window_id) - 4111usize];
+    ["Offset of field: emacs_globals::f_inhibit_try_window_reusing"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_try_window_reusing) - 4112usize];
+    ["Offset of field: emacs_globals::f_inhibit_x_resources"]
+        [::std::mem::offset_of!(emacs_globals, f_inhibit_x_resources) - 4113usize];
+    ["Offset of field: emacs_globals::f_input_pending_p_filter_events"]
+        [::std::mem::offset_of!(emacs_globals, f_input_pending_p_filter_events) - 4114usize];
+    ["Offset of field: emacs_globals::f_inverse_video"]
+        [::std::mem::offset_of!(emacs_globals, f_inverse_video) - 4115usize];
+    ["Offset of field: emacs_globals::f_kill_buffer_delete_auto_save_files"]
+        [::std::mem::offset_of!(emacs_globals, f_kill_buffer_delete_auto_save_files) - 4116usize];
+    ["Offset of field: emacs_globals::f_load_convert_to_unibyte"]
+        [::std::mem::offset_of!(emacs_globals, f_load_convert_to_unibyte) - 4117usize];
+    ["Offset of field: emacs_globals::f_load_dangerous_libraries"]
+        [::std::mem::offset_of!(emacs_globals, f_load_dangerous_libraries) - 4118usize];
+    ["Offset of field: emacs_globals::f_load_force_doc_strings"]
+        [::std::mem::offset_of!(emacs_globals, f_load_force_doc_strings) - 4119usize];
+    ["Offset of field: emacs_globals::f_load_in_progress"]
+        [::std::mem::offset_of!(emacs_globals, f_load_in_progress) - 4120usize];
+    ["Offset of field: emacs_globals::f_load_no_native"]
+        [::std::mem::offset_of!(emacs_globals, f_load_no_native) - 4121usize];
+    ["Offset of field: emacs_globals::f_load_prefer_newer"]
+        [::std::mem::offset_of!(emacs_globals, f_load_prefer_newer) - 4122usize];
+    ["Offset of field: emacs_globals::f_lucid__menu_grab_keyboard"]
+        [::std::mem::offset_of!(emacs_globals, f_lucid__menu_grab_keyboard) - 4123usize];
+    ["Offset of field: emacs_globals::f_make_window_start_visible"]
+        [::std::mem::offset_of!(emacs_globals, f_make_window_start_visible) - 4124usize];
+    ["Offset of field: emacs_globals::f_menu_prompting"]
+        [::std::mem::offset_of!(emacs_globals, f_menu_prompting) - 4125usize];
+    ["Offset of field: emacs_globals::f_message_truncate_lines"]
+        [::std::mem::offset_of!(emacs_globals, f_message_truncate_lines) - 4126usize];
+    ["Offset of field: emacs_globals::f_minibuffer_allow_text_properties"]
+        [::std::mem::offset_of!(emacs_globals, f_minibuffer_allow_text_properties) - 4127usize];
+    ["Offset of field: emacs_globals::f_minibuffer_auto_raise"]
+        [::std::mem::offset_of!(emacs_globals, f_minibuffer_auto_raise) - 4128usize];
+    ["Offset of field: emacs_globals::f_mode_line_in_non_selected_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_mode_line_in_non_selected_windows) - 4129usize];
+    ["Offset of field: emacs_globals::f_mouse_fine_grained_tracking"]
+        [::std::mem::offset_of!(emacs_globals, f_mouse_fine_grained_tracking) - 4130usize];
+    ["Offset of field: emacs_globals::f_mouse_prefer_closest_glyph"]
+        [::std::mem::offset_of!(emacs_globals, f_mouse_prefer_closest_glyph) - 4131usize];
+    ["Offset of field: emacs_globals::f_multibyte_syntax_as_symbol"]
+        [::std::mem::offset_of!(emacs_globals, f_multibyte_syntax_as_symbol) - 4132usize];
+    ["Offset of field: emacs_globals::f_multiple_frames"]
+        [::std::mem::offset_of!(emacs_globals, f_multiple_frames) - 4133usize];
+    ["Offset of field: emacs_globals::f_mwheel_coalesce_scroll_events"]
+        [::std::mem::offset_of!(emacs_globals, f_mwheel_coalesce_scroll_events) - 4134usize];
+    ["Offset of field: emacs_globals::f_native_comp_jit_compilation"]
+        [::std::mem::offset_of!(emacs_globals, f_native_comp_jit_compilation) - 4135usize];
+    ["Offset of field: emacs_globals::f_no_redraw_on_reenter"]
+        [::std::mem::offset_of!(emacs_globals, f_no_redraw_on_reenter) - 4136usize];
+    ["Offset of field: emacs_globals::f_nobreak_char_ascii_display"]
+        [::std::mem::offset_of!(emacs_globals, f_nobreak_char_ascii_display) - 4137usize];
+    ["Offset of field: emacs_globals::f_noninteractive1"]
+        [::std::mem::offset_of!(emacs_globals, f_noninteractive1) - 4138usize];
+    ["Offset of field: emacs_globals::f_ns_use_fullscreen_animation"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_fullscreen_animation) - 4139usize];
+    ["Offset of field: emacs_globals::f_ns_use_mwheel_acceleration"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_mwheel_acceleration) - 4140usize];
+    ["Offset of field: emacs_globals::f_ns_use_mwheel_momentum"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_mwheel_momentum) - 4141usize];
+    ["Offset of field: emacs_globals::f_ns_use_native_fullscreen"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_native_fullscreen) - 4142usize];
+    ["Offset of field: emacs_globals::f_ns_use_proxy_icon"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_proxy_icon) - 4143usize];
+    ["Offset of field: emacs_globals::f_ns_use_srgb_colorspace"]
+        [::std::mem::offset_of!(emacs_globals, f_ns_use_srgb_colorspace) - 4144usize];
+    ["Offset of field: emacs_globals::f_open_paren_in_column_0_is_defun_start"][::std::mem::offset_of!(
+        emacs_globals,
+        f_open_paren_in_column_0_is_defun_start
+    ) - 4145usize];
+    ["Offset of field: emacs_globals::f_parse_sexp_ignore_comments"]
+        [::std::mem::offset_of!(emacs_globals, f_parse_sexp_ignore_comments) - 4146usize];
+    ["Offset of field: emacs_globals::f_parse_sexp_lookup_properties"]
+        [::std::mem::offset_of!(emacs_globals, f_parse_sexp_lookup_properties) - 4147usize];
+    ["Offset of field: emacs_globals::f_print_escape_control_characters"]
+        [::std::mem::offset_of!(emacs_globals, f_print_escape_control_characters) - 4148usize];
+    ["Offset of field: emacs_globals::f_print_escape_multibyte"]
+        [::std::mem::offset_of!(emacs_globals, f_print_escape_multibyte) - 4149usize];
+    ["Offset of field: emacs_globals::f_print_escape_newlines"]
+        [::std::mem::offset_of!(emacs_globals, f_print_escape_newlines) - 4150usize];
+    ["Offset of field: emacs_globals::f_print_escape_nonascii"]
+        [::std::mem::offset_of!(emacs_globals, f_print_escape_nonascii) - 4151usize];
+    ["Offset of field: emacs_globals::f_print_integers_as_characters"]
+        [::std::mem::offset_of!(emacs_globals, f_print_integers_as_characters) - 4152usize];
+    ["Offset of field: emacs_globals::f_print_quoted"]
+        [::std::mem::offset_of!(emacs_globals, f_print_quoted) - 4153usize];
+    ["Offset of field: emacs_globals::f_print_symbols_bare"]
+        [::std::mem::offset_of!(emacs_globals, f_print_symbols_bare) - 4154usize];
+    ["Offset of field: emacs_globals::f_process_prioritize_lower_fds"]
+        [::std::mem::offset_of!(emacs_globals, f_process_prioritize_lower_fds) - 4155usize];
+    ["Offset of field: emacs_globals::f_query_all_font_backends"]
+        [::std::mem::offset_of!(emacs_globals, f_query_all_font_backends) - 4156usize];
+    ["Offset of field: emacs_globals::f_read_buffer_completion_ignore_case"]
+        [::std::mem::offset_of!(emacs_globals, f_read_buffer_completion_ignore_case) - 4157usize];
+    ["Offset of field: emacs_globals::f_read_minibuffer_restore_windows"]
+        [::std::mem::offset_of!(emacs_globals, f_read_minibuffer_restore_windows) - 4158usize];
+    ["Offset of field: emacs_globals::f_record_all_keys"]
+        [::std::mem::offset_of!(emacs_globals, f_record_all_keys) - 4159usize];
+    ["Offset of field: emacs_globals::f_redisplay__inhibit_bidi"]
+        [::std::mem::offset_of!(emacs_globals, f_redisplay__inhibit_bidi) - 4160usize];
+    ["Offset of field: emacs_globals::f_redisplay_adhoc_scroll_in_resize_mini_windows"][::std::mem::offset_of!(
+        emacs_globals,
+        f_redisplay_adhoc_scroll_in_resize_mini_windows
+    )
+        - 4161usize];
+    ["Offset of field: emacs_globals::f_redisplay_skip_fontification_on_input"][::std::mem::offset_of!(
+        emacs_globals,
+        f_redisplay_skip_fontification_on_input
+    ) - 4162usize];
+    ["Offset of field: emacs_globals::f_redisplay_skip_initial_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_redisplay_skip_initial_frame) - 4163usize];
+    ["Offset of field: emacs_globals::f_scroll_bar_adjust_thumb_portion_p"]
+        [::std::mem::offset_of!(emacs_globals, f_scroll_bar_adjust_thumb_portion_p) - 4164usize];
+    ["Offset of field: emacs_globals::f_scroll_minibuffer_conservatively"]
+        [::std::mem::offset_of!(emacs_globals, f_scroll_minibuffer_conservatively) - 4165usize];
+    ["Offset of field: emacs_globals::f_symbols_with_pos_enabled"]
+        [::std::mem::offset_of!(emacs_globals, f_symbols_with_pos_enabled) - 4166usize];
+    ["Offset of field: emacs_globals::f_system_uses_terminfo"]
+        [::std::mem::offset_of!(emacs_globals, f_system_uses_terminfo) - 4167usize];
+    ["Offset of field: emacs_globals::f_tab_bar__dragging_in_progress"]
+        [::std::mem::offset_of!(emacs_globals, f_tab_bar__dragging_in_progress) - 4168usize];
+    ["Offset of field: emacs_globals::f_text_quoting_flag"]
+        [::std::mem::offset_of!(emacs_globals, f_text_quoting_flag) - 4169usize];
+    ["Offset of field: emacs_globals::f_tooltip_reuse_hidden_frame"]
+        [::std::mem::offset_of!(emacs_globals, f_tooltip_reuse_hidden_frame) - 4170usize];
+    ["Offset of field: emacs_globals::f_translate_upper_case_key_bindings"]
+        [::std::mem::offset_of!(emacs_globals, f_translate_upper_case_key_bindings) - 4171usize];
+    ["Offset of field: emacs_globals::f_tty_menu_calls_mouse_position_function"][::std::mem::offset_of!(
+        emacs_globals,
+        f_tty_menu_calls_mouse_position_function
+    ) - 4172usize];
+    ["Offset of field: emacs_globals::f_undo_inhibit_record_point"]
+        [::std::mem::offset_of!(emacs_globals, f_undo_inhibit_record_point) - 4173usize];
+    ["Offset of field: emacs_globals::f_unibyte_display_via_language_environment"][::std::mem::offset_of!(
+        emacs_globals,
+        f_unibyte_display_via_language_environment
+    ) - 4174usize];
+    ["Offset of field: emacs_globals::f_use_default_font_for_symbols"]
+        [::std::mem::offset_of!(emacs_globals, f_use_default_font_for_symbols) - 4175usize];
+    ["Offset of field: emacs_globals::f_use_dialog_box"]
+        [::std::mem::offset_of!(emacs_globals, f_use_dialog_box) - 4176usize];
+    ["Offset of field: emacs_globals::f_use_file_dialog"]
+        [::std::mem::offset_of!(emacs_globals, f_use_file_dialog) - 4177usize];
+    ["Offset of field: emacs_globals::f_use_short_answers"]
+        [::std::mem::offset_of!(emacs_globals, f_use_short_answers) - 4178usize];
+    ["Offset of field: emacs_globals::f_use_system_tooltips"]
+        [::std::mem::offset_of!(emacs_globals, f_use_system_tooltips) - 4179usize];
+    ["Offset of field: emacs_globals::f_visible_bell"]
+        [::std::mem::offset_of!(emacs_globals, f_visible_bell) - 4180usize];
+    ["Offset of field: emacs_globals::f_visible_cursor"]
+        [::std::mem::offset_of!(emacs_globals, f_visible_cursor) - 4181usize];
+    ["Offset of field: emacs_globals::f_window_auto_redraw_on_parameter_change"][::std::mem::offset_of!(
+        emacs_globals,
+        f_window_auto_redraw_on_parameter_change
+    ) - 4182usize];
+    ["Offset of field: emacs_globals::f_window_resize_pixelwise"]
+        [::std::mem::offset_of!(emacs_globals, f_window_resize_pixelwise) - 4183usize];
+    ["Offset of field: emacs_globals::f_word_wrap_by_category"]
+        [::std::mem::offset_of!(emacs_globals, f_word_wrap_by_category) - 4184usize];
+    ["Offset of field: emacs_globals::f_words_include_escapes"]
+        [::std::mem::offset_of!(emacs_globals, f_words_include_escapes) - 4185usize];
+    ["Offset of field: emacs_globals::f_write_region_inhibit_fsync"]
+        [::std::mem::offset_of!(emacs_globals, f_write_region_inhibit_fsync) - 4186usize];
+    ["Offset of field: emacs_globals::f_x_stretch_cursor_p"]
+        [::std::mem::offset_of!(emacs_globals, f_x_stretch_cursor_p) - 4187usize];
+    ["Offset of field: emacs_globals::f_x_underline_at_descent_line"]
+        [::std::mem::offset_of!(emacs_globals, f_x_underline_at_descent_line) - 4188usize];
+    ["Offset of field: emacs_globals::f_x_use_underline_position_properties"]
+        [::std::mem::offset_of!(emacs_globals, f_x_use_underline_position_properties) - 4189usize];
+    ["Offset of field: emacs_globals::f_xft_ignore_color_fonts"]
+        [::std::mem::offset_of!(emacs_globals, f_xft_ignore_color_fonts) - 4190usize];
+};
+unsafe extern "C" {
+    pub static mut globals: emacs_globals;
+}
 unsafe extern "C" {
     pub static Qnil: Lisp_Object;
 }
@@ -601,6 +2595,55 @@ const _: () = {
         [::std::mem::offset_of!(Emacs_GC, foreground) - 0usize];
     ["Offset of field: Emacs_GC::background"]
         [::std::mem::offset_of!(Emacs_GC, background) - 8usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Point2D_f32__emacs_pixel {
+    pub x: f32,
+    pub y: f32,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of Point2D_f32__emacs_pixel"]
+        [::std::mem::size_of::<Point2D_f32__emacs_pixel>() - 8usize];
+    ["Alignment of Point2D_f32__emacs_pixel"]
+        [::std::mem::align_of::<Point2D_f32__emacs_pixel>() - 4usize];
+    ["Offset of field: Point2D_f32__emacs_pixel::x"]
+        [::std::mem::offset_of!(Point2D_f32__emacs_pixel, x) - 0usize];
+    ["Offset of field: Point2D_f32__emacs_pixel::y"]
+        [::std::mem::offset_of!(Point2D_f32__emacs_pixel, y) - 4usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Size2D_f32__emacs_pixel {
+    pub width: f32,
+    pub height: f32,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of Size2D_f32__emacs_pixel"][::std::mem::size_of::<Size2D_f32__emacs_pixel>() - 8usize];
+    ["Alignment of Size2D_f32__emacs_pixel"]
+        [::std::mem::align_of::<Size2D_f32__emacs_pixel>() - 4usize];
+    ["Offset of field: Size2D_f32__emacs_pixel::width"]
+        [::std::mem::offset_of!(Size2D_f32__emacs_pixel, width) - 0usize];
+    ["Offset of field: Size2D_f32__emacs_pixel::height"]
+        [::std::mem::offset_of!(Size2D_f32__emacs_pixel, height) - 4usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Rect_f32__emacs_pixel {
+    pub origin: Point2D_f32__emacs_pixel,
+    pub size: Size2D_f32__emacs_pixel,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of Rect_f32__emacs_pixel"][::std::mem::size_of::<Rect_f32__emacs_pixel>() - 16usize];
+    ["Alignment of Rect_f32__emacs_pixel"]
+        [::std::mem::align_of::<Rect_f32__emacs_pixel>() - 4usize];
+    ["Offset of field: Rect_f32__emacs_pixel::origin"]
+        [::std::mem::offset_of!(Rect_f32__emacs_pixel, origin) - 0usize];
+    ["Offset of field: Rect_f32__emacs_pixel::size"]
+        [::std::mem::offset_of!(Rect_f32__emacs_pixel, size) - 8usize];
 };
 pub type Emacs_Pixmap = *mut ::libc::c_void;
 pub type Emacs_Cursor = *mut ::libc::c_void;
@@ -3602,7 +5645,6 @@ pub enum draw_glyphs_face {
     DRAW_IMAGE_SUNKEN = 5,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct glyph_string {
     pub x: ::libc::c_int,
     pub y: ::libc::c_int,
@@ -3634,7 +5676,7 @@ pub struct glyph_string {
     pub slice: glyph_slice,
     pub clip_head: *mut glyph_string,
     pub clip_tail: *mut glyph_string,
-    pub clip: [NSRect; 2usize],
+    pub clip: [WrRect; 2usize],
     pub num_clips: ::libc::c_int,
     pub underline_position: ::libc::c_int,
     pub underline_thickness: ::libc::c_int,
@@ -3643,7 +5685,7 @@ pub struct glyph_string {
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of glyph_string"][::std::mem::size_of::<glyph_string>() - 280usize];
+    ["Size of glyph_string"][::std::mem::size_of::<glyph_string>() - 248usize];
     ["Alignment of glyph_string"][::std::mem::align_of::<glyph_string>() - 8usize];
     ["Offset of field: glyph_string::x"][::std::mem::offset_of!(glyph_string, x) - 0usize];
     ["Offset of field: glyph_string::y"][::std::mem::offset_of!(glyph_string, y) - 4usize];
@@ -3689,13 +5731,13 @@ const _: () = {
         [::std::mem::offset_of!(glyph_string, clip_tail) - 176usize];
     ["Offset of field: glyph_string::clip"][::std::mem::offset_of!(glyph_string, clip) - 184usize];
     ["Offset of field: glyph_string::num_clips"]
-        [::std::mem::offset_of!(glyph_string, num_clips) - 248usize];
+        [::std::mem::offset_of!(glyph_string, num_clips) - 216usize];
     ["Offset of field: glyph_string::underline_position"]
-        [::std::mem::offset_of!(glyph_string, underline_position) - 252usize];
+        [::std::mem::offset_of!(glyph_string, underline_position) - 220usize];
     ["Offset of field: glyph_string::underline_thickness"]
-        [::std::mem::offset_of!(glyph_string, underline_thickness) - 256usize];
-    ["Offset of field: glyph_string::next"][::std::mem::offset_of!(glyph_string, next) - 264usize];
-    ["Offset of field: glyph_string::prev"][::std::mem::offset_of!(glyph_string, prev) - 272usize];
+        [::std::mem::offset_of!(glyph_string, underline_thickness) - 224usize];
+    ["Offset of field: glyph_string::next"][::std::mem::offset_of!(glyph_string, next) - 232usize];
+    ["Offset of field: glyph_string::prev"][::std::mem::offset_of!(glyph_string, prev) - 240usize];
 };
 impl glyph_string {
     #[inline]
@@ -8074,11 +10116,11 @@ pub struct macfont_info {
     pub metrics_nrows: ::libc::c_short,
     pub _bitfield_align_1: [u8; 0],
     pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
-    pub __bindgen_padding_0: [u8; 5usize],
+    pub f: *mut frame,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of macfont_info"][::std::mem::size_of::<macfont_info>() - 264usize];
+    ["Size of macfont_info"][::std::mem::size_of::<macfont_info>() - 272usize];
     ["Alignment of macfont_info"][::std::mem::align_of::<macfont_info>() - 8usize];
     ["Offset of field: macfont_info::font"][::std::mem::offset_of!(macfont_info, font) - 0usize];
     ["Offset of field: macfont_info::macfont"]
@@ -8093,6 +10135,7 @@ const _: () = {
         [::std::mem::offset_of!(macfont_info, metrics) - 248usize];
     ["Offset of field: macfont_info::metrics_nrows"]
         [::std::mem::offset_of!(macfont_info, metrics_nrows) - 256usize];
+    ["Offset of field: macfont_info::f"][::std::mem::offset_of!(macfont_info, f) - 264usize];
 };
 impl macfont_info {
     #[inline]

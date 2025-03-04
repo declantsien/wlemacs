@@ -575,7 +575,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 
 #endif  /* HAVE_NTGUI */
 
-#if (defined (HAVE_NS) || defined (HAVE_HAIKU)) && !defined USE_WEBRENDER
+#if (defined (HAVE_NS) || defined (HAVE_HAIKU))
 /* NS and Haiku emulation of GCs */
 
 static Emacs_GC *
@@ -595,7 +595,7 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
 }
 #endif  /* HAVE_NS */
 
-#if defined HAVE_PGTK && !defined USE_WEBRENDER
+#ifdef HAVE_PGTK
 /* PGTK emulation of GCs */
 
 static Emacs_GC *
@@ -614,26 +614,6 @@ x_free_gc (struct frame *f, Emacs_GC *gc)
   xfree (gc);
 }
 #endif  /* HAVE_NS */
-
-#ifdef USE_WEBRENDER
-/* webrender emulation of GCs */
-
-static GC
-x_create_gc (struct frame *f,
-	     unsigned long mask,
-	     Emacs_GC *xgcv)
-{
-  GC gc = malloc (sizeof *gc);
-  *gc = *xgcv;
-  return gc;
-}
-
-static void
-x_free_gc (struct frame *f, GC gc)
-{
-  free (gc);
-}
-#endif  /* USE_WEBRENDER */
 
 #ifdef HAVE_ANDROID
 

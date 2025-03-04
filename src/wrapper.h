@@ -50,6 +50,7 @@ struct macfont_info
   unsigned spacing : 2;
   unsigned antialias : 2;
   bool_bf color_bitmap_p : 1;
+  struct frame *f;
 };
 #endif
 #ifdef NS_IMPL_GNUSTEP

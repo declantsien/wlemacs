@@ -36,10 +36,8 @@ Original author: YAMAMOTO Mitsuharu
 #include "macfont.h"
 #include "macuvs.h"
 #include "pdumper.h"
-#include "wr_ffi.h"
 
 #include <libkern/OSByteOrder.h>
-extern void wr_add_ctfont(CTFontRef font);
 /* Values for `dir' argument to shaper functions.  */
 enum lgstring_direction
   {
@@ -85,6 +83,9 @@ struct macfont_info
   unsigned spacing : 2;
   unsigned antialias : 2;
   bool_bf color_bitmap_p : 1;
+#ifdef USE_WEBRENDER
+  struct frame *f;
+#endif
 };
 
 /* Values for the `spacing' member in `struct macfont_info'.  */
@@ -1768,6 +1769,7 @@ static void macfont_text_extents (struct font *, const unsigned int *, int,
 static int macfont_draw (struct glyph_string *, int, int, int, int, bool);
 #ifdef USE_WEBRENDER
 extern int wr_font_draw (struct glyph_string *, int, int, int, int, bool);
+extern void wr_prepare_font(struct frame *f, struct font *font);
 #endif
 static Lisp_Object macfont_shape (Lisp_Object, Lisp_Object);
 static int macfont_variation_glyphs (struct font *, int c,
@@ -2911,6 +2913,7 @@ macfont_text_extents (struct font *font, const unsigned int *code, int nglyphs,
   int width, i;
 
   block_input ();
+  // macfont_glyph_extents need to be replaced with wr.glyph_dimension.advance
   width = macfont_glyph_extents (font, code[0], metrics, NULL, 0);
   for (i = 1; i < nglyphs; i++)
     {

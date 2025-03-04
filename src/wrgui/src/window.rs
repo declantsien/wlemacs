@@ -6,6 +6,14 @@ use crate::types::{
 };
 use crate::util::HandyDandyRectBuilder;
 
+/// cbindgen:ignore
+unsafe extern "C" {
+    pub fn window_box_left_offset(arg1: *const window, arg2: glyph_row_area) -> ::libc::c_int;
+    pub fn window_box_right(arg1: *const window, arg2: glyph_row_area) -> ::libc::c_int;
+    pub fn window_box_left(arg1: *const window, arg2: glyph_row_area) -> ::libc::c_int;
+    pub fn cursor_in_mouse_face_p(w: *const window) -> bool;
+}
+
 impl<'a> window {
     pub fn from_ptr(f: *mut window) -> Option<&'a window> {
         unsafe { f.as_ref() }
@@ -27,6 +35,22 @@ impl<'a> window {
 
     pub fn to_frame_pixel_y(&mut self, y: ::libc::c_int) -> ::libc::c_int {
         unsafe { window_to_frame_pixel_y(self, y) }
+    }
+
+    pub fn box_left_offset(&self, area: impl Into<glyph_row_area>) -> ::libc::c_int {
+        unsafe { window_box_left_offset(self, area.into()) }
+    }
+
+    pub fn box_right(&self, area: impl Into<glyph_row_area>) -> ::libc::c_int {
+        unsafe { window_box_right(self, area.into()) }
+    }
+
+    pub fn box_left(&self, area: impl Into<glyph_row_area>) -> ::libc::c_int {
+        unsafe { window_box_left(self, area.into()) }
+    }
+
+    pub fn cursor_in_mouse_face_p(&self) -> bool {
+        unsafe { cursor_in_mouse_face_p(self) }
     }
 
     pub fn window_box(&mut self, area: impl Into<glyph_row_area>) -> EmacsIntRect {

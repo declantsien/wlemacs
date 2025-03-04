@@ -180,7 +180,8 @@ usize_is_size_t = true
 # found but otherwise don't appear to be used by the public API.
 #
 # default: []
-include = ["MyOrphanStruct", "MyGreatTypeRename"]
+# include = ["MyOrphanStruct", "MyGreatTypeRename"]
+include = ["WrRect"]
 
 # A list of items to not include in the generated bindings
 # default: []
@@ -645,7 +646,7 @@ parse_deps = true
 # only crates found in this list will ever be parsed.
 #
 # default: there is no whitelist (NOTE: this is the opposite of [])
-include = []
+include = ["euclid"]
 # include = ["log", "euclid", "webrender", "webrender_api"]
 
 # A black list of crate names that are not allowed to be parsed.

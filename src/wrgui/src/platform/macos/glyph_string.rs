@@ -1,6 +1,6 @@
 use webrender_api::ColorF;
 
-use crate::types::{draw_glyphs_face, glyph_string, prepare_face_for_display};
+use crate::types::{draw_glyphs_face, glyph_string, prepare_face_for_display, Emacs_GC};
 
 impl glyph_string {
     /* Transfer glyph string parameters from S's face to S itself.
@@ -19,6 +19,20 @@ impl glyph_string {
             }
         }
     }
+
+    pub fn gc_mut(&mut self) -> Option<&mut Emacs_GC> {
+        unsafe { self.gc.as_mut() }
+    }
+
+    // pub fn set_cursor_gc(&mut self) {
+    //     if self.font == self.f().output_data().unwrap().font
+    //         && self.face().unwrap().background == self.f().background_pixel
+    //         && self.face().unwrap().foreground == self.f().foreground_pixel
+    //         && !self.cmp().is_some()
+    //     {
+    //         self.gc_mut().and_then(|gc| gc)
+    //     }
+    // }
 
     pub fn fg_color(&self) -> ColorF {
         self.f().cursor_color()

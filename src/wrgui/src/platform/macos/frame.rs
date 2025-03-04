@@ -33,7 +33,11 @@ impl frame {
     }
 
     pub fn scale_factor(&mut self) -> f64 {
-        unsafe { ns_frame_scale_factor(self) }
+        let s = unsafe { ns_frame_scale_factor(self) };
+        if s == 0.0 {
+            return 1.0;
+        }
+        s
     }
 }
 
