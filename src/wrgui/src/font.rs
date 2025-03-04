@@ -1,5 +1,9 @@
 use crate::canvas::WrCanvas;
-use crate::types::{font, frame, EmacsLength, EmacsToLayoutScale, GlyphSize};
+use crate::platform::font::FontInfo;
+use crate::types::{
+    font, frame, EmacsLength, EmacsRect, EmacsToLayoutScale,
+    ExternalPtr, GlyphSize, LayoutLength,
+};
 use webrender::api::{
     FontInstanceKey, FontInstanceOptions, FontInstancePlatformOptions, FontKey, FontTemplate,
     FontVariation, IdNamespace,
@@ -8,7 +12,8 @@ use webrender::api::{
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use webrender_api::{GlyphDimensions, GlyphIndex};
+use webrender_api::units::{LayoutPoint, LayoutRect, LayoutSize};
+use webrender_api::GlyphDimensions;
 use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
 
 impl<'a> font {
@@ -46,6 +51,8 @@ static INSTANCES_CACHE: LazyLock<
     >,
 > = LazyLock::new(Default::default);
 
+pub type FontRef = ExternalPtr<font>;
+static PENDING_FONTS: LazyLock<Mutex<Vec<FontRef>>> = LazyLock::new(Default::default);
 const namespace: IdNamespace = IdNamespace(1);
 
 fn wr_font_key(font_tpl: FontTemplate, rasterizer: Option<&mut GlyphRasterizer>) -> FontKey {
@@ -104,14 +111,22 @@ fn wr_font_instance(
     instance.clone()
 }
 
-pub fn with_get_glyph_dimension<F>(font: &mut font, fr: *mut frame, f: F)
-where
-    F: Fn(&mut font, &mut dyn FnMut(char) -> Option<GlyphDimensions>),
+pub fn with_get_glyph_dimension<F>(
+    font_info: &mut FontInfo,
+    glyph_size: i32,
+    scale_factor: f32,
+    fr: Option<*mut frame>,
+    f: &mut F,
+) where
+    F: FnMut(&mut dyn FnMut(char) -> Option<GlyphDimensions>, bool),
 {
-    if let Some(wr) = frame::from_ptr(fr).and_then(|f| f.renderer_mut()) {
-        let font_tpl = font.font_template();
+    if let Some(wr) = fr
+        .and_then(|f| frame::from_ptr(f))
+        .and_then(|f| f.renderer_mut())
+    {
+        let font_tpl = font_info.font_template();
         let key = wr.wr_add_font(font_tpl);
-        let glyph_size = EmacsLength::new(font.pixel_size as f32);
+        let glyph_size = EmacsLength::new(glyph_size as f32);
         let instance_key = wr.wr_add_font_instance(
             key,
             glyph_size,
@@ -119,8 +134,7 @@ where
             Some(FontInstancePlatformOptions::default()),
             Vec::new(),
         );
-        let font_info = font.font_info_mut().unwrap();
-        font_info.f = fr;
+        font_info.f = fr.unwrap();
         font_info.key = key;
         font_info.instance_key = instance_key;
 
@@ -140,16 +154,15 @@ where
                 .and_then(|i| i);
             return d;
         });
-        f(font, &mut get_glyph_dimension);
+        f(&mut get_glyph_dimension, false);
     } else {
-        let font_tpl = font.font_template();
+        let font_tpl = font_info.font_template();
         let mut rasterizer = WR_GLYPH_RASTERIZER.lock();
 
         let key = wr_font_key(font_tpl, Some(&mut rasterizer));
-        let scale_factor =
-            EmacsToLayoutScale::new(frame::from_ptr(fr).unwrap().scale_factor() as f32);
+        let scale_factor = EmacsToLayoutScale::new(scale_factor);
 
-        let glyph_size: EmacsLength = EmacsLength::new(font.pixel_size as f32);
+        let glyph_size: EmacsLength = EmacsLength::new(glyph_size as f32);
         let glyph_size = GlyphSize::from_layout_length(glyph_size * scale_factor);
         let instance = wr_font_instance(key, glyph_size, Some(&mut rasterizer));
 
@@ -160,7 +173,8 @@ where
             let index = index.unwrap_or(0);
             rasterizer.get_glyph_dimensions(&instance, index)
         });
-        f(font, &mut Box::new(get_glyph_dimension));
+        font_info.f = fr.unwrap();
+        f(&mut Box::new(get_glyph_dimension), true);
     };
 }
 
@@ -168,10 +182,16 @@ where
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
+    let ft = font::from_ptr_mut(font).unwrap();
+    let fr = frame::from_ptr(f).unwrap();
     with_get_glyph_dimension(
-        font::from_ptr_mut(font).unwrap(),
-        f,
-        |ft, get_glyph_dimension| {
+        font::from_ptr_mut(font)
+            .and_then(|ft| ft.font_info_mut())
+            .unwrap(),
+        ft.pixel_size,
+        fr.scale_factor() as f32,
+        Some(f),
+        &mut |get_glyph_dimension, is_pending| {
             let mut n = 0;
             (32..127).for_each(|c| {
                 let ch = char::from_u32(c).unwrap();
@@ -196,6 +216,10 @@ pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
             });
 
             ft.average_width /= n;
+
+            if is_pending {
+                PENDING_FONTS.lock().push(FontRef::new(font));
+            }
         },
     )
 }
@@ -247,4 +271,80 @@ impl font {
         let wr = f.renderer_mut().unwrap();
         wr.glyph_dimensions(instance_key, indices)
     }
+}
+
+/// cbindgen:ignore
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "C" fn wrfont_get_advance_width_for_glyph(
+    font_info: *mut FontInfo,
+    glyph: u32,
+    prev_advance: f64,
+) -> libc::c_double {
+    let font = font::from_ptr(font_info as *mut font).unwrap();
+     let font_info = FontInfo::from_ptr_mut(font_info).unwrap();
+      let wr = frame::from_ptr(font_info.f)
+        .and_then(|f| f.renderer_mut())
+        .unwrap();
+    let GlyphDimensions { advance, .. } = wr
+        .glyph_dimensions(font_info.instance_key, vec![glyph])
+        .get(0)
+        .map(|i| *i)
+        .and_then(|i| i)
+        .unwrap();
+    let advance = LayoutLength::new(advance) / wr.emacs_to_layout_scale();
+    return advance.get() as f64;
+}
+
+/// cbindgen:ignore
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "C" fn wrfont_get_bounding_rect_for_glyph(
+    font_info: *mut FontInfo,
+    glyph: u32,
+    prev_advance: f64,
+) -> EmacsRect {
+    let font = font::from_ptr(font_info as *mut font).unwrap();
+    let font_info = FontInfo::from_ptr_mut(font_info).unwrap();
+    let wr = frame::from_ptr(font_info.f)
+        .and_then(|f| f.renderer_mut())
+        .unwrap();
+    let GlyphDimensions {
+        left,
+        top,
+        width,
+        height,
+        ..
+    } = wr
+        .glyph_dimensions(font_info.instance_key, vec![glyph])
+        .get(0)
+        .map(|i| *i)
+        .and_then(|i| i)
+        .unwrap();
+    let bounds = LayoutRect::from_origin_and_size(
+        LayoutPoint::new(left as f32, top as f32),
+        LayoutSize::new(width as f32, height as f32),
+    ) / wr.emacs_to_layout_scale();
+    return bounds;
+}
+
+pub fn flush_pendings_fonts_to_wr(wr: &mut WrCanvas) {
+    let mut pendings_fonts = PENDING_FONTS.lock();
+    pendings_fonts.iter().map(|ft| *ft).for_each(|mut ft| {
+        let tpl = ft.font_template();
+        let key = wr.wr_add_font(tpl);
+        let glyph_size = ft.pixel_size;
+        let glyph_size = EmacsLength::new(glyph_size as f32);
+        let instance_key = wr.wr_add_font_instance(
+            key,
+            glyph_size,
+            Some(FontInstanceOptions::default()),
+            Some(FontInstancePlatformOptions::default()),
+            Vec::new(),
+        );
+        let font_info = FontInfo::from_ptr_mut(ft.as_mut() as *mut FontInfo).unwrap();
+        font_info.key = key;
+        font_info.instance_key = instance_key;
+    });
+    pendings_fonts.clear();
 }

@@ -91,6 +91,9 @@ struct macfont_info
 #endif
 };
 
+double wrfont_get_advance_width_for_glyph (struct macfont_info *, CGGlyph, CGFloat);
+CGRect
+wr_font_get_bounding_rect_for_glyph (struct macfont_info *, CGGlyph);
 /* Values for the `spacing' member in `struct macfont_info'.  */
 
 enum
@@ -1274,6 +1277,7 @@ macfont_glyph_extents (struct font *font, CGGlyph glyph,
       else
         fwidth = mac_font_get_advance_width_for_glyph (macfont, glyph);
 
+      wrfont_get_advance_width_for_glyph(macfont_info, glyph, fwidth);
       if (macfont_info->spacing == MACFONT_SPACING_MONO)
 	{
 	  /* Some monospace fonts for programming languages contain

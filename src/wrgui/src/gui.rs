@@ -7,6 +7,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
 
 use crate::canvas::WrCanvas;
+use crate::font::flush_pendings_fonts_to_wr;
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 use crate::platform::pixel_to_color;
@@ -51,8 +52,9 @@ pub extern "C" fn wrgui_init(f: *mut frame) {
     let size = EmacsIntSize::new(f.pixel_width, f.pixel_height);
     let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
     let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
-
-    let data = Box::new(WrCanvas::build(gl_context, size, scale_factor));
+    let mut wr = WrCanvas::build(gl_context, size, scale_factor);
+    flush_pendings_fonts_to_wr(&mut wr);
+    let data = Box::new(wr);
     f.output_data_mut().unwrap().wr_data = Box::into_raw(data) as *mut ::libc::c_void;
 }
 
