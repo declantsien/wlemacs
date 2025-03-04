@@ -167,6 +167,7 @@ impl<T> ::std::fmt::Debug for __IncompleteArrayField<T> {
         fmt.write_str("__IncompleteArrayField")
     }
 }
+pub const FONT_INVALID_CODE: u32 = 4294967295;
 pub type bool_bf = bool;
 pub type __darwin_time_t = ::libc::c_long;
 pub type intmax_t = ::libc::c_long;

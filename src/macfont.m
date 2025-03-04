@@ -91,9 +91,9 @@ struct macfont_info
 #endif
 };
 
-double wrfont_get_advance_width_for_glyph (struct macfont_info *, CGGlyph, CGFloat);
-CGRect
-wr_font_get_bounding_rect_for_glyph (struct macfont_info *, CGGlyph);
+#ifdef USE_WEBRENDER
+double wrfont_get_advance_width_for_glyph (struct macfont_info *, CGGlyph);
+#endif
 /* Values for the `spacing' member in `struct macfont_info'.  */
 
 enum
@@ -1271,13 +1271,16 @@ macfont_glyph_extents (struct font *font, CGGlyph glyph,
   if (METRICS_STATUS (cache) == METRICS_INVALID)
     {
       CGFloat fwidth;
-
+#ifdef USE_WEBRENDER
+      fwidth = wrfont_get_advance_width_for_glyph(macfont_info, glyph);
+#else
       if (macfont_info->screen_font)
         fwidth = mac_screen_font_get_advance_width_for_glyph (macfont_info->screen_font, glyph);
       else
         fwidth = mac_font_get_advance_width_for_glyph (macfont, glyph);
+#endif /* USE_WEBRENDER */
 
-      wrfont_get_advance_width_for_glyph(macfont_info, glyph, fwidth);
+
       if (macfont_info->spacing == MACFONT_SPACING_MONO)
 	{
 	  /* Some monospace fonts for programming languages contain
@@ -1776,6 +1779,7 @@ static void macfont_text_extents (struct font *, const unsigned int *, int,
 static int macfont_draw (struct glyph_string *, int, int, int, int, bool);
 #ifdef USE_WEBRENDER
 extern int wr_font_draw (struct glyph_string *, int, int, int, int, bool);
+extern unsigned wr_encode_char (struct font *, int);
 extern void wr_prepare_font(struct frame *f, struct font *font);
 #endif
 static Lisp_Object macfont_shape (Lisp_Object, Lisp_Object);
@@ -1794,7 +1798,11 @@ static struct font_driver macfont_driver =
   .open_font = macfont_open,
   .close_font = macfont_close,
   .has_char = macfont_has_char,
+#ifdef USE_WEBRENDER
+  .encode_char = wr_encode_char,
+#else
   .encode_char = macfont_encode_char,
+#endif
   .text_extents = macfont_text_extents,
 #ifdef USE_WEBRENDER
   .draw = wr_font_draw,

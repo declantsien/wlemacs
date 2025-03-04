@@ -19,7 +19,7 @@ use crate::types::{
     gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
     prepare_face_for_display, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    x_draw_xwidget_glyph_string, EmacsIntRect, EmacsRect, WrRect,
+    x_draw_xwidget_glyph_string, WrRect,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -680,7 +680,7 @@ pub extern "C" fn wr_font_draw(
     // let wr_font_info = unsafe { (gs().font as *mut crate::font::WrFontInfo).as_mut().unwrap() };
 
     // println!("wr_font_info {:?}", wr_font_info);
-    let font_instance_key = font.font_instance_key(f_mut());
+    let font_instance_key = font.font_instance_key();
     let glyph_instances = gs().glyph_instances(from as usize, to as usize, x, y);
     let visible_rect = (x, y).by(gs().width, gs().font().unwrap().height);
     println!("visible_rect {visible_rect:?}");
@@ -836,7 +836,7 @@ fn draw_glyph_string_bg_rect(s: &glyph_string, x: i32, y: i32, w: i32, h: i32) {
     }
 }
 
-/// cbindgen:ignore
+// cbindgen:ignore
 unsafe extern "C" {
     pub fn get_glyph_string_clip_rects(
         s: *mut glyph_string,

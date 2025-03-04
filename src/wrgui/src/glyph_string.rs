@@ -122,10 +122,7 @@ impl<'a> glyph_string {
         let origin = EmacsIntPoint::new(x, y).to_f32() * scale;
 
         let indices: Vec<u32> = self.glyph_indices()[from..to].iter().map(|c| *c).collect();
-        let dimensions = self
-            .font()
-            .unwrap()
-            .glyph_dimensions(self.f_mut(), indices.clone());
+        let dimensions = self.font().unwrap().glyph_dimensions(indices.clone());
         let (instances, _) = indices.into_iter().zip(dimensions.into_iter()).fold(
             (Vec::new(), origin),
             |(mut instances, mut point), (index, dimension)| {
