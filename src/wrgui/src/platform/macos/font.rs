@@ -17,6 +17,10 @@ impl font {
         let font_info = self as *const font as *const macfont_info;
         unsafe { font_info.as_ref() }
     }
+    pub fn font_info_mut(&mut self) -> Option<&mut FontInfo> {
+        let font_info = self as *mut font as *mut macfont_info;
+        unsafe { font_info.as_mut() }
+    }
 
     pub fn font_template(&self) -> FontTemplate {
         let font_info = self.font_info().unwrap();

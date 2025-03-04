@@ -36,6 +36,7 @@ Original author: YAMAMOTO Mitsuharu
 #include "macfont.h"
 #include "macuvs.h"
 #include "pdumper.h"
+#include "wr_ffi_generated.h"
 
 #include <libkern/OSByteOrder.h>
 /* Values for `dir' argument to shaper functions.  */
@@ -85,6 +86,8 @@ struct macfont_info
   bool_bf color_bitmap_p : 1;
 #ifdef USE_WEBRENDER
   struct frame *f;
+  WrFontKey key;
+  WrFontInstanceKey instance_key;
 #endif
 };
 

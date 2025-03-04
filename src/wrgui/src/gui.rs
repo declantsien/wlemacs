@@ -675,7 +675,9 @@ pub extern "C" fn wr_font_draw(
     let font = gs().font().unwrap();
     let canvas = f_mut().renderer_mut().unwrap();
 
-    // println!("{:?}", font_tpl);
+    // let wr_font_info = unsafe { (gs().font as *mut crate::font::WrFontInfo).as_mut().unwrap() };
+
+    // println!("wr_font_info {:?}", wr_font_info);
     let font_instance_key = font.font_instance_key(f_mut());
     let glyph_instances = gs().glyph_instances(from as usize, to as usize, x, y);
     let visible_rect = (x, y).by(gs().width, gs().font().unwrap().height);

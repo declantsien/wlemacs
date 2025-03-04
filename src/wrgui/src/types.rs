@@ -8,6 +8,7 @@ use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::{
     Box2D, Length, Point2D, Point3D, Scale, SideOffsets2D, Size2D, Vector2D, Vector3D,
 };
+use webrender_api::{FontInstanceKey, FontKey, IdNamespace};
 // NS_IMPL_COCOA
 use core_text::font::CTFontRef;
 
@@ -45,6 +46,35 @@ pub enum AntialiasBorder {
     No = 0,
     Yes,
 }
+
+// /// cbindgen:field-names=[mHandle]
+// /// cbindgen:derive-lt=true
+// /// cbindgen:derive-lte=true
+// /// cbindgen:derive-neq=true
+// type WrEpoch = Epoch;
+/// cbindgen:field-names=[mHandle]
+/// cbindgen:derive-lt=true
+/// cbindgen:derive-lte=true
+/// cbindgen:derive-neq=true
+pub type WrIdNamespace = IdNamespace;
+
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// type WrDocumentId = DocumentId;
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// type WrPipelineId = PipelineId;
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// /// cbindgen:derive-neq=true
+// type WrImageKey = ImageKey;
+/// cbindgen:field-names=[mNamespace, mHandle]
+pub type WrFontKey = FontKey;
+/// cbindgen:field-names=[mNamespace, mHandle]
+pub type WrFontInstanceKey = FontInstanceKey;
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// type WrYuvColorSpace = YuvColorSpace;
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// type WrColorDepth = ColorDepth;
+// /// cbindgen:field-names=[mNamespace, mHandle]
+// type WrColorRange = ColorRange;
 
 /// Hashable floating-point storage for glyph size.
 #[repr(C)]

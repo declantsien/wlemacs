@@ -10117,10 +10117,12 @@ pub struct macfont_info {
     pub _bitfield_align_1: [u8; 0],
     pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub f: *mut frame,
+    pub key: WrFontKey,
+    pub instance_key: WrFontInstanceKey,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of macfont_info"][::std::mem::size_of::<macfont_info>() - 272usize];
+    ["Size of macfont_info"][::std::mem::size_of::<macfont_info>() - 288usize];
     ["Alignment of macfont_info"][::std::mem::align_of::<macfont_info>() - 8usize];
     ["Offset of field: macfont_info::font"][::std::mem::offset_of!(macfont_info, font) - 0usize];
     ["Offset of field: macfont_info::macfont"]
@@ -10136,6 +10138,9 @@ const _: () = {
     ["Offset of field: macfont_info::metrics_nrows"]
         [::std::mem::offset_of!(macfont_info, metrics_nrows) - 256usize];
     ["Offset of field: macfont_info::f"][::std::mem::offset_of!(macfont_info, f) - 264usize];
+    ["Offset of field: macfont_info::key"][::std::mem::offset_of!(macfont_info, key) - 272usize];
+    ["Offset of field: macfont_info::instance_key"]
+        [::std::mem::offset_of!(macfont_info, instance_key) - 280usize];
 };
 impl macfont_info {
     #[inline]
