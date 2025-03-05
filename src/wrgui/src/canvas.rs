@@ -39,18 +39,9 @@ pub struct FringeBitmap {
 pub struct WrCanvas {
     size: EmacsIntSize,
     scale_factor: EmacsToDeviceScale,
-    fonts: FastHashMap<FontTemplate, FontKey>,
     fringe_bitmaps: FastHashMap<i32, FringeBitmap>,
-    font_instances: FastHashMap<
-        (
-            FontKey,
-            FontSize,
-            Option<FontInstanceOptions>,
-            Option<FontInstancePlatformOptions>,
-            Vec<FontVariation>,
-        ),
-        FontInstanceKey,
-    >,
+    /// info used when delete FontKey,
+    fonts: FastHashMap<FontKey, Vec<FontInstanceKey>>,
     images: FastHashMap<ImageHash, (ImageKey, ImageDescriptor)>,
     allow_mipmaps: bool,
     pub render_api: RenderApi,
@@ -127,10 +118,9 @@ impl WrCanvas {
         Self {
             size,
             scale_factor,
-            fonts: FastHashMap::default(),
-            font_instances: FastHashMap::default(),
             images: FastHashMap::default(),
             fringe_bitmaps: FastHashMap::default(),
+            fonts: FastHashMap::default(),
             allow_mipmaps: false,
             render_api: api,
             document_id,
@@ -350,16 +340,6 @@ impl WrCanvas {
         let now = std::time::Instant::now();
         let glyph_size = glyph_size * self.scale_factor;
         let glyph_size = glyph_size.get();
-        let hash_map_key = (
-            font_key,
-            FontSize::from_f32_px(glyph_size),
-            options,
-            platform_options,
-            variations.clone(),
-        );
-        if let Some(font_instance_key) = self.font_instances.get(&hash_map_key) {
-            return *font_instance_key;
-        };
 
         let key = self.render_api.generate_font_instance_key();
         let mut txn = Transaction::new();
@@ -377,6 +357,11 @@ impl WrCanvas {
             let elapsed = now.elapsed();
             log::trace!("wr add font instance in {:?}", elapsed);
         }
+        if let Some(instances) = self.fonts.get_mut(&font_key) {
+            if !instances.contains(&key) {
+                instances.push(key);
+            }
+        }
         key
     }
 
@@ -389,10 +374,6 @@ impl WrCanvas {
     pub fn wr_add_font(&mut self, data: FontTemplate) -> FontKey {
         #[cfg(not(target_arch = "wasm32"))]
         let now = std::time::Instant::now();
-
-        if let Some(key) = self.fonts.get(&data) {
-            return *key;
-        }
 
         let font_key = self.render_api.generate_font_key();
         let mut txn = Transaction::new();
@@ -407,8 +388,6 @@ impl WrCanvas {
 
         self.render_api.send_transaction(self.document_id, txn);
 
-        self.fonts.insert(data, font_key);
-
         #[cfg(not(target_arch = "wasm32"))]
         {
             let elapsed = now.elapsed();
@@ -417,8 +396,14 @@ impl WrCanvas {
         font_key
     }
 
-    pub fn wr_delete_font(&mut self, _key: FontKey) {
-        todo!()
+    pub fn wr_delete_font(&mut self, key: FontKey) {
+        if self.fonts.get(&key).map(|instances| instances.len()).unwrap_or(0) > 0 {
+            return;
+        }
+
+        let mut txn = Transaction::new();
+        txn.delete_font(key);
+        self.render_api.send_transaction(self.document_id, txn);
     }
 
     pub fn glyph_indices(&self, key: FontKey, text: &str) -> Vec<Option<GlyphIndex>> {

@@ -25,6 +25,13 @@ impl<'a> font {
     }
 }
 
+impl FontInfo {
+    pub fn wr(&self) -> Option<&mut WrCanvas> {
+        frame::from_ptr(self.f)
+            .and_then(|f| f.renderer_mut())
+    }
+}
+
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()
         .thread_name(|idx| format!("WRWorker#{}", idx))
@@ -222,6 +229,16 @@ pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
     )
 }
 
+/// cbindgen:ignore
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "C" fn wr_font_cleanup(font: *mut font) {
+    let font_info = FontInfo::from_ptr(font as *mut FontInfo).unwrap();
+    let instance_key = font_info.instance_key;
+    font_info.wr().unwrap().wr_delete_font_instance(instance_key);
+    font_info.wr().unwrap().wr_delete_font(font_info.key);
+}
+
 impl font {
     #[inline(always)]
     pub fn base(&self) -> i32 {
@@ -241,15 +258,15 @@ impl font {
         self.font_info().unwrap().instance_key
     }
 
+    pub fn wr(&self) -> Option<&mut WrCanvas> {
+        self
+            .font_info()
+            .and_then(|i| i.wr())
+    }
+
     pub fn glyph_dimensions(&self, indices: Vec<u32>) -> Vec<Option<GlyphDimensions>> {
         let instance_key = self.font_instance_key();
-        let wr = self
-            .font_info()
-            .map(|i| i.f)
-            .and_then(|f| frame::from_ptr(f))
-            .and_then(|f| f.renderer_mut())
-            .unwrap();
-        wr.glyph_dimensions(instance_key, indices)
+        self.wr().unwrap().glyph_dimensions(instance_key, indices)
     }
 }
 
