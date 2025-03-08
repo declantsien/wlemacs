@@ -397,7 +397,13 @@ impl WrCanvas {
     }
 
     pub fn wr_delete_font(&mut self, key: FontKey) {
-        if self.fonts.get(&key).map(|instances| instances.len()).unwrap_or(0) > 0 {
+        if self
+            .fonts
+            .get(&key)
+            .map(|instances| instances.len())
+            .unwrap_or(0)
+            > 0
+        {
             return;
         }
 

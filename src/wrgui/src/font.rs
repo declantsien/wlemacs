@@ -27,8 +27,7 @@ impl<'a> font {
 
 impl FontInfo {
     pub fn wr(&self) -> Option<&mut WrCanvas> {
-        frame::from_ptr(self.f)
-            .and_then(|f| f.renderer_mut())
+        frame::from_ptr(self.f).and_then(|f| f.renderer_mut())
     }
 }
 
@@ -235,7 +234,10 @@ pub extern "C" fn wr_prepare_font(f: *mut frame, font: *mut font) {
 pub extern "C" fn wr_font_cleanup(font: *mut font) {
     let font_info = FontInfo::from_ptr(font as *mut FontInfo).unwrap();
     let instance_key = font_info.instance_key;
-    font_info.wr().unwrap().wr_delete_font_instance(instance_key);
+    font_info
+        .wr()
+        .unwrap()
+        .wr_delete_font_instance(instance_key);
     font_info.wr().unwrap().wr_delete_font(font_info.key);
 }
 
@@ -259,9 +261,7 @@ impl font {
     }
 
     pub fn wr(&self) -> Option<&mut WrCanvas> {
-        self
-            .font_info()
-            .and_then(|i| i.wr())
+        self.font_info().and_then(|i| i.wr())
     }
 
     pub fn glyph_dimensions(&self, indices: Vec<u32>) -> Vec<Option<GlyphDimensions>> {

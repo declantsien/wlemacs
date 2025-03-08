@@ -1,10 +1,14 @@
 use std::cmp::{max, min};
+use std::sync::Arc;
 
 use bit_vec::BitVec;
 use euclid::{Point2D, Rect, Size2D};
-use image::{DynamicImage, Rgba, RgbaImage};
+use image::{DynamicImage, GenericImageView, Rgba, RgbaImage};
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use webrender_api::{AlphaType, ColorF, CommonItemProperties, ImageRendering};
+use webrender_api::{
+    AlphaType, ColorF, CommonItemProperties, ImageData, ImageDescriptor, ImageDescriptorFlags,
+    ImageFormat, ImageRendering,
+};
 
 use crate::canvas::WrCanvas;
 use crate::font::flush_pendings_fonts_to_wr;
@@ -19,7 +23,7 @@ use crate::types::{
     gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
     prepare_face_for_display, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    x_draw_xwidget_glyph_string, WrRect,
+    x_draw_xwidget_glyph_string, ExternalPtr, WrRect,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -168,15 +172,14 @@ extern "C" fn update_window_begin(w: *mut window) {
 extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_overwritten_p: bool) {
 }
 
+type GsRef = ExternalPtr<glyph_string>;
 #[allow(unused_variables)]
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     use glyph_type::*;
-    let mut r: [WrRect; 2] = [WrRect::zero(), WrRect::zero()];
-    let mut n: i32;
+
     let mut relief_drawn_p = false;
 
-    let gs = glyph_string::from_ptr(s).unwrap();
-    let gs_mut = || unsafe { s.as_mut().unwrap() };
+    let mut gs = GsRef::new(s);
 
     let font = gs.font().unwrap_or(gs.f().font().unwrap());
 
@@ -185,27 +188,22 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
     /* If S draws into the background of its successors, draw the
     background of the successors first so that S can draw into it.
     This makes S->next use XDrawString instead of XDrawImageString.  */
-    if gs.next().is_some() && gs.is_right_overhang() && !gs.is_for_overlaps() {
+    if !gs.next.is_null() && gs.is_right_overhang() && !gs.is_for_overlaps() {
         let mut width: i32 = 0;
-        let mut next = gs.next();
+        let mut next = GsRef::new(gs.next);
         loop {
-            if next.is_none() || width >= gs.right_overhang {
+            if next.is_null() || width >= gs.right_overhang {
                 break;
             }
-            let nxt = next.unwrap();
-            let type_ = nxt.glyph_type();
-            if type_ != IMAGE_GLYPH {
-                nxt.set_gc();
-                with_glyph_string_clipping(nxt, |s, clips, n| {
-                    println!("clips: {r:?}");
-                    match type_ {
-                        STRETCH_GLYPH => draw_stretch_glyph_string(s),
-                        _ => s.draw_background(true),
-                    }
-                });
-            }
-            width += nxt.width;
-            next = nxt.next();
+
+            with_glyph_string_clipping(next.as_mut(), &mut |clips, n| match next.glyph_type() {
+                IMAGE_GLYPH => {}
+                STRETCH_GLYPH => draw_stretch_glyph_string(gs.next),
+                _ => next.draw_background(true),
+            });
+
+            width += next.width;
+            next = GsRef::new(next.next);
         }
     }
 
@@ -214,12 +212,12 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
 
     /* Draw relief (if any) in advance for char/composition so that the
     glyph string can be drawn over it.  */
-    if !(gs.for_overlaps() != 0)
+    if !gs.is_for_overlaps()
         && gs.face().unwrap().box_() != face_box_type::FACE_NO_BOX
         && (gs.glyph_type() == CHAR_GLYPH || gs.glyph_type() == COMPOSITE_GLYPH)
     {
         // set_glyph_string_clipping (s,
-        gs_mut().draw_background(true);
+        gs.draw_background(true);
         // draw_glyph_string_box(s)
         relief_drawn_p = true;
     }
@@ -239,26 +237,23 @@ extern "C" fn draw_glyph_string(s: *mut glyph_string) {
             let is_composite = type_ == COMPOSITE_GLYPH;
             if gs.for_overlaps() != 0 || (is_composite && gs.cmp_from > 0 && !gs.cmp_is_automatic())
             {
-                gs_mut().set_background_filled_p(true);
+                gs.set_background_filled_p(true);
             } else {
-                gs_mut().draw_background(is_composite);
+                gs.draw_background(is_composite);
             }
             if is_composite {
                 unsafe { gui_draw_composite_glyph_string_foreground(s) };
             } else {
                 unsafe { gui_draw_char_glyph_string_foreground(s) };
             }
-
             /* Draw underline, overline, strike-through. */
-            let face = gs.face().unwrap();
-            let color = face.fg_color().unwrap_or(gs.f().fg_color());
-            gs_mut().draw_text_decoration(face, color, gs_mut().width, gs_mut().x);
+            gs.draw_text_decoration();
         }
         GLYPHLESS_GLYPH => {
             if gs.for_overlaps() != 0 {
-                gs_mut().set_background_filled_p(true);
+                gs.set_background_filled_p(true);
             } else {
-                gs_mut().draw_background(true);
+                gs.draw_background(true);
             }
             unsafe { gui_draw_glyphless_glyph_string_foreground(s) };
         }
@@ -569,6 +564,17 @@ extern "C" fn define_fringe_bitmap(
     });
 
     let image = DynamicImage::ImageRgba8(image_buffer);
+    let (width, height) = image.dimensions();
+
+    let descriptor = ImageDescriptor::new(
+        width as i32,
+        height as i32,
+        ImageFormat::RGBA8,
+        ImageDescriptorFlags::empty(),
+    );
+
+    let data = ImageData::Raw(Arc::new(image.to_rgba8().to_vec()));
+    let key = canvas.add_image(descriptor, data);
     // todo!()
 }
 
@@ -651,13 +657,11 @@ impl glyph_string {
 
     #[allow(unused_variables)]
     /* Draw underline, overline, strike-through. */
-    pub fn draw_text_decoration(
-        &mut self,
-        face: &face,
-        c: ColorF,
-        width: libc::c_int,
-        x: libc::c_int,
-    ) {
+    pub fn draw_text_decoration(&mut self) {
+        let face = self.face().unwrap();
+        let color = face.fg_color().unwrap_or(self.f().fg_color());
+        let w = self.width;
+        let x = self.x;
     }
 }
 
@@ -839,7 +843,7 @@ fn draw_glyph_string_bg_rect(s: &glyph_string, x: i32, y: i32, w: i32, h: i32) {
 // cbindgen:ignore
 unsafe extern "C" {
     pub fn get_glyph_string_clip_rects(
-        s: *mut glyph_string,
+        s: *const glyph_string,
         rects: *mut WrRect,
         n: libc::c_int,
     ) -> ::libc::c_int;
@@ -847,9 +851,21 @@ unsafe extern "C" {
 
 /* Set clipping for output of glyph string S.  S may be part of a mode
 line or menu if we don't have X toolkit support.  */
-fn with_glyph_string_clipping<F, T>(s: &mut glyph_string, f: F) -> T
+fn with_glyph_string_clipping<F, T>(s: *mut glyph_string, f: &mut F) -> T
 where
-    F: Fn(&mut glyph_string, &mut [WrRect; 2], i32) -> T,
+    F: FnMut(&[WrRect; 2], i32) -> T,
+{
+    let mut r: [WrRect; 2] = Default::default();
+    let n = unsafe { get_glyph_string_clip_rects(s, r.as_mut_ptr(), 2) }; //
+    f(&r, n)
+}
+
+/// Set S->gc of glyph string S for drawing that glyph string.  Set
+/// S->stippled_p to a non-zero value if the face of S has a stipple
+/// pattern.
+fn with_glyph_string_graphic_context<F, T>(s: &mut glyph_string, f: &mut F) -> T
+where
+    F: FnMut(&mut glyph_string, &mut [WrRect; 2], i32) -> T,
 {
     let mut r: [WrRect; 2] = Default::default();
     let n = unsafe { get_glyph_string_clip_rects(s, r.as_mut_ptr(), 2) };
