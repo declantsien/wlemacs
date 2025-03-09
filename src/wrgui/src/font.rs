@@ -13,7 +13,7 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use webrender_api::GlyphDimensions;
-use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterizer};
+use wr_glyph_rasterizer::{BaseFontInstance, FontInstance, GlyphRasterThread, GlyphRasterizer};
 
 impl<'a> font {
     pub fn from_ptr(f: *mut font) -> Option<&'a font> {
@@ -31,12 +31,36 @@ impl FontInfo {
     }
 }
 
+pub static WR_GLYPH_RASTERIZER_THREAD: LazyLock<Mutex<Option<GlyphRasterThread>>> =
+    LazyLock::new(|| {
+        let thread = GlyphRasterThread::new(
+            || {
+                // profiler::register_thread("WrGlyphRasterizer");
+            },
+            || {
+                // profiler::unregister_thread();
+            },
+        );
+        let thread = match thread {
+            Ok(thread) => Some(thread),
+            Err(..) => None,
+        };
+        Mutex::new(thread)
+    });
+
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()
         .thread_name(|idx| format!("WRWorker#{}", idx))
         .build();
     let workers = std::sync::Arc::new(worker.unwrap());
-    let rasterizer = GlyphRasterizer::new(workers, None, true);
+    // let thread = WR_GLYPH_RASTERIZER_THREAD
+    //     .lock()
+    //     .as_mut()
+    //     .map(|d| d.clone());
+    // let thread = GlyphRasterThread::new(||{}, ||{}).ok();
+    let thread = None;
+    println!("dedicated_glyph_raster_thread: {:?}", thread.is_some());
+    let rasterizer = GlyphRasterizer::new(workers, thread, true);
     Mutex::new(rasterizer)
 });
 
@@ -170,13 +194,17 @@ pub fn with_get_glyph_dimension<F>(
         let glyph_size: EmacsLength = EmacsLength::new(glyph_size as f32);
         let glyph_size = GlyphSize::from_layout_length(glyph_size * scale_factor);
         let instance = wr_font_instance(key, glyph_size, Some(&mut rasterizer));
+        println!("key: {key:?}, instance: {instance:?}");
 
         let get_glyph_dimension = Box::new(|ch: char| -> Option<GlyphDimensions> {
             let index = rasterizer.get_glyph_index(key, ch);
+            println!("index: {index:?}");
             /* In order to simulate the Xft behavior, we use metrics of
             glyph ID 0 if there is no glyph for an ASCII printable.  */
             let index = index.unwrap_or(0);
-            rasterizer.get_glyph_dimensions(&instance, index)
+            let result = rasterizer.get_glyph_dimensions(&instance, index);
+            println!("dimension: {result:?}");
+            result
         });
         font_info.f = fr.unwrap();
         f(&mut Box::new(get_glyph_dimension), true);

@@ -574,7 +574,7 @@ extern "C" fn define_fringe_bitmap(
     );
 
     let data = ImageData::Raw(Arc::new(image.to_rgba8().to_vec()));
-    let key = canvas.add_image(descriptor, data);
+    // let key = canvas.add_image(descriptor, data);
     // todo!()
 }
 

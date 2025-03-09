@@ -84,6 +84,11 @@ impl WrCanvas {
         // webrender
         let webrender_opts = webrender::WebRenderOptions {
             clear_color: ColorF::new(1.0, 1.0, 1.0, 1.0),
+            dedicated_glyph_raster_thread: wr_glyph_rasterizer::GlyphRasterThread::new(
+                || {},
+                || {},
+            )
+            .ok(),
             ..webrender::WebRenderOptions::default()
         };
 
@@ -178,10 +183,6 @@ impl WrCanvas {
 
         image_key
     }
-
-    // pub fn scale(&self) -> f32 {
-    //     self.frame.scale_factor() as f32
-    // }
 
     pub fn emacs_to_layout_scale(&self) -> EmacsToLayoutScale {
         EmacsToLayoutScale::new(self.scale_factor.get())

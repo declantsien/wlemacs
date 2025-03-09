@@ -418,4 +418,14 @@ syms_of_webrender (void)
 #ifdef GLYPH_DEBUG
   Fprovide (Qwr_capture, Qnil);
 #endif
+
+  DEFVAR_BOOL ("wr-worker-thread-local-arena", wr_worker_thread_local_arena,
+	       doc: /* TODO add documents */);
+
+  wr_worker_thread_local_arena = 1;
+  DEFVAR_BOOL ("wr-precache-shaders", wr_precache_shaders,
+	       doc: /* TODO add documents */);
+
+  wr_precache_shaders = 1;
+
 }
