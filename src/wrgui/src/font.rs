@@ -31,7 +31,7 @@ impl FontInfo {
     }
 }
 
-pub static WR_GLYPH_RASTERIZER_THREAD: LazyLock<Mutex<Option<GlyphRasterThread>>> =
+static WR_GLYPH_RASTERIZER_THREAD: LazyLock<Mutex<Option<GlyphRasterThread>>> =
     LazyLock::new(|| {
         let thread = GlyphRasterThread::new(
             || {
@@ -48,6 +48,19 @@ pub static WR_GLYPH_RASTERIZER_THREAD: LazyLock<Mutex<Option<GlyphRasterThread>>
         Mutex::new(thread)
     });
 
+pub trait DedicatedGlyphRasterThread {
+    fn dedicated() -> Option<GlyphRasterThread>;
+}
+
+impl DedicatedGlyphRasterThread for GlyphRasterThread {
+    fn dedicated() -> Option<Self> {
+        WR_GLYPH_RASTERIZER_THREAD
+            .lock()
+            .as_mut()
+            .map(|d| d.clone())
+    }
+}
+
 static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| {
     let worker = rayon::ThreadPoolBuilder::new()
         .thread_name(|idx| format!("WRWorker#{}", idx))
@@ -57,10 +70,8 @@ static WR_GLYPH_RASTERIZER: LazyLock<Mutex<GlyphRasterizer>> = LazyLock::new(|| 
     //     .lock()
     //     .as_mut()
     //     .map(|d| d.clone());
-    // let thread = GlyphRasterThread::new(||{}, ||{}).ok();
-    let thread = None;
-    println!("dedicated_glyph_raster_thread: {:?}", thread.is_some());
-    let rasterizer = GlyphRasterizer::new(workers, thread, true);
+    // println!("dedicated_glyph_raster_thread: {:?}", thread.is_some());
+    let rasterizer = GlyphRasterizer::new(workers, GlyphRasterThread::dedicated(), true);
     Mutex::new(rasterizer)
 });
 

@@ -7,6 +7,7 @@ use crate::types::{
 use image::GenericImageView;
 use webrender::api::euclid::Length;
 
+use super::font::DedicatedGlyphRasterThread;
 use super::types::ImageHash;
 use crate::gfx::context::GLContextTrait;
 use std::cell::RefCell;
@@ -84,11 +85,7 @@ impl WrCanvas {
         // webrender
         let webrender_opts = webrender::WebRenderOptions {
             clear_color: ColorF::new(1.0, 1.0, 1.0, 1.0),
-            dedicated_glyph_raster_thread: wr_glyph_rasterizer::GlyphRasterThread::new(
-                || {},
-                || {},
-            )
-            .ok(),
+            dedicated_glyph_raster_thread: wr_glyph_rasterizer::GlyphRasterThread::dedicated(),
             ..webrender::WebRenderOptions::default()
         };
 
