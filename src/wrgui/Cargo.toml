@@ -35,6 +35,7 @@ default-features = false
 # rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
 path = "../../../webrender/webrender_api"
 default-features = false
+features = ["serialize"]
 
 [dependencies.wr_glyph_rasterizer]
 # git = "https://github.com/declantsien/webrender.git"

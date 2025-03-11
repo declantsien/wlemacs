@@ -37,6 +37,115 @@ pub struct FringeBitmap {
     pub height: u32,
 }
 
+pub trait RetainedDisplayList {
+    fn retained(pipeline_id: PipelineId, dl: Option<&BuiltDisplayList>) -> DisplayListBuilder;
+}
+
+static mut count: i32 = 0;
+
+impl RetainedDisplayList for DisplayListBuilder {
+    fn retained(pipeline_id: PipelineId, dl: Option<&BuiltDisplayList>) -> DisplayListBuilder {
+        let mut builder = DisplayListBuilder::new(pipeline_id);
+        builder.begin();
+        if dl.is_none() {
+            unsafe { count = 0 };
+            return builder;
+        }
+        unsafe { count += 1 };
+        let dl = dl.unwrap();
+        let mut iterator: BuiltDisplayListIter = dl.iter();
+        use DisplayItem::*;
+
+        dl.iter_spatial_tree(|item| {
+            builder.push_spatial_tree_item(item);
+        });
+
+        while let Some(item) = iterator.next_raw() {
+            let it = *item.item();
+            // println!("loop {:?}", it);
+            match it {
+                Rectangle(_)
+                | ClearRectangle(_)
+                | HitTest(_)
+                | Line(_)
+                | Border(_)
+                | BoxShadow(_)
+                | PushShadow(_)
+                | Gradient(_)
+                | RadialGradient(_)
+                | ConicGradient(_)
+                | Image(_)
+                | RepeatingImage(_)
+                | YuvImage(_)
+                | BackdropFilter(_)
+                | RectClip(_)
+                | RoundedRectClip(_)
+                | ImageMaskClip(_)
+                | Iframe(_)
+                | PushReferenceFrame(_)
+                | PushStackingContext(_) => builder.push_item(&it),
+                ClipChain(_) => {
+                    let clips = item.clip_chain_items().iter().collect::<Vec<_>>();
+                    builder.push_item(&it);
+                    builder.push_iter(clips);
+                }
+                Text(_) => {
+                    let glyphs = item.glyphs().iter().collect::<Vec<_>>();
+                    for split_glyphs in glyphs.chunks(MAX_TEXT_RUN_LENGTH) {
+                        builder.push_item(&it);
+                        builder.push_iter(split_glyphs);
+                    }
+                }
+                SetGradientStops => {
+                    let stops = item.gradient_stops().iter().collect::<Vec<_>>();
+                    builder.push_stops(stops.as_slice());
+                }
+                SetFilterOps => {
+                    let filters = item.filters().iter().collect::<Vec<_>>();
+                    builder.push_item(&SetFilterOps);
+                    builder.push_iter(filters);
+                }
+                SetFilterData => {
+                    debug_assert!(
+                        !item.filter_datas().is_empty(),
+                        "next_raw should have populated cur_filter_data"
+                    );
+                    let temp_filter_data = &item.filter_datas()[item.filter_datas().len() - 1];
+                    let func_types: Vec<ComponentTransferFuncType> =
+                        temp_filter_data.func_types.iter().collect();
+                    debug_assert!(
+                        func_types.len() == 4,
+                        "someone changed the number of filter funcs without updating this code"
+                    );
+                    builder.push_item(&SetFilterData);
+                    builder.push_iter(func_types);
+                    builder.push_iter(temp_filter_data.r_values.iter().collect::<Vec<_>>());
+                    builder.push_iter(temp_filter_data.g_values.iter().collect::<Vec<_>>());
+                    builder.push_iter(temp_filter_data.b_values.iter().collect::<Vec<_>>());
+                    builder.push_iter(temp_filter_data.a_values.iter().collect::<Vec<_>>());
+                }
+                SetFilterPrimitives => {
+                    let filter_primitives = item.filter_primitives().iter().collect::<Vec<_>>();
+                    builder.push_item(&SetFilterPrimitives);
+                    builder.push_iter(filter_primitives);
+                }
+                SetPoints => {
+                    let points = item.points().iter().collect::<Vec<_>>();
+                    builder.push_item(&SetPoints);
+                    builder.push_iter(points);
+                }
+                PopReferenceFrame => builder.pop_reference_frame(),
+                PopStackingContext => builder.pop_stacking_context(),
+                PopAllShadows => builder.pop_all_shadows(),
+
+                ReuseItems(_) | RetainedItems(_) => unreachable!("Unexpected item"),
+            };
+        }
+
+        builder
+    }
+}
+
 pub struct WrCanvas {
     size: EmacsIntSize,
     scale_factor: EmacsToDeviceScale,
@@ -60,6 +169,7 @@ pub struct WrCanvas {
     renderer: Renderer,
     gl_context: GLContext,
     gl: Rc<dyn gl::Gl>,
+    built_display_list: Option<BuiltDisplayList>,
 }
 
 impl fmt::Debug for WrCanvas {
@@ -137,6 +247,7 @@ impl WrCanvas {
             gl_context,
             gl,
             texture_resources,
+            built_display_list: None,
         }
     }
 
@@ -194,21 +305,22 @@ impl WrCanvas {
         let pipeline_id = self.pipeline_id;
 
         let layout_size = self.layout_size();
-        let mut builder = DisplayListBuilder::new(pipeline_id);
-        builder.begin();
+        let mut builder =
+            DisplayListBuilder::retained(pipeline_id, self.built_display_list.as_ref());
+        // builder.begin();
 
-        if let Some((image_key, image_rect)) = image {
-            let bounds = LayoutRect::from_size(layout_size);
+        // if let Some((image_key, image_rect)) = image {
+        //     let bounds = LayoutRect::from_size(layout_size);
 
-            builder.push_image(
-                &CommonItemProperties::new(bounds, self.root_space_and_clip),
-                image_rect,
-                ImageRendering::Auto,
-                AlphaType::PremultipliedAlpha,
-                image_key,
-                ColorF::WHITE,
-            );
-        }
+        //     builder.push_image(
+        //         &CommonItemProperties::new(bounds, self.root_space_and_clip),
+        //         image_rect,
+        //         ImageRendering::Auto,
+        //         AlphaType::PremultipliedAlpha,
+        //         image_key,
+        //         ColorF::WHITE,
+        //     );
+        // }
 
         builder
     }
@@ -287,8 +399,11 @@ impl WrCanvas {
         if let Some(mut builder) = builder {
             let epoch = self.epoch;
             let mut txn = Transaction::new();
+            let (pipeline_id, built_display_list) = builder.end();
 
-            txn.set_display_list(epoch, builder.end());
+            self.built_display_list = Some(built_display_list.clone());
+
+            txn.set_display_list(epoch, (pipeline_id, built_display_list));
             txn.set_root_pipeline(self.pipeline_id);
             txn.generate_frame(0, true, RenderReasons::NONE);
 
