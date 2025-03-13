@@ -401,7 +401,12 @@ impl WrCanvas {
             let mut txn = Transaction::new();
             let (pipeline_id, built_display_list) = builder.end();
 
-            self.built_display_list = Some(built_display_list.clone());
+            if false {
+                // self.built_display_list = Some(built_display_list.clone());
+                let mut iterator: BuiltDisplayListIter = built_display_list.iter();
+                let items = BuiltDisplayList::create_debug_display_items(iterator);
+                println!("items: {items:?}");
+            }
 
             txn.set_display_list(epoch, (pipeline_id, built_display_list));
             txn.set_root_pipeline(self.pipeline_id);
@@ -743,13 +748,7 @@ impl WrCanvas {
         });
     }
 
-    pub fn push_border(
-        &mut self,
-        color_pixel: ::libc::c_ulong,
-        rect: LayoutRect,
-        clip_rect: Option<LayoutRect>,
-    ) {
-        let color = pixel_to_color(color_pixel);
+    pub fn push_border(&mut self, color: ColorF, rect: EmacsRect, clip_rect: Option<EmacsRect>) {
         let border_widths = LayoutSideOffsets::new_all_same(1.0);
 
         let border_side = BorderSide {
@@ -766,13 +765,17 @@ impl WrCanvas {
             do_aa: true,
         });
 
-        self.display(|builder, space_and_clip, _| {
-            builder.push_border(
-                &CommonItemProperties::new(clip_rect.unwrap_or(rect), space_and_clip),
-                rect,
-                border_widths,
-                border_details,
-            );
+        self.display(|builder, space_and_clip, scale| {
+            let prim_info = CommonItemProperties {
+                clip_rect: clip_rect.unwrap_or(rect) * scale,
+                clip_chain_id: space_and_clip.clip_chain_id,
+                spatial_id: space_and_clip.spatial_id,
+                flags: prim_flags(
+                    true, // is_backface_visible,
+                    /* prefer_compositor_surface */ false,
+                ),
+            };
+            builder.push_border(&prim_info, rect * scale, border_widths, border_details);
         });
     }
 

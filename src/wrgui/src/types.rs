@@ -3,7 +3,7 @@ use euclid::Rect;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
-use std::{mem, ptr};
+use std::{fmt, mem, ptr};
 use webrender::api::units::{DevicePixel, LayoutPixel};
 use webrender::euclid::{
     Box2D, Length, Point2D, Point3D, Scale, SideOffsets2D, Size2D, Vector2D, Vector3D,
@@ -467,3 +467,30 @@ pub fn BASE_EQ(x: Lisp_Object, y: Lisp_Object) -> bool {
 pub fn NILP(x: Lisp_Object) -> bool {
     BASE_EQ(x, unsafe { Qnil })
 }
+
+// impl fmt::Debug for Lisp_Object {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         todo!()
+//         // let valid = unsafe { valid_lisp_object_p(*self) };
+//         // if valid > 0 {
+//         //     let loutput = unsafe { Fprin1_to_string(*self, Qexternal_debugging_output, Qnil) };
+//         //     let output: String = loutput.into();
+//         //     return write!(f, "{}", output);
+//         // } else {
+//         //     let n = unsafe { XLI(*self) };
+//         //     let prefix = {
+//         //         if valid == 0 {
+//         //             "INVALID"
+//         //         } else {
+//         //             "SOME"
+//         //         }
+//         //     };
+//         //     write!(
+//         //         f,
+//         //         "#<{prefix}_LISP_OBJECT 0x{:08}{}x>\r\n",
+//         //         n,
+//         //         std::str::from_utf8(pI).unwrap()
+//         //     )
+//         // }
+//     }
+// }

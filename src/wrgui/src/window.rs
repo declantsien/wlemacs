@@ -1,8 +1,9 @@
 use std::cmp::max;
 
 use crate::types::{
-    frame, get_phys_cursor_geometry, get_phys_cursor_glyph, glyph, glyph_row, glyph_row_area,
-    text_cursor_kinds, window, window_box, window_to_frame_pixel_y, EmacsIntRect, XFRAME,
+    frame, get_phys_cursor_geometry, get_phys_cursor_glyph, glyph, glyph_matrix, glyph_row,
+    glyph_row_area, text_cursor_kinds, window, window_box, window_to_frame_pixel_y, EmacsIntRect,
+    Lisp_Object, XFRAME, XWINDOW,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -15,6 +16,11 @@ unsafe extern "C" {
 }
 
 impl<'a> window {
+    pub fn from_lisp(w: Lisp_Object) -> Option<&'a window> {
+        let w = unsafe { XWINDOW(w) };
+        unsafe { w.as_ref() }
+    }
+
     pub fn from_ptr(f: *mut window) -> Option<&'a window> {
         unsafe { f.as_ref() }
     }
@@ -121,3 +127,25 @@ impl<'a> window {
     #[allow(unused_variables)]
     pub fn draw_bar_cursor(&self, row: &glyph_row, width: ::libc::c_int, kind: text_cursor_kinds) {}
 }
+
+impl glyph_matrix {
+    pub fn rows(&self) -> &[glyph_row] {
+        unsafe { std::slice::from_raw_parts(self.rows, self.rows_allocated as usize) }
+    }
+}
+
+impl glyph_row {
+    pub fn glyphs(&self) -> Vec<&glyph> {
+        self.glyphs
+            .iter()
+            .map(|g| unsafe { g.as_ref().unwrap() })
+            .collect()
+    }
+}
+
+// window body/modeline/echo area/cursor/frige in different layer
+// body using a scroll frame
+// get window content height or just
+// window current matrix to display items
+// update display items with desired matrix
+// draw glyphs details draw_glyphs from xdisp.c

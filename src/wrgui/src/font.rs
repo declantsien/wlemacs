@@ -205,16 +205,16 @@ pub fn with_get_glyph_dimension<F>(
         let glyph_size: EmacsLength = EmacsLength::new(glyph_size as f32);
         let glyph_size = GlyphSize::from_layout_length(glyph_size * scale_factor);
         let instance = wr_font_instance(key, glyph_size, Some(&mut rasterizer));
-        println!("key: {key:?}, instance: {instance:?}");
+        // println!("key: {key:?}, instance: {instance:?}");
 
         let get_glyph_dimension = Box::new(|ch: char| -> Option<GlyphDimensions> {
             let index = rasterizer.get_glyph_index(key, ch);
-            println!("index: {index:?}");
+            // println!("index: {index:?}");
             /* In order to simulate the Xft behavior, we use metrics of
             glyph ID 0 if there is no glyph for an ASCII printable.  */
             let index = index.unwrap_or(0);
             let result = rasterizer.get_glyph_dimensions(&instance, index);
-            println!("dimension: {result:?}");
+            // println!("dimension: {result:?}");
             result
         });
         font_info.f = fr.unwrap();

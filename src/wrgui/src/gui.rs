@@ -11,19 +11,20 @@ use webrender_api::{
 };
 
 use crate::canvas::WrCanvas;
+use crate::color::lookup_color_by_name_or_hex;
 use crate::font::flush_pendings_fonts_to_wr;
 use crate::gfx::context::{GLContext, GLContextTrait};
 use crate::platform::gui::{default_font_parameter, define_frame_cursor};
 use crate::platform::pixel_to_color;
 use crate::types::{
-    block_input, draw_fringe_bitmap_params, draw_glyphs_face, draw_phys_cursor_glyph, face,
+    block_input, draw_fringe_bitmap_params, draw_glyphs_face, draw_phys_cursor_glyph,
     face_box_type, face_id, frame, get_phys_cursor_glyph, globals, glyph_row, glyph_row_area,
     glyph_string, glyph_type, gui_clear_cursor, gui_clear_end_of_line, gui_clear_window_mouse_face,
     gui_draw_char_glyph_string_foreground, gui_draw_composite_glyph_string_foreground,
     gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
     prepare_face_for_display, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    x_draw_xwidget_glyph_string, ExternalPtr, WrRect,
+    x_draw_xwidget_glyph_string, ExternalPtr, WrRect, NILP, WINDOWP,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -46,13 +47,14 @@ impl glyph_matrix {
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wrgui_init(f: *mut frame) {
+    println!("winit_init");
     use crate::types::{EmacsIntSize, EmacsToDeviceScale};
     let f = frame::from_ptr(f).unwrap();
     let scale_factor = f.scale_factor();
 
     let display_handle = f.display_handle().unwrap().as_raw();
     let window_handle = f.window_handle().unwrap().as_raw();
-    println!("window handle: {window_handle:?}");
+    // println!("window handle: {window_handle:?}");
     let size = EmacsIntSize::new(f.pixel_width, f.pixel_height);
     let device_size = (size.to_f32() * EmacsToDeviceScale::new(scale_factor as f32)).to_i32();
     let gl_context = GLContext::build(display_handle, window_handle, device_size.to_i32());
@@ -100,6 +102,7 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
 
 #[allow(unused_variables)]
 extern "C" fn scroll_run(w: *mut window, run: *mut run) {
+    println!("scroll_run");
     let win = window::from_ptr(w).unwrap();
     let win_mut = window::from_ptr_mut(w).unwrap();
     let f = win.x_frame_mut().unwrap();
@@ -160,21 +163,29 @@ extern "C" fn scroll_run(w: *mut window, run: *mut run) {
 
 #[allow(unused_variables)]
 extern "C" fn after_update_window_line(w: *mut window, desired_row: *mut glyph_row) {
-    println!("after_update_window_line");
+    // println!("after_update_window_line");
 }
 
 #[allow(unused_variables)]
 extern "C" fn update_window_begin(w: *mut window) {
-    println!("update_window_begin");
+    // println!("update_window_begin");
 }
 
 #[allow(unused_variables)]
 extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_overwritten_p: bool) {
+    let w = window::from_ptr(w).unwrap();
+    let current_matrix = unsafe { w.current_matrix.as_ref().unwrap() };
+    let desired_matrix = unsafe { w.desired_matrix.as_ref().unwrap() };
+    // println!("current_matrix: {current_matrix:?}");
+    // println!("current_matrix rows: {:?}", current_matrix.rows()[0].glyphs().len());
+    // println!("desired_matrix: {desired_matrix:?}");
+    // println!("desired_matrix rows: {:?}", desired_matrix.rows());
 }
 
 type GsRef = ExternalPtr<glyph_string>;
 #[allow(unused_variables)]
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {
+    println!("draw_glyph_string");
     use glyph_type::*;
 
     let mut relief_drawn_p = false;
@@ -269,6 +280,7 @@ extern "C" fn draw_fringe_bitmap(
     row: *mut glyph_row,
     p: *mut draw_fringe_bitmap_params,
 ) {
+    println!("draw_fringe_bitmap");
     let w = window::from_ptr_mut(w).unwrap();
     let f = window::from_ptr(w).unwrap().x_frame_mut().unwrap();
     let row = unsafe { row.as_ref().unwrap() };
@@ -311,7 +323,13 @@ extern "C" fn draw_fringe_bitmap(
 
 #[allow(unused_variables)]
 extern "C" fn flush_display(f: *mut frame) {
+    // walk_throught_window_tree(frame::from_ptr(f).unwrap());
+
     if let Some(r) = frame::from_ptr(f).and_then(|f| f.renderer_mut()) {
+        build_display_list_from_window_tree(
+            window::from_lisp(frame::from_ptr(f).unwrap().root_window),
+            r,
+        );
         r.flush();
     }
 }
@@ -324,6 +342,7 @@ extern "C" fn clear_frame_area(
     width: ::libc::c_int,
     height: ::libc::c_int,
 ) {
+    println!("clear_frame_area");
     let f = frame::from_ptr(f).unwrap();
     let r = (x, y).by(width, height);
     f.clear_area(r.to_i32());
@@ -340,6 +359,9 @@ extern "C" fn draw_window_cursor(
     on_p: bool,
     active_p: bool,
 ) {
+    println!("draw_window_cursor");
+    println!("window addr {} {:?}", w.addr(), cursor_type);
+    return;
     use text_cursor_kinds::*;
     let win = window::from_ptr_mut(w).unwrap();
     let f = window::from_ptr(w).and_then(|w| w.x_frame_mut()).unwrap();
@@ -474,6 +496,7 @@ extern "C" fn draw_vertical_window_border(
     y0: ::libc::c_int,
     y1: ::libc::c_int,
 ) {
+    println!("draw_vertical_window_border");
     let win = window::from_ptr(w);
     let f = || window::from_ptr_mut(w).unwrap().x_frame_mut().unwrap();
     let face = f().face_from_id_or_null(face_id::VERTICAL_BORDER_FACE_ID);
@@ -497,6 +520,7 @@ extern "C" fn draw_window_divider(
     y0: ::libc::c_int,
     y1: ::libc::c_int,
 ) {
+    println!("draw_window_divider");
     let win = window::from_ptr(w);
     let f = || window::from_ptr_mut(w).unwrap().x_frame_mut().unwrap();
     let get_color = |id| {
@@ -675,6 +699,7 @@ pub extern "C" fn wr_font_draw(
     y: ::libc::c_int,
     with_background: bool,
 ) {
+    println!("wr_font_draw");
     let gs = || unsafe { s.as_ref().unwrap() };
     let gs_mut = || unsafe { s.as_mut().unwrap() };
     let f_mut = || gs_mut().f_mut();
@@ -687,7 +712,7 @@ pub extern "C" fn wr_font_draw(
     let font_instance_key = font.font_instance_key();
     let glyph_instances = gs().glyph_instances(from as usize, to as usize, x, y);
     let visible_rect = (x, y).by(gs().width, gs().font().unwrap().height);
-    println!("visible_rect {visible_rect:?}");
+    // println!("visible_rect {visible_rect:?}");
     // // FIXME visible_rect set above is not correct here, hard code it for now
     let visible_rect = (0, 0).by(f_mut().pixel_width, f_mut().pixel_height);
     if with_background {
@@ -727,6 +752,7 @@ extern "C" fn draw_border(
 }
 
 fn draw_stretch_glyph_string(s: *mut glyph_string) {
+    println!("draw_stretch_glyph_string");
     let gs = glyph_string::from_ptr(s).unwrap();
     let wr = glyph_string::from_ptr_mut(s)
         .and_then(|s| Some(s.f_mut()))
@@ -870,4 +896,64 @@ where
     let mut r: [WrRect; 2] = Default::default();
     let n = unsafe { get_glyph_string_clip_rects(s, r.as_mut_ptr(), 2) };
     f(s, &mut r, n)
+}
+
+fn walk_throught_window_tree(f: &frame) {}
+
+/* Build the matrix by walking the window tree.  */
+fn build_display_list_from_window_tree(
+    w: Option<&window>,
+    wr: &mut WrCanvas, // f->desired_matrix,
+                       // XWINDOW (FRAME_ROOT_WINDOW (f))
+) {
+    println!("window tree {}", (w.unwrap() as *const window).addr());
+    // let w = window::from_lisp(f.root_window);
+    let mut win = w;
+    while let Some(w) = win {
+        if unsafe { WINDOWP(w.contents) } {
+            build_display_list_from_window_tree(window::from_lisp(w.contents), wr);
+        } else {
+            build_display_list_from_leaf_window(w, wr);
+        }
+
+        win = if NILP(w.next) {
+            None
+        } else {
+            window::from_lisp(w.next)
+        };
+    }
+}
+
+/* Add a window's matrix to a frame matrix.  FRAME_MATRIX is the
+desired frame matrix built.  W is a leaf window whose desired or
+current matrix is to be added to FRAME_MATRIX.  W's flag
+must_be_updated_p determines which matrix it contributes to
+FRAME_MATRIX.  If W->must_be_updated_p, W's desired matrix
+is added to FRAME_MATRIX, otherwise W's current matrix is added.
+Adding a desired matrix means setting up used counters and such in
+frame rows, while adding a current window matrix to FRAME_MATRIX
+means copying glyphs.  The latter case corresponds to
+preserve_other_columns in the old redisplay.  */
+
+fn build_display_list_from_leaf_window(
+    // struct glyph_matrix *frame_matrix,
+    w: &window,
+    wr: &mut WrCanvas,
+) {
+    let cur = unsafe { w.desired_matrix.as_ref().unwrap() };
+    let rows = cur.rows();
+    rows.iter().for_each(|r| {
+        wr.push_border(
+            lookup_color_by_name_or_hex("red").unwrap(),
+            (r.x + w.pixel_left, r.y + w.pixel_top).by(r.pixel_width, r.visible_height),
+            None,
+        );
+    });
+
+    wr.push_border(
+        ColorF::BLACK,
+        (w.pixel_left, w.pixel_top).by(w.pixel_width, w.pixel_height),
+        None,
+    );
+    println!("window leaf {}", (w as *const window).addr());
 }

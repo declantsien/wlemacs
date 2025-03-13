@@ -843,6 +843,8 @@ pub struct emacs_globals {
     pub f_window_resize_pixelwise: bool,
     pub f_word_wrap_by_category: bool,
     pub f_words_include_escapes: bool,
+    pub f_wr_precache_shaders: bool,
+    pub f_wr_worker_thread_local_arena: bool,
     pub f_write_region_inhibit_fsync: bool,
     pub f_x_stretch_cursor_p: bool,
     pub f_x_underline_at_descent_line: bool,
@@ -851,7 +853,7 @@ pub struct emacs_globals {
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of emacs_globals"][::std::mem::size_of::<emacs_globals>() - 4192usize];
+    ["Size of emacs_globals"][::std::mem::size_of::<emacs_globals>() - 4200usize];
     ["Alignment of emacs_globals"][::std::mem::align_of::<emacs_globals>() - 8usize];
     ["Offset of field: emacs_globals::f_V_comp_no_native_file_h"]
         [::std::mem::offset_of!(emacs_globals, f_V_comp_no_native_file_h) - 0usize];
@@ -2176,16 +2178,20 @@ const _: () = {
         [::std::mem::offset_of!(emacs_globals, f_word_wrap_by_category) - 4184usize];
     ["Offset of field: emacs_globals::f_words_include_escapes"]
         [::std::mem::offset_of!(emacs_globals, f_words_include_escapes) - 4185usize];
+    ["Offset of field: emacs_globals::f_wr_precache_shaders"]
+        [::std::mem::offset_of!(emacs_globals, f_wr_precache_shaders) - 4186usize];
+    ["Offset of field: emacs_globals::f_wr_worker_thread_local_arena"]
+        [::std::mem::offset_of!(emacs_globals, f_wr_worker_thread_local_arena) - 4187usize];
     ["Offset of field: emacs_globals::f_write_region_inhibit_fsync"]
-        [::std::mem::offset_of!(emacs_globals, f_write_region_inhibit_fsync) - 4186usize];
+        [::std::mem::offset_of!(emacs_globals, f_write_region_inhibit_fsync) - 4188usize];
     ["Offset of field: emacs_globals::f_x_stretch_cursor_p"]
-        [::std::mem::offset_of!(emacs_globals, f_x_stretch_cursor_p) - 4187usize];
+        [::std::mem::offset_of!(emacs_globals, f_x_stretch_cursor_p) - 4189usize];
     ["Offset of field: emacs_globals::f_x_underline_at_descent_line"]
-        [::std::mem::offset_of!(emacs_globals, f_x_underline_at_descent_line) - 4188usize];
+        [::std::mem::offset_of!(emacs_globals, f_x_underline_at_descent_line) - 4190usize];
     ["Offset of field: emacs_globals::f_x_use_underline_position_properties"]
-        [::std::mem::offset_of!(emacs_globals, f_x_use_underline_position_properties) - 4189usize];
+        [::std::mem::offset_of!(emacs_globals, f_x_use_underline_position_properties) - 4191usize];
     ["Offset of field: emacs_globals::f_xft_ignore_color_fonts"]
-        [::std::mem::offset_of!(emacs_globals, f_xft_ignore_color_fonts) - 4190usize];
+        [::std::mem::offset_of!(emacs_globals, f_xft_ignore_color_fonts) - 4192usize];
 };
 unsafe extern "C" {
     pub static mut globals: emacs_globals;
@@ -11849,6 +11855,9 @@ impl window {
         });
         __bindgen_bitfield_unit
     }
+}
+unsafe extern "C" {
+    pub fn WINDOWP(a: Lisp_Object) -> bool;
 }
 unsafe extern "C" {
     pub fn XWINDOW(a: Lisp_Object) -> *mut window;
