@@ -1,17 +1,123 @@
 use parking_lot::Mutex;
+use webrender_api::units::{DeviceIntSize, TexelRect};
+use webrender_api::{ExternalImage, ExternalImageHandler, ExternalImageId, ExternalImageSource, ImageDescriptor, ImageDescriptorFlags, ImageFormat};
+use std::os::raw::c_void;
 use std::sync::LazyLock;
 use webrender::FastHashMap;
 
 use webrender::api::ImageKey;
 
 use crate::types::face;
+use crate::util::make_slice;
 
-static BITMAPS: LazyLock<Mutex<FastHashMap<::libc::c_int, ImageKey>>> =
+static BITMAPS: LazyLock<Mutex<FastHashMap<::libc::c_int, Vec<u8>>>> =
     LazyLock::new(Default::default);
+
+/// Used to indicate if an image is opaque, or has an alpha channel.
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum OpacityType {
+    Opaque = 0,
+    HasAlphaChannel = 1,
+}
+
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct WrImageDescriptor {
+    pub format: ImageFormat,
+    pub width: i32,
+    pub height: i32,
+    pub stride: i32,
+    pub opacity: OpacityType,
+    // TODO(gw): Remove this flag (use prim flags instead).
+    pub prefer_compositor_surface: bool,
+}
+
+impl<'a> From<&'a WrImageDescriptor> for ImageDescriptor {
+    fn from(desc: &'a WrImageDescriptor) -> ImageDescriptor {
+        let mut flags = ImageDescriptorFlags::empty();
+
+        if desc.opacity == OpacityType::Opaque {
+            flags |= ImageDescriptorFlags::IS_OPAQUE;
+        }
+
+        ImageDescriptor {
+            size: DeviceIntSize::new(desc.width, desc.height),
+            stride: if desc.stride != 0 { Some(desc.stride) } else { None },
+            format: desc.format,
+            offset: 0,
+            flags,
+        }
+    }
+}
+
+#[repr(u32)]
+#[allow(dead_code)]
+enum WrExternalImageType {
+    RawData,
+    NativeTexture,
+    Invalid,
+}
+
+#[repr(C)]
+struct WrExternalImage {
+    image_type: WrExternalImageType,
+
+    // external texture handle
+    handle: u32,
+    // external texture coordinate
+    u0: f32,
+    v0: f32,
+    u1: f32,
+    v1: f32,
+
+    // external image buffer
+    buff: *const u8,
+    size: usize,
+}
+
+extern "C" {
+    fn wr_renderer_lock_external_image(
+        renderer: *mut c_void,
+        external_image_id: ExternalImageId,
+        channel_index: u8,
+    ) -> WrExternalImage;
+    fn wr_renderer_unlock_external_image(renderer: *mut c_void, external_image_id: ExternalImageId, channel_index: u8);
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct WrExternalImageHandler {
+    external_image_obj: *mut c_void,
+}
+
+impl ExternalImageHandler for WrExternalImageHandler {
+    fn lock(&mut self, id: ExternalImageId, channel_index: u8) -> ExternalImage {
+        let image = unsafe { wr_renderer_lock_external_image(self.external_image_obj, id, channel_index) };
+        ExternalImage {
+            uv: TexelRect::new(image.u0, image.v0, image.u1, image.v1),
+            source: match image.image_type {
+                WrExternalImageType::NativeTexture => ExternalImageSource::NativeTexture(image.handle),
+                WrExternalImageType::RawData => {
+                    ExternalImageSource::RawData(unsafe { make_slice(image.buff, image.size) })
+                },
+                WrExternalImageType::Invalid => ExternalImageSource::Invalid,
+            },
+        }
+    }
+
+    fn unlock(&mut self, id: ExternalImageId, channel_index: u8) {
+        unsafe {
+            wr_renderer_unlock_external_image(self.external_image_obj, id, channel_index);
+        }
+    }
+}
 
 impl face {
     pub fn stipple_bitmap(&self) -> ImageKey {
-        BITMAPS.lock().get(&(self.stipple as i32)).unwrap().clone()
+        todo!()
+        // BITMAPS.lock().get(&(self.stipple as i32)).unwrap().clone()
     }
 }
 

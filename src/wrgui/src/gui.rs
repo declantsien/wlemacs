@@ -588,6 +588,13 @@ extern "C" fn define_fringe_bitmap(
     });
 
     let image = DynamicImage::ImageRgba8(image_buffer);
+
+    if false {
+        match image.to_rgb8().save_with_format(format!("/tmp/{which}.png"), image::ImageFormat::Png) {
+            Ok(_)=> {},
+            Err(e) => {println!("Failed to write bitmap {} {:?}", which, e)}
+        };
+    }
     let (width, height) = image.dimensions();
 
     let descriptor = ImageDescriptor::new(
