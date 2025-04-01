@@ -1,0 +1,2 @@
+* convert buffer content/face etc to html/css
+** check vscode text buffer to html

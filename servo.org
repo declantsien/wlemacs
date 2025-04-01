@@ -1,0 +1,5 @@
+- Emacs frame current/desired metrics /face  to html/css(or directly as BoxTree/FragmentTree)
+- generate wr display list from FragmentTree (Servo does this already)
+- Doing above in Layout thread
+- Can elisp/js co extists
+- compositor / webview / embedder

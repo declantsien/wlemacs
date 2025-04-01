@@ -2,6 +2,11 @@
 #![feature(concat_idents)]
 #![allow(non_upper_case_globals)]
 
+// In Rust, a delegate is a trait that the embedder can install its own impl for.
+// There are also different OpenGL versions across multiple platforms, which can be challenging to configure and link. Verso is experimenting with using Glutin for better configuration and attempting to get closer to the general Rust ecosystem.
+// Off main thread HTML parsing in Servo https://servo.org/blog/2017/08/23/gsoc-parsing/
+// https://servo.zulipchat.com/
+
 mod frame;
 
 // pub mod bindings;
