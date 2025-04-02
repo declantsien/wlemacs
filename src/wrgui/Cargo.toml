@@ -8,7 +8,7 @@ build = "build.rs"
 
 [lib]
 crate-type = ["staticlib"]
-path = "src/lib.rs"
+path = "lib.rs"
 
 [dependencies]
 # emacs-sys = { path = "../emacs-sys", features = ["webrender"] }
