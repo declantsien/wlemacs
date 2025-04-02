@@ -1,6 +1,6 @@
 ### Workspace configurations
 [workspace]
-members = ["src/wrgui"]
+members = [ "src/winitterm","src/wrgui"]
 exclude = [
 ]
 resolver = "2"

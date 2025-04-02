@@ -1,0 +1,11 @@
+[package]
+name = "winitterm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "winitterm"
+path = "lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
