@@ -873,7 +873,7 @@ fn draw_glyph_string_bg_rect(s: &glyph_string, x: i32, y: i32, w: i32, h: i32) {
     }
 }
 
-// cbindgen:ignore
+/// cbindgen:ignore
 unsafe extern "C" {
     pub fn get_glyph_string_clip_rects(
         s: *const glyph_string,

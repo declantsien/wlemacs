@@ -377,7 +377,7 @@ impl<T> PartialOrd for ExternalPtr<T> {
     }
 }
 
-include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/emacs.rs"));
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/emacs.rs"));
 
 pub type GlyphStringRef = ExternalPtr<glyph_string>;
 

@@ -1,5 +1,5 @@
 #![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
-#![feature(concat_idents)]
+// #![feature(concat_idents)]
 #![allow(non_upper_case_globals)]
 
 // In Rust, a delegate is a trait that the embedder can install its own impl for.

@@ -357,7 +357,7 @@ LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
 LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
 
 RUST_CFLAGS = @RUST_CFLAGS@
-WR_LIBS = @WR_LIBS@
+WR_LIBS = $(LIBWR_ARCHIVE) @WR_LIBS@
 WR_OBJ = @WR_OBJ@
 
 LIBSYSTEMD_LIBS = @LIBSYSTEMD_LIBS@
@@ -728,14 +728,30 @@ wr_ffi_generated.h :
 
 nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 
-./wrgui/src/emacs.rs :
+./wrgui/emacs.rs :
 	bindgen wrapper.h \
 	--ctypes-prefix ::libc \
+	--generate-inline-functions \
 	--blocklist-type WrCanvas \
+	--blocklist-type WrRect \
+	--blocklist-type WrFontKey \
+	--blocklist-type WrFontInstanceKey \
+	--blocklist-type FontKey \
+	--blocklist-type FontInstanceKey \
+	--blocklist-type IdNamespace \
 	--blocklist-type CTFontRef \
+	--allowlist-function AREF \
+	--allowlist-function XFIXNUM \
+	--allowlist-function block_input \
+	--allowlist-function unblock_input \
+	--allowlist-function composition_gstring_from_id \
+	--allowlist-function mark_window_cursors_off \
+	--allowlist-function window_to_frame_pixel_y \
+	--allowlist-function window_to_frame_pixel_y \
 	--allowlist-function ns_define_frame_cursor \
 	--allowlist-function ns_default_font_parameter \
 	--allowlist-function ns_frame_scale_factor \
+	--allowlist-function gui_clear_cursor \
 	--allowlist-function gui_produce_glyphs \
 	--allowlist-function gui_write_glyphs \
 	--allowlist-function gui_insert_glyphs \
@@ -743,16 +759,40 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 	--allowlist-function gui_clear_window_mouse_face \
 	--allowlist-function gui_get_glyph_overhangs \
 	--allowlist-function gui_fix_overlapping_area \
+	--allowlist-function get_phys_cursor_geometry \
+	--allowlist-function get_phys_cursor_glyph \
+	--allowlist-function draw_phys_cursor_glyph \
+	--allowlist-function draw_fringe_bitmap \
+	--allowlist-function draw_phys_cursor_glyph \
+	--allowlist-function prepare_face_for_display \
+	--allowlist-function x_draw_xwidget_glyph_string \
+	--allowlist-function gui_draw_char_glyph_string_foreground      \
+	--allowlist-function gui_draw_composite_glyph_string_foreground \
+	--allowlist-function gui_draw_glyphless_glyph_string_foreground \
+	--allowlist-function XFRAME \
+	--allowlist-function XWINDOW \
+	--allowlist-function WINDOWP \
+	--allowlist-function FACE_FROM_ID \
+	--allowlist-function FACE_FROM_ID_OR_NULL \
+	--allowlist-function window_box \
+	--allowlist-function builtin_lisp_symbol \
+	--allowlist-function XLI \
 	--allowlist-type redisplay_interface \
 	--allowlist-type macfont_info \
 	--allowlist-type glyph_type \
+	--allowlist-type face_id \
+	--allowlist-type lglyph_indices \
 	--allowlist-var ns_frame_parm_handlers \
+	--allowlist-var FONT_INVALID_CODE \
+	--allowlist-var max_used_fringe_bitmap \
+	--allowlist-var globals \
+	--allowlist-var Qnil \
 	--allowlist-type "Emacs_*" \
 	--rustified-enum ".*" \
 	-o $@ \
 	-- $(ALL_CFLAGS)
 
-$(LIBWR_ARCHIVE) : ./wrgui/src/emacs.rs
+$(LIBWR_ARCHIVE) : ./wrgui/emacs.rs
 	RUSTFLAGS="$(RUSTFLAGS)" \
 	EMACS_CFLAGS="$(EMACS_CFLAGS)" \
 	$(CARGO_BUILD) $(CARGO_FLAGS) $(CARGO_ADDITIONAL_FLAGS) -p wrgui \

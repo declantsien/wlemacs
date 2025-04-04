@@ -405,7 +405,7 @@ impl WrCanvas {
                 // self.built_display_list = Some(built_display_list.clone());
                 let mut iterator: BuiltDisplayListIter = built_display_list.iter();
                 let items = BuiltDisplayList::create_debug_display_items(iterator);
-                println!("items: {items:?}");
+                // println!("items: {items:?}");
             }
 
             txn.set_display_list(epoch, (pipeline_id, built_display_list));

@@ -30,11 +30,6 @@ AC_CHECK_PROGS([RUSTC], [rustc])
 test -z "$RUSTC" &&
    AC_MSG_ERROR([Rust is required])
 
-case `($RUSTC --version) 2>/dev/null` in
-  *nightly* ) ;;
-  *) AC_MSG_ERROR([Rust Nightly Channel is required]);;
-esac
-
 AC_CHECK_PROGS([CARGO], [cargo])
 test -z "$CARGO" &&
       AC_MSG_ERROR([CARGO is required])
@@ -7237,7 +7232,7 @@ if test "${with_webrender}" = "yes" ; then
 
   WR_OBJ="wr.o"
   LIBWR_ARCHIVE="libwr$RUST_ARCHIVE_EXTENSION"
-  WR_LIBS="$LIBWR_ARCHIVE"
+  dnl WR_LIBS="$LIBWR_ARCHIVE"
 fi
 AC_SUBST(WR_LIBS)
 AC_SUBST(WR_OBJ)

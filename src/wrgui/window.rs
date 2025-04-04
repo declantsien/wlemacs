@@ -7,7 +7,7 @@ use crate::types::{
 };
 use crate::util::HandyDandyRectBuilder;
 
-// cbindgen:ignore
+/// cbindgen:ignore
 unsafe extern "C" {
     pub fn window_box_left_offset(arg1: *const window, arg2: glyph_row_area) -> ::libc::c_int;
     pub fn window_box_right(arg1: *const window, arg2: glyph_row_area) -> ::libc::c_int;
