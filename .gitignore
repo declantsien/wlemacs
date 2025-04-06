@@ -204,8 +204,13 @@ test/manual/indent/*.new
 test/lisp/gnus/mml-sec-resources/random_seed
 test/lisp/play/fortune-resources/fortunes.dat
 test/**/*.xml
+test/infra/android/**/*.class
+test/infra/android/**/*.dex
+test/infra/android/**/*.zip
+test/infra/android/**/*.jar
+test/infra/android/bin/build.sh
 
-# ctags, etags.
+# etags.
 TAGS
 !admin/notes/tags
 
@@ -230,7 +235,6 @@ a.out
 lib-src/asset-directory-tool
 lib-src/be-resources
 lib-src/blessmail
-lib-src/ctags
 lib-src/ebrowse
 lib-src/emacsclient
 lib-src/etags

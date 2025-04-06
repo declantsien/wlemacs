@@ -427,7 +427,12 @@ the :notify function can't know the new value.")
 	(overlay-put overlay 'local-map keymap)
 	(overlay-put overlay 'face face)
 	(overlay-put overlay 'follow-link follow-link)
-	(overlay-put overlay 'help-echo help-echo))
+        (overlay-put overlay 'help-echo help-echo)
+        ;; Since the `widget-field' face has a :box attribute, we need to add
+        ;; some character with no face after the newline character, to avoid
+        ;; clashing with text that comes after the field and has a face with
+        ;; a :box attribute too.  (Bug#51550)
+        (overlay-put overlay 'after-string #(" " 0 1 (invisible t))))
       (setq to (1- to))
       (setq rear-sticky t))
     (let ((overlay (make-overlay from to nil nil rear-sticky)))
@@ -468,8 +473,6 @@ the :notify function can't know the new value.")
     (widget-put widget :button-overlay overlay)
     (when (functionp help-echo)
       (setq help-echo 'widget-mouse-help))
-    (overlay-put overlay 'before-string
-                 (propertize " " 'invisible t 'face face))
     (overlay-put overlay 'button widget)
     (overlay-put overlay 'keymap (widget-get widget :keymap))
     (overlay-put overlay 'evaporate t)
@@ -549,8 +552,15 @@ With CHECK-AFTER non-nil, considers also the content after point, if needed."
   :group 'widget-faces)
 
 (defun widget-specify-inactive (widget from to)
-  "Make WIDGET inactive for user modifications."
-  (unless (widget-get widget :inactive)
+  "Make WIDGET inactive for user modifications.
+
+If WIDGET is already inactive, moves the :inactive overlay to the positions
+indicated by FROM and TO, either numbers or markers.
+
+If WIDGET is not inactive, creates an overlay that spans from FROM to TO,
+and saves that overlay under the :inactive property for WIDGET."
+  (if (widget-get widget :inactive)
+      (move-overlay (widget-get widget :inactive) from to)
     (let ((overlay (make-overlay from to nil t nil)))
       (overlay-put overlay 'face 'widget-inactive)
       ;; This is disabled, as it makes the mouse cursor change shape.
@@ -611,6 +621,29 @@ With CHECK-AFTER non-nil, considers also the content after point, if needed."
 	 (symbolp (car widget))
 	 (get (car widget) 'widget-type))))
 
+;;;###autoload
+(defun widget-put (widget property value)
+  "In WIDGET, set PROPERTY to VALUE.
+The value can later be retrieved with `widget-get'."
+  (setcdr widget (plist-put (cdr widget) property value))
+  value)
+
+;;;###autoload
+(defun widget-get (widget property)
+  "In WIDGET, get the value of PROPERTY.
+The value could either be specified when the widget was created, or
+later with `widget-put'."
+  (let (value)
+    (while (and widget
+                (let ((found (plist-member (cdr widget) property)))
+                  (cond (found
+                         (setq value (cadr found))
+                         nil)
+                        (t
+                         (setq widget (get (widget-type widget) 'widget-type))
+                         t)))))
+    value))
+
 (defun widget-get-indirect (widget property)
   "In WIDGET, get the value of PROPERTY.
 If the value is a symbol, return its binding.
@@ -627,6 +660,13 @@ Otherwise, just return the value."
 	((car widget)
 	 (widget-member (get (car widget) 'widget-type) property))
 	(t nil)))
+
+;;;###autoload
+(defun widget-apply (widget property &rest args)
+  "Apply the value of WIDGET's PROPERTY to the widget itself.
+Return the result of applying the value of PROPERTY to WIDGET.
+ARGS are passed as extra arguments to the function."
+  (apply (widget-get widget property) widget args))
 
 (defun widget-value (widget)
   "Extract the current value of WIDGET."
@@ -1054,12 +1094,6 @@ button end points."
 
 ;;; Keymap and Commands.
 
-;; This alias exists only so that one can choose in doc-strings (e.g.
-;; Custom-mode) which key-binding of widget-keymap one wants to refer to.
-;; https://lists.gnu.org/r/emacs-devel/2008-11/msg00480.html
-(define-obsolete-function-alias 'advertised-widget-backward
-  #'widget-backward "23.2")
-
 ;;;###autoload
 (defvar widget-keymap
   (let ((map (make-sparse-keymap)))
@@ -1334,7 +1368,7 @@ nothing is shown in the echo area."
 	  (when new
 	    (if (eq new old)
                 (setq pos (point))
-              (cl-incf tabable)
+              (incf tabable)
 	      (setq arg (cond (fwd (1- arg))
                               (bwd (1+ arg))))
 	      (setq old new))))))
@@ -1730,20 +1764,66 @@ The value of the :type attribute should be an unconverted widget type."
           (call-interactively
            (widget-get widget :complete-function))))))))
 
+(defun widget--prepare-markers-for-inside-insertion (widget)
+  "Prepare the WIDGET's parent for insertions inside it, if necessary.
+
+Usually, the :from marker has type t, while the :to marker has type nil.
+When recreating a child or a button inside a composite widget right at these
+markers, they have to be changed to nil and t respectively,
+so that the WIDGET's parent (if any), properly contains all of its
+recreated children and buttons.
+
+Prepares also the markers of the WIDGET's grandparent, if necessary.
+
+Returns a list of the markers that had its type changed, for later resetting."
+  (let* ((parent (widget-get widget :parent))
+         (parent-from-marker (and parent (widget-get parent :from)))
+         (parent-to-marker (and parent (widget-get parent :to)))
+         (lst nil)
+         (pos (point)))
+    (when (and parent-from-marker
+               (eq pos (marker-position parent-from-marker))
+               (marker-insertion-type parent-from-marker))
+      (set-marker-insertion-type parent-from-marker nil)
+      (push (cons parent-from-marker t) lst))
+    (when (and parent-to-marker
+               (eq pos (marker-position parent-to-marker))
+               (not (marker-insertion-type parent-to-marker)))
+      (set-marker-insertion-type parent-to-marker t)
+      (push (cons parent-to-marker nil) lst))
+    (when lst
+      (nconc lst (widget--prepare-markers-for-inside-insertion parent)))))
+
+(defun widget--revert-markers-for-outside-insertion (markers)
+  "Revert MARKERS for insertions that do not belong to a widget.
+
+MARKERS is a list of the form (MARKER . NEW-TYPE), as returned by
+`widget--prepare-markers-for-inside-insertion' and this function sets MARKER
+to NEW-TYPE.
+
+Coupled with `widget--prepare-parent-for-inside-insertion', this has the effect
+of setting markers back to the type needed for insertions that do not belong
+to a given widget."
+  (dolist (marker markers)
+    (set-marker-insertion-type (car marker) (cdr marker))))
+
 (defun widget-default-create (widget)
   "Create WIDGET at point in the current buffer."
   (widget-specify-insert
-   (let ((from (point))
+   (let ((str (widget-get widget :format))
+         (onext 0) (next 0)
 	 button-begin button-end
 	 sample-begin sample-end
 	 doc-begin doc-end
-	 value-pos)
-     (insert (widget-get widget :format))
-     (goto-char from)
+         value-pos
+         (markers (widget--prepare-markers-for-inside-insertion widget)))
      ;; Parse escapes in format.
-     (while (re-search-forward "%\\(.\\)" nil t)
-       (let ((escape (char-after (match-beginning 1))))
-	 (delete-char -2)
+     (while (string-match "%\\(.\\)" str next)
+       (setq next (match-end 1))
+       ;; If we skipped some literal text, insert it.
+       (when (/= (- next onext) 2)
+         (insert (substring str onext (- next 2))))
+       (let ((escape (string-to-char (match-string 1 str))))
 	 (cond ((eq escape ?%)
 		(insert ?%))
 	       ((eq escape ?\[)
@@ -1787,7 +1867,11 @@ The value of the :type attribute should be an unconverted widget type."
 		    (widget-apply widget :value-create)
 		  (setq value-pos (point))))
 	       (t
-		(widget-apply widget :format-handler escape)))))
+		(widget-apply widget :format-handler escape))))
+       (setq onext next))
+     ;; Insert remaining literal text, if any.
+     (when (> (length str) next)
+       (insert (substring str next)))
      ;; Specify button, sample, and doc, and insert value.
      (and button-begin button-end
 	  (widget-specify-button widget button-begin button-end))
@@ -1797,7 +1881,8 @@ The value of the :type attribute should be an unconverted widget type."
 	  (widget-specify-doc widget doc-begin doc-end))
      (when value-pos
        (goto-char value-pos)
-       (widget-apply widget :value-create)))
+       (widget-apply widget :value-create))
+     (widget--revert-markers-for-outside-insertion markers))
    (let ((from (point-min-marker))
 	 (to (point-max-marker)))
      (set-marker-insertion-type from t)
@@ -2533,14 +2618,15 @@ If the item is checked, CHOSEN is a cons whose cdr is the value."
 	  (buttons (widget-get widget :buttons))
 	  (button-args (or (widget-get type :sibling-args)
 			   (widget-get widget :button-args)))
-	  (from (point))
+          (str (widget-get widget :entry-format))
+          (onext 0) (next 0)
 	  child button)
-     (insert (widget-get widget :entry-format))
-     (goto-char from)
      ;; Parse % escapes in format.
-     (while (re-search-forward "%\\([bv%]\\)" nil t)
-       (let ((escape (char-after (match-beginning 1))))
-	 (delete-char -2)
+     (while (string-match "%\\([bv%]\\)" str next)
+       (setq next (match-end 1))
+       (when (/= (- next onext) 2)
+         (insert (substring str onext (- next 2))))
+       (let ((escape (string-to-char (match-string 1 str))))
 	 (cond ((eq escape ?%)
 		(insert ?%))
 	       ((eq escape ?b)
@@ -2564,7 +2650,10 @@ If the item is checked, CHOSEN is a cons whose cdr is the value."
                              (widget-create-child-value
                               widget type (car (cdr chosen)))))))
 	       (t
-		(error "Unknown escape `%c'" escape)))))
+		(error "Unknown escape `%c'" escape))))
+       (setq onext next))
+     (when (> (length str) next)
+       (insert (substring str next)))
      ;; Update properties.
      (and button child (widget-put child :button button))
      (and button (widget-put widget :buttons (cons button buttons)))
@@ -2711,16 +2800,17 @@ Return an alist of (TYPE MATCH)."
 	  (buttons (widget-get widget :buttons))
 	  (button-args (or (widget-get type :sibling-args)
 			   (widget-get widget :button-args)))
-	  (from (point))
+          (str (widget-get widget :entry-format))
+          (onext 0) (next 0)
 	  (chosen (and (null (widget-get widget :choice))
 		       (widget-apply type :match value)))
 	  child button)
-     (insert (widget-get widget :entry-format))
-     (goto-char from)
      ;; Parse % escapes in format.
-     (while (re-search-forward "%\\([bv%]\\)" nil t)
-       (let ((escape (char-after (match-beginning 1))))
-	 (delete-char -2)
+     (while (string-match "%\\([bv%]\\)" str next)
+       (setq next (match-end 1))
+       (when (/= (- next onext) 2)
+         (insert (substring str onext (- next 2))))
+       (let ((escape (string-to-char (match-string 1 str))))
 	 (cond ((eq escape ?%)
 		(insert ?%))
 	       ((eq escape ?b)
@@ -2739,7 +2829,10 @@ Return an alist of (TYPE MATCH)."
 			(to (widget-get child :to)))
                     (widget-specify-unselected child from to))))
 	       (t
-		(error "Unknown escape `%c'" escape)))))
+		(error "Unknown escape `%c'" escape))))
+       (setq onext next))
+     (when (> (length str) next)
+       (insert (substring str next)))
      ;; Update properties.
      (when chosen
        (widget-put widget :choice type))
@@ -3008,17 +3101,19 @@ Save CHILD into the :last-deleted list, so it can be inserted later."
   ;; Create a new entry to the list.
   (let ((type (nth 0 (widget-get widget :args)))
 	;; (widget-push-button-gui widget-editable-list-gui)
+        (str (widget-get widget :entry-format))
+        (onext 0) (next 0)
 	child delete insert)
     (widget-specify-insert
-     (save-excursion
-       (and (widget--should-indent-p)
-            (widget-get widget :indent)
-            (insert-char ?\s (widget-get widget :indent)))
-       (insert (widget-get widget :entry-format)))
+     (and (widget--should-indent-p)
+          (widget-get widget :indent)
+          (insert-char ?\s (widget-get widget :indent)))
      ;; Parse % escapes in format.
-     (while (re-search-forward "%\\(.\\)" nil t)
-       (let ((escape (char-after (match-beginning 1))))
-	 (delete-char -2)
+     (while (string-match "%\\(.\\)" str next)
+       (setq next (match-end 1))
+       (when (/= (- next onext) 2)
+         (insert (substring str onext (- next 2))))
+       (let ((escape (string-to-char (match-string 1 str))))
 	 (cond ((eq escape ?%)
 		(insert ?%))
 	       ((eq escape ?i)
@@ -3034,7 +3129,10 @@ Save CHILD into the :last-deleted list, so it can be inserted later."
 		             widget type
 		             (if conv value (widget-default-get type)))))
 	       (t
-		(error "Unknown escape `%c'" escape)))))
+		(error "Unknown escape `%c'" escape))))
+       (setq onext next))
+     (when (> (length str) next)
+       (insert (substring str next)))
      (let ((buttons (widget-get widget :buttons)))
        (if insert (push insert buttons))
        (if delete (push delete buttons))

@@ -94,68 +94,67 @@
 (defvar lisp-imenu-generic-expression
   (list
    (list nil
-	 (purecopy (concat "^\\s-*("
-			   (regexp-opt
-			    '("defun" "defmacro"
-                              ;; Elisp.
-                              "defun*" "defsubst" "define-inline"
-			      "define-advice" "defadvice" "define-skeleton"
-			      "define-compilation-mode" "define-minor-mode"
-			      "define-global-minor-mode"
-			      "define-globalized-minor-mode"
-			      "define-derived-mode" "define-generic-mode"
-			      "ert-deftest"
-			      "cl-defun" "cl-defsubst" "cl-defmacro"
-			      "cl-define-compiler-macro" "cl-defgeneric"
-			      "cl-defmethod"
-                              ;; CL.
-			      "define-compiler-macro" "define-modify-macro"
-			      "defsetf" "define-setf-expander"
-			      "define-method-combination"
-                              ;; CLOS and EIEIO
-			      "defgeneric" "defmethod")
-                            t)
-			   "\\s-+\\(" (rx lisp-mode-symbol) "\\)"))
+         (concat "^\\s-*("
+                 (regexp-opt
+                  '("defun" "defmacro"
+                    ;; Elisp.
+                    "defun*" "defsubst" "define-inline"
+                    "define-advice" "defadvice" "define-skeleton"
+                    "define-compilation-mode" "define-minor-mode"
+                    "define-globalized-minor-mode"
+                    "define-derived-mode" "define-generic-mode"
+                    "ert-deftest"
+                    "cl-defun" "cl-defsubst" "cl-defmacro"
+                    "cl-define-compiler-macro" "cl-defgeneric"
+                    "cl-defmethod"
+                    ;; CL.
+                    "define-compiler-macro" "define-modify-macro"
+                    "defsetf" "define-setf-expander"
+                    "define-method-combination"
+                    ;; CLOS and EIEIO
+                    "defgeneric" "defmethod")
+                  t)
+                 "\\s-+\\(" (rx lisp-mode-symbol) "\\)")
 	 2)
    ;; Like the previous, but uses a quoted symbol as the name.
    (list nil
-	 (purecopy (concat "^\\s-*("
-			   (regexp-opt
-			    '("defalias" "define-obsolete-function-alias")
-                            t)
-			   "\\s-+'\\(" (rx lisp-mode-symbol) "\\)"))
+         (concat "^\\s-*("
+                 (regexp-opt
+                  '("defalias" "define-obsolete-function-alias")
+                  t)
+                 "\\s-+'\\(" (rx lisp-mode-symbol) "\\)")
 	 2)
-   (list (purecopy "Variables")
-	 (purecopy (concat "^\\s-*("
-			   (regexp-opt
-			    '(;; Elisp
-                              "defconst" "defcustom" "defvar-keymap"
-                              ;; CL
-                              "defconstant"
-			      "defparameter" "define-symbol-macro")
-                            t)
-			   "\\s-+\\(" (rx lisp-mode-symbol) "\\)"))
+   (list "Variables"
+         (concat "^\\s-*("
+                 (regexp-opt
+                  '(;; Elisp
+                    "defconst" "defcustom" "defvar-keymap"
+                    ;; CL
+                    "defconstant"
+                    "defparameter" "define-symbol-macro")
+                  t)
+                 "\\s-+\\(" (rx lisp-mode-symbol) "\\)")
 	 2)
    ;; For `defvar'/`defvar-local', we ignore (defvar FOO) constructs.
-   (list (purecopy "Variables")
-	 (purecopy (concat "^\\s-*(defvar\\(?:-local\\)?\\s-+\\("
-                           (rx lisp-mode-symbol) "\\)"
-			   "[[:space:]\n]+[^)]"))
+   (list "Variables"
+         (concat "^\\s-*(defvar\\(?:-local\\)?\\s-+\\("
+                 (rx lisp-mode-symbol) "\\)"
+                 "[[:space:]\n]+[^)]")
 	 1)
-   (list (purecopy "Types")
-	 (purecopy (concat "^\\s-*("
-			   (regexp-opt
-			    '(;; Elisp
-                              "defgroup" "deftheme"
-                              "define-widget" "define-error"
-			      "defface" "cl-deftype" "cl-defstruct"
-                              ;; CL
-                              "deftype" "defstruct"
-			      "define-condition" "defpackage"
-                              ;; CLOS and EIEIO
-                              "defclass")
-                            t)
-			   "\\s-+'?\\(" (rx lisp-mode-symbol) "\\)"))
+   (list "Types"
+         (concat "^\\s-*("
+                 (regexp-opt
+                  '(;; Elisp
+                    "defgroup" "deftheme"
+                    "define-widget" "define-error"
+                    "defface" "cl-deftype" "cl-defstruct"
+                    ;; CL
+                    "deftype" "defstruct"
+                    "define-condition" "defpackage"
+                    ;; CLOS and EIEIO
+                    "defclass")
+                  t)
+                 "\\s-+'?\\(" (rx lisp-mode-symbol) "\\)")
 	 2))
 
   "Imenu generic expression for Lisp mode.  See `imenu-generic-expression'.")
@@ -352,7 +351,7 @@ This will generate compile-time constants from BINDINGS."
      (el-fdefs '("defsubst" "cl-defsubst" "define-inline"
                  "define-advice" "defadvice" "defalias"
                  "define-derived-mode" "define-minor-mode"
-                 "define-generic-mode" "define-global-minor-mode"
+                 "define-generic-mode"
                  "define-globalized-minor-mode" "define-skeleton"
                  "define-widget" "ert-deftest"))
      (el-vdefs '("defconst" "defcustom" "defvaralias" "defvar-local"
@@ -514,10 +513,10 @@ This will generate compile-time constants from BINDINGS."
          ;; Constant values.
          (,(lambda (bound) (lisp-mode--search-key ":" bound))
           (0 font-lock-builtin-face))
-         ;; ELisp and CLisp `&' keywords as types.
+         ;; Elisp and Common Lisp `&' keywords as types.
          (,(lambda (bound) (lisp-mode--search-key "&" bound))
           (0 font-lock-type-face))
-         ;; ELisp regexp grouping constructs
+         ;; Elisp regexp grouping constructs
          (,(lambda (bound)
              (catch 'found
                ;; The following loop is needed to continue searching after matches
@@ -559,7 +558,9 @@ This will generate compile-time constants from BINDINGS."
          (,(concat "(" cl-errs-re "\\_>")
            (1 font-lock-warning-face))
          ;; Words inside ‘’ and `' tend to be symbol names.
-         (,(concat "[`‘]\\(" (rx lisp-mode-symbol) "\\)['’]")
+         (,(concat "[`‘]\\("
+                   (rx (* lisp-mode-symbol (+ space)) lisp-mode-symbol)
+                   "\\)['’]")
           (1 font-lock-constant-face prepend))
          ;; Uninterned symbols, e.g., (defpackage #:my-package ...)
          ;; must come before keywords below to have effect
@@ -567,10 +568,10 @@ This will generate compile-time constants from BINDINGS."
          ;; Constant values.
          (,(lambda (bound) (lisp-mode--search-key ":" bound))
           (0 font-lock-builtin-face))
-         ;; ELisp and CLisp `&' keywords as types.
+         ;; Elisp and Common Lisp `&' keywords as types.
          (,(lambda (bound) (lisp-mode--search-key "&" bound))
           (0 font-lock-type-face))
-         ;; ELisp regexp grouping constructs
+         ;; Elisp regexp grouping constructs
          ;; This is too general -- rms.
          ;; A user complained that he has functions whose names start with `do'
          ;; and that they get the wrong color.
@@ -1431,16 +1432,17 @@ Any non-integer value means do not use a different value of
   :group 'lisp
   :version "30.1")
 
-(defvar lisp-fill-paragraph-as-displayed nil
-  "Modify the behavior of `lisp-fill-paragraph'.
+(defvar lisp-fill-paragraphs-as-doc-string t
+  "Whether `lisp-fill-paragraph' should fill strings as Elisp doc strings.
 The default behavior of `lisp-fill-paragraph' is tuned for filling Emacs
 Lisp doc strings, with their special treatment for the first line.
-Particularly, strings are filled in a narrowed context to avoid filling
+Specifically, strings are filled in a narrowed context to avoid filling
 surrounding code, which means any leading indent is disregarded, which
 can cause the filled string to extend passed the configured
 `fill-column' variable value.  If you would rather fill the string in
-its original context and ensure the `fill-column' value is more strictly
-respected, set this variable to true.  Doing so makes
+its original context, disregarding the special conventions of Elisp doc
+strings, and want to ensure the `fill-column' value is more strictly
+respected, set this variable to nil.  Doing so makes
 `lisp-fill-paragraph' behave as it used to in Emacs 27 and prior
 versions.")
 
@@ -1506,7 +1508,7 @@ and initial semicolons."
               ;; code.
               (if (not string-start)
                   (lisp--fill-line-simple)
-                (unless lisp-fill-paragraph-as-displayed
+                (when lisp-fill-paragraphs-as-doc-string
                   ;; If we're in a string, then narrow (roughly) to that
                   ;; string before filling.  This avoids filling Lisp
                   ;; statements that follow the string.

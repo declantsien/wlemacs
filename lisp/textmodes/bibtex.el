@@ -88,7 +88,7 @@ If this is a function, call it to generate the initial field text."
   :risky t)
 ;; The functionality provided by `bibtex-include-OPTkey' is a special case
 ;; of what `bibtex-aux-opt-alist' offers.  Which BibTeX style files actually
-;; use the key field?  The BibTeX docomentation suggests it is used rarely.
+;; use the key field?  The BibTeX documentation suggests it is used rarely.
 ;; Under biblatex, the key field is an alias for sortkey, see Secs. 2.2.3
 ;; and 2.2.5.
 (make-obsolete-variable 'bibtex-include-OPTkey
@@ -3561,12 +3561,12 @@ BOUND limits the search."
 (define-button-type 'bibtex-url
   'action 'bibtex-button-action
   'bibtex-function #'bibtex-url
-  'help-echo (purecopy "mouse-2, RET: follow URL"))
+  'help-echo "mouse-2, RET: follow URL")
 
 (define-button-type 'bibtex-search-crossref
   'action 'bibtex-button-action
   'bibtex-function #'bibtex-search-crossref
-  'help-echo (purecopy "mouse-2, RET: follow crossref"))
+  'help-echo "mouse-2, RET: follow crossref")
 
 (defun bibtex-button (beg end type &rest args)
   "Make a BibTeX button from BEG to END of type TYPE in the current buffer."

@@ -38,10 +38,10 @@
 (defun proced--cpu-at-point ()
   "Return as an integer the current CPU value at point."
   (if (string-suffix-p "nan" (thing-at-point 'sexp))
-      (let ((pid (proced-pid-at-point)))
-        (ert-skip
-         (format
-          "Found NaN value for %%CPU at point for process with PID %d" pid)))
+      (ert-skip
+       (format
+        "Found NaN value for %%CPU at point for process with PID %s"
+        (substring-no-properties (thing-at-point 'sexp))))
     (thing-at-point 'number)))
 
 (defun proced--assert-emacs-pid-in-buffer ()
@@ -61,6 +61,7 @@
   (proced--move-to-column "%CPU")
   (condition-case err
       (>= (proced--cpu-at-point) cpu)
+    (ert-test-skipped (signal (car err) (cdr err)))
     (error
      (ert-fail
       (list err (proced--assert-process-valid-cpu-refinement-explainer cpu))))))
@@ -86,6 +87,7 @@ CPU is as in `proced--assert-process-valid-cpu-refinement'."
      #'proced--assert-process-valid-cpu-refinement-explainer)
 
 (ert-deftest proced-format-test ()
+  (skip-when (eq system-type 'darwin)) ; Bug#76898
   (dolist (format '(short medium long verbose))
     (proced--within-buffer
      format
@@ -93,6 +95,7 @@ CPU is as in `proced--assert-process-valid-cpu-refinement'."
      (proced--assert-emacs-pid-in-buffer))))
 
 (ert-deftest proced-update-test ()
+  (skip-when (eq system-type 'darwin)) ; Bug#76898
   (proced--within-buffer
    'short
    'user
@@ -100,6 +103,7 @@ CPU is as in `proced--assert-process-valid-cpu-refinement'."
    (proced--assert-emacs-pid-in-buffer)))
 
 (ert-deftest proced-revert-test ()
+  (skip-when (eq system-type 'darwin)) ; Bug#76898
   (proced--within-buffer
    'short
    'user
@@ -107,6 +111,7 @@ CPU is as in `proced--assert-process-valid-cpu-refinement'."
    (proced--assert-emacs-pid-in-buffer)))
 
 (ert-deftest proced-color-test ()
+  (skip-when (eq system-type 'darwin)) ; Bug#76898
   (let ((proced-enable-color-flag t))
     (proced--within-buffer
      'short

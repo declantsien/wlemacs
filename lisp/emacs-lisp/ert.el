@@ -422,16 +422,23 @@ and aborts the current test as failed if it doesn't."
 (cl-defmacro should-error (form &rest keys &key type exclude-subtypes)
   "Evaluate FORM and check that it signals an error.
 
-The error signaled needs to match TYPE.  TYPE should be a list
-of condition names.  (It can also be a non-nil symbol, which is
-equivalent to a singleton list containing that symbol.)  If
-EXCLUDE-SUBTYPES is nil, the error matches TYPE if one of its
-condition names is an element of TYPE.  If EXCLUDE-SUBTYPES is
-non-nil, the error matches TYPE if it is an element of TYPE.
+If no error was signaled, abort the test as failed and
+return (ERROR-SYMBOL . DATA) from the error.
 
-If the error matches, returns (ERROR-SYMBOL . DATA) from the
-error.  If not, or if no error was signaled, abort the test as
-failed."
+You can also match specific errors using the KEYWORD-ARGS arguments,
+which is specified as keyword/argument pairs.  The following arguments
+are defined:
+
+:type TYPE -- If TYPE is non-nil, the error signaled needs to match
+TYPE.  TYPE should be a list of condition names.  It can also be a
+symbol, which is equivalent to a one-element list containing that
+symbol.
+
+:exclude-subtypes EXCLUDED -- If EXCLUDED is non-nil, the error matches
+TYPE only if it is an element of TYPE.  If nil (the default), the error
+matches TYPE if one of its condition names is an element of TYPE.
+
+\(fn FORM &rest KEYWORD-ARGS)"
   (declare (debug t))
   (unless type (setq type ''error))
   (ert--expand-should
@@ -576,7 +583,7 @@ Return nil if they are."
 
 (defun ert--significant-plist-keys (plist)
   "Return the keys of PLIST that have non-null values, in order."
-  (cl-assert (zerop (mod (length plist) 2)) t)
+  (cl-assert (evenp (length plist)) t)
   (cl-loop for (key value . rest) on plist by #'cddr
            unless (or (null value) (memq key accu)) collect key into accu
            finally (cl-return accu)))
@@ -587,8 +594,8 @@ Return nil if they are."
 Returns nil if they are equivalent, i.e., have the same value for
 each key, where absent values are treated as nil.  The order of
 key/value pairs in each list does not matter."
-  (cl-assert (zerop (mod (length a) 2)) t)
-  (cl-assert (zerop (mod (length b) 2)) t)
+  (cl-assert (evenp (length a)) t)
+  (cl-assert (evenp (length b)) t)
   ;; Normalizing the plists would be another way to do this but it
   ;; requires a total ordering on all lisp objects (since any object
   ;; is valid as a text property key).  Perhaps defining such an
@@ -661,6 +668,19 @@ Return nil if they are."
     (ert--explain-equal-including-properties-rec a b)))
 (put 'equal-including-properties 'ert-explainer
      'ert--explain-equal-including-properties)
+
+(defun ert--explain-time-equal-p (a b)
+  "Explainer function for `time-equal-p'.
+A and B are the time values to compare."
+  (declare (ftype (function (t t) list))
+           (side-effect-free t))
+  (unless (time-equal-p a b)
+    `(different-time-values
+      ,(format-time-string "%F %T.%N%z" a t)
+      ,(format-time-string "%F %T.%N%z" b t)
+      difference
+      ,(format-time-string "%s.%N" (time-subtract a b) t))))
+(function-put #'time-equal-p 'ert-explainer #'ert--explain-time-equal-p)
 
 ;;; Implementation of `ert-info'.
 
@@ -1159,21 +1179,21 @@ Also changes the counters in STATS to match."
                                                 (aref results pos))
                     (cl-etypecase (aref results pos)
                       (ert-test-passed
-                       (cl-incf (ert--stats-passed-expected stats) d))
+                       (incf (ert--stats-passed-expected stats) d))
                       (ert-test-failed
-                       (cl-incf (ert--stats-failed-expected stats) d))
+                       (incf (ert--stats-failed-expected stats) d))
 		      (ert-test-skipped
-                       (cl-incf (ert--stats-skipped stats) d))
+                       (incf (ert--stats-skipped stats) d))
                       (null)
                       (ert-test-aborted-with-non-local-exit)
                       (ert-test-quit))
                   (cl-etypecase (aref results pos)
                     (ert-test-passed
-                     (cl-incf (ert--stats-passed-unexpected stats) d))
+                     (incf (ert--stats-passed-unexpected stats) d))
                     (ert-test-failed
-                     (cl-incf (ert--stats-failed-unexpected stats) d))
+                     (incf (ert--stats-failed-unexpected stats) d))
                     (ert-test-skipped
-                     (cl-incf (ert--stats-skipped stats) d))
+                     (incf (ert--stats-skipped stats) d))
                     (null)
                     (ert-test-aborted-with-non-local-exit)
                     (ert-test-quit)))))
@@ -1419,7 +1439,7 @@ Returns the stats object."
                          (message "%9s  %S%s"
                                   (ert-string-for-test-result result nil)
                                   (ert-test-name test)
-                                  (if (cl-plusp
+                                  (if (plusp
                                        (length (getenv "EMACS_TEST_VERBOSE")))
                                       (ert-reason-for-test-result result)
                                     ""))))
@@ -1432,7 +1452,7 @@ Returns the stats object."
                          (message "%9s  %S%s"
                                   (ert-string-for-test-result result nil)
                                   (ert-test-name test)
-                                  (if (cl-plusp
+                                  (if (plusp
                                        (length (getenv "EMACS_TEST_VERBOSE")))
                                       (ert-reason-for-test-result result)
                                     ""))))
@@ -1684,8 +1704,8 @@ test packages depend on each other, it might be helpful.")
                   (insert "      </error>\n"
                           "    </testcase>\n"
                           "  </testsuite>\n")
-                  (cl-incf errors 1)
-                  (cl-incf id 1)))
+                  (incf errors 1)
+                  (incf id 1)))
 
             (insert-file-contents-literally test-report)
             (when (looking-at-p
@@ -1693,15 +1713,15 @@ test packages depend on each other, it might be helpful.")
               (delete-region (point) (line-beginning-position 2)))
             (when (looking-at
                    "<testsuites name=\".+\" tests=\"\\(.+\\)\" errors=\"\\(.+\\)\" failures=\"\\(.+\\)\" skipped=\"\\(.+\\)\" time=\"\\(.+\\)\">")
-              (cl-incf tests (string-to-number (match-string 1)))
-              (cl-incf errors  (string-to-number (match-string 2)))
-              (cl-incf failures  (string-to-number (match-string 3)))
-              (cl-incf skipped (string-to-number (match-string 4)))
-              (cl-incf time (string-to-number (match-string 5)))
+              (incf tests (string-to-number (match-string 1)))
+              (incf errors (string-to-number (match-string 2)))
+              (incf failures (string-to-number (match-string 3)))
+              (incf skipped (string-to-number (match-string 4)))
+              (incf time (string-to-number (match-string 5)))
               (delete-region (point) (line-beginning-position 2)))
             (when (looking-at "  <testsuite id=\"\\(0\\)\"")
               (replace-match (number-to-string id) nil nil nil 1)
-              (cl-incf id 1))
+              (incf id 1))
             (goto-char (point-max))
             (beginning-of-line 0)
             (when (looking-at-p "</testsuites>")
@@ -2123,7 +2143,7 @@ non-nil, returns the face for expected results.."
 (defun ert-face-for-stats (stats)
   "Return a face that represents STATS."
   (cond ((ert--stats-aborted-p stats) 'nil)
-        ((cl-plusp (ert-stats-completed-unexpected stats))
+        ((plusp (ert-stats-completed-unexpected stats))
          (ert-face-for-test-result nil))
         ((eql (ert-stats-completed-expected stats) (ert-stats-total stats))
          (ert-face-for-test-result t))
@@ -2856,13 +2876,15 @@ To be used in the ERT results buffer."
                                   (ert--tests-running-mode-line-indicator))))
 (add-hook 'emacs-lisp-mode-hook #'ert--activate-font-lock-keywords)
 
-(defun ert--unload-function ()
+(defun ert-unload-function ()
   "Unload function to undo the side-effects of loading ert.el."
   (ert--remove-from-list 'find-function-regexp-alist 'ert--test :key #'car)
   (ert--remove-from-list 'minor-mode-alist 'ert--current-run-stats :key #'car)
   (ert--remove-from-list 'emacs-lisp-mode-hook
                          'ert--activate-font-lock-keywords)
   nil)
+
+;;; erts files.
 
 (defun ert-test-erts-file (file &optional transform)
   "Parse FILE as a file containing before/after parts (an erts file).
@@ -2990,8 +3012,151 @@ write erts files."
           (forward-line 1)))
       (nreverse specs))))
 
-(defvar ert-unload-hook ())
-(add-hook 'ert-unload-hook #'ert--unload-function)
+
+;;; Buffer related helpers
+
+(defun ert--text-button (string &rest properties)
+  "Return a string containing STRING as a text button with PROPERTIES.
+
+See `make-text-button'."
+  (with-temp-buffer
+    (insert string)
+    (apply #'make-text-button (point-min) (point-max) properties)
+    (buffer-string)))
+
+(defun ert--format-test-buffer-name (base-name)
+  "Compute a test buffer name based on BASE-NAME.
+
+Helper function for `ert--test-buffers'."
+  (format "*Test buffer (%s)%s*"
+          (or (and (ert-running-test)
+                   (ert-test-name (ert-running-test)))
+              "<anonymous test>")
+          (if base-name
+              (format ": %s" base-name)
+            "")))
+
+(defvar ert--test-buffers (make-hash-table :weakness t)
+  "Table of all test buffers.  Keys are the buffer objects, values are t.
+
+The main use of this table is for `ert-kill-all-test-buffers'.
+Not all buffers in this table are necessarily live, but all live
+test buffers are in this table.")
+
+(define-button-type 'ert--test-buffer-button
+  'action #'ert--test-buffer-button-action
+  'help-echo "mouse-2, RET: Pop to test buffer")
+
+(defun ert--test-buffer-button-action (button)
+  "Pop to the test buffer that BUTTON is associated with."
+  (pop-to-buffer (button-get button 'ert--test-buffer)))
+
+(defun ert--call-with-test-buffer (ert--base-name ert--thunk)
+  "Helper function for `ert-with-test-buffer'.
+
+Create a test buffer with a name based on ERT--BASE-NAME and run
+ERT--THUNK with that buffer as current."
+  (let* ((ert--buffer (generate-new-buffer
+                    (ert--format-test-buffer-name ert--base-name)))
+         (ert--button (ert--text-button (buffer-name ert--buffer)
+                                  :type 'ert--test-buffer-button
+                                  'ert--test-buffer ert--buffer)))
+    (puthash ert--buffer 't ert--test-buffers)
+    ;; We don't use `unwind-protect' here since we want to kill the
+    ;; buffer only on success.
+    (prog1 (with-current-buffer ert--buffer
+             (ert-info (ert--button :prefix "Buffer: ")
+               (funcall ert--thunk)))
+      (kill-buffer ert--buffer)
+      (remhash ert--buffer ert--test-buffers))))
+
+(cl-defmacro ert-with-test-buffer ((&key ((:name name-form))
+                                      ((:selected select-form)))
+                                &body body)
+  "Create a test buffer and run BODY in that buffer.
+
+To be used in ERT tests.  If BODY finishes successfully, the test buffer
+is killed; if there is an error, the test buffer is kept around for
+further inspection.  The name of the buffer is derived from the name of
+the test and the result of NAME-FORM.
+
+If SELECT-FORM is non-nil, switch to the test buffer before running
+BODY, as if body was in `ert-with-buffer-selected'.
+
+The return value is the last form in BODY."
+  (declare (debug ((":name" form) (":selected" form) def-body))
+           (indent 1))
+  `(ert--call-with-test-buffer
+    ,name-form
+    ,(if select-form
+         `(lambda () (ert-with-buffer-selected (current-buffer)
+                  ,@body))
+       `(lambda () ,@body))))
+
+(defun ert-kill-all-test-buffers ()
+  "Kill all test buffers that are still live."
+  (interactive)
+  (let ((count 0))
+    (maphash (lambda (buffer _dummy)
+               (when (or (not (buffer-live-p buffer))
+                         (kill-buffer buffer))
+                 (incf count)))
+             ert--test-buffers)
+    (message "%s out of %s test buffers killed"
+             count (hash-table-count ert--test-buffers)))
+  ;; It could be that some test buffers were actually kept alive
+  ;; (e.g., due to `kill-buffer-query-functions').  I'm not sure what
+  ;; to do about this.  For now, let's just forget them.
+  (clrhash ert--test-buffers)
+  nil)
+
+(cl-defmacro ert-with-buffer-selected (buffer-or-name &body body)
+  "Display a buffer in a temporary selected window and run BODY.
+
+If BUFFER-OR-NAME is nil, the current buffer is used.
+
+The buffer is made the current buffer, and the temporary window
+becomes the `selected-window', before BODY is evaluated.  The
+modification hooks `before-change-functions' and
+`after-change-functions' are not inhibited during the evaluation
+of BODY, which makes it easier to use `execute-kbd-macro' to
+simulate user interaction.  The window configuration is restored
+before returning, even if BODY exits nonlocally.  The return
+value is the last form in BODY."
+  (declare (debug (form body)) (indent 1))
+  `(save-window-excursion
+     (with-current-buffer (or ,buffer-or-name (current-buffer))
+       (with-selected-window (display-buffer (current-buffer))
+         ,@body))))
+
+(defun ert-call-with-buffer-renamed (buffer-name thunk)
+  "Protect the buffer named BUFFER-NAME from side-effects and run THUNK.
+
+Renames the buffer BUFFER-NAME to a new temporary name, creates a
+new buffer named BUFFER-NAME, executes THUNK, kills the new
+buffer, and renames the original buffer back to BUFFER-NAME.
+
+This is useful if THUNK has undesirable side-effects on an Emacs
+buffer with a fixed name such as *Messages*."
+  (let ((new-buffer-name (generate-new-buffer-name
+                          (format "%s orig buffer" buffer-name))))
+    (with-current-buffer (get-buffer-create buffer-name)
+      (rename-buffer new-buffer-name))
+    (unwind-protect
+        (progn
+          (get-buffer-create buffer-name)
+          (funcall thunk))
+      (when (get-buffer buffer-name)
+        (kill-buffer buffer-name))
+      (with-current-buffer new-buffer-name
+        (rename-buffer buffer-name)))))
+
+(cl-defmacro ert-with-buffer-renamed ((buffer-name-form) &body body)
+  "Protect the buffer named BUFFER-NAME from side-effects and run BODY.
+
+See `ert-call-with-buffer-renamed' for details."
+  (declare (indent 1))
+  `(ert-call-with-buffer-renamed ,buffer-name-form (lambda () ,@body)))
 
 ;;; Obsolete
 
@@ -2999,6 +3164,8 @@ write erts files."
   #'equal-including-properties "29.1")
 (put 'ert-equal-including-properties 'ert-explainer
      'ert--explain-equal-including-properties)
+
+(define-obsolete-function-alias 'ert--unload-function 'ert-unload-function "31.1")
 
 (provide 'ert)
 

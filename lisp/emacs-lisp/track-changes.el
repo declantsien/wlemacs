@@ -3,7 +3,7 @@
 ;; Copyright (C) 2024-2025 Free Software Foundation, Inc.
 
 ;; Author: Stefan Monnier <monnier@iro.umontreal.ca>
-;; Version: 1.2
+;; Version: 1.4
 ;; Package-Requires: ((emacs "24"))
 
 ;; This file is part of GNU Emacs.
@@ -76,7 +76,12 @@
 
 ;;; News:
 
-;; Since v1.1:
+;; v1.3:
+;;
+;; - Fix bug#73041.
+;; - New `trace' setting for `track-changes-record-errors'.
+;;
+;; v1.2:
 ;;
 ;; - New function `track-changes-inconsistent-state-p'.
 
@@ -372,7 +377,9 @@ and re-enable the TRACKER corresponding to ID."
                              track-changes--state))
               ;; Nothing to do.
               nil)
-          (cl-assert (not (memq id track-changes--clean-trackers)))
+          ;; ID may still be in `track-changes--clean-trackers' if
+          ;; `after-change-functions' was skipped.
+          ;;(cl-assert (not (memq id track-changes--clean-trackers)))
           (cl-assert (<= (point-min) beg end (point-max)))
           ;; Update the tracker's state *before* running `func' so we don't risk
           ;; mistakenly replaying the changes in case `func' exits non-locally.

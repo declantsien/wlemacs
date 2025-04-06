@@ -575,12 +575,12 @@ This way enabling/disabling of menu items is more correct."
 
 (defcustom cperl-fontify-trailer
   'perl-code
-  "How to fontify text after an \"__END__\" or \"__DATA__\" token.
-If \"perl-code\", treat as Perl code for fontification, and
-examine for imenu entries.  Use this setting if you have trailing
-POD documentation, or for modules which use AutoLoad or
-AutoSplit.  If \"comment\", treat as comment, and do not look for
-imenu entries."
+  "How to treat text after an \"__END__\" or \"__DATA__\" token.
+If \"perl-code\", treat as Perl code for fontification, examine for
+imenu entries, and indent according to Perl syntax.  Use this setting if
+you have trailing POD documentation, or for modules which use AutoLoad
+or AutoSplit.  If \"comment\", treat as comment, do not look for imenu
+entries, and do not change indentation."
   :type '(choice (const perl-code)
 		 (const comment))
   :version "30.1"
@@ -3825,7 +3825,7 @@ modify syntax-type text property if the situation is too hard."
 		     (char-after (- (point) 2)))
 		 (save-excursion
 		   (forward-char -2)
-		   (= 0 (% (skip-chars-backward "\\\\") 2)))
+		   (cl-evenp (skip-chars-backward "\\\\")))
 		 (forward-char -1)))
 	  ;; Now we are after the first part.
 	  (and is-2arg			; Have trailing part
@@ -5164,7 +5164,7 @@ recursive calls in starting lines of here-documents."
 				       (or ; Should work with delim = \
 					(not (eq (preceding-char) ?\\ ))
 					;; XXXX Double \\ is needed with 19.33
-					(= (% (skip-chars-backward "\\\\") 2) 0))
+					(cl-evenp (skip-chars-backward "\\\\")))
 				       (looking-at
 					(cond
 					 ((eq (char-after b) ?\] )
@@ -5607,7 +5607,7 @@ Do not look before LIM."
 	   (forward-sexp -1)
 	   (not
 	    (looking-at
-	     "\\(map\\|grep\\|say\\|printf?\\|system\\|exec\\|tr\\|s\\)\\>")))))))
+	     "\\(map\\|grep\\|say\\|printf?\\|system\\|exec\\|tr\\|s\\)\\_>")))))))
 
 
 (defun cperl-indent-exp ()

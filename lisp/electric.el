@@ -514,6 +514,7 @@ The variable `electric-layout-rules' says when and how to insert newlines."
 
 ;; The default :value-create produces "list of numbers" when given "list
 ;; of characters", this prints them as characters.
+(declare-function widget-get "wid-edit" (widget property))
 (defun electric--print-list-of-chars (widget)
   (let ((print-integers-as-characters t))
     (princ (widget-get widget :value) (current-buffer))))
@@ -729,6 +730,38 @@ use `electric-quote-local-mode'."
     (electric-quote-mode 1)                ; Setup the hooks.
     (setq-default electric-quote-mode nil) ; But keep it globally disabled.
     )))
+
+;;; Electric comment block
+
+(defun electric-block-comment-post-self-insert-function ()
+  "Function that `electric-block-comment' adds to `post-self-insert-hook'.
+This closes block comment with `block-comment-end' when `block-comment-start'
+is typed."
+  (when (and block-comment-start block-comment-end
+             ;; Check if we are exactly behind a `block-comment-start'
+             (save-excursion
+               (save-match-data
+                 (re-search-backward (regexp-quote block-comment-start)
+                                     (- (point) (length block-comment-start))
+                                     t)))
+             ;; And if there is not anything front us
+             (looking-at-p (concat "[^[:space:]]")))
+    (insert " ")
+    (save-excursion
+      (insert (concat " " block-comment-end)))))
+
+(define-minor-mode electric-block-comment-mode
+  "Toggle automatic closing of block comments (Electric Block Comment mode).
+
+When enabled, typing `block-comment-start' closes it inserting their
+corresponding `block-comment-end'."
+  :group 'electricity
+  :version "31.1"
+  (if electric-block-comment-mode
+      (add-hook 'post-self-insert-hook
+                #'electric-block-comment-post-self-insert-function 10 t)
+    (remove-hook 'post-self-insert-hook
+                 #'electric-block-comment-post-self-insert-function t)))
 
 (provide 'electric)
 

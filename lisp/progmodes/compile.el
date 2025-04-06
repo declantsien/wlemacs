@@ -85,14 +85,18 @@ Similarly, to remove a prefix \"bar/\", use:
                               (string :tag "Replace matched filename with"))))
   :version "27.1")
 
-(defvar compilation-filter-hook nil
+(defcustom compilation-filter-hook nil
   "Hook run after `compilation-filter' has inserted a string into the buffer.
 It is called with the variable `compilation-filter-start' bound
 to the position of the start of the inserted text, and point at
 its end.
 
 If Emacs lacks asynchronous process support, this hook is run
-after `call-process' inserts the grep output into the buffer.")
+after `call-process' inserts the grep output into the buffer."
+  :type 'hook
+  :options '(ansi-color-compilation-filter
+             ansi-osc-compilation-filter)
+  :version "31.1")
 
 (defvar compilation-filter-start nil
   "Position of the start of the text inserted by `compilation-filter'.
@@ -937,7 +941,7 @@ The value nil as an element means to try the default directory."
 			 (string :tag "Directory"))))
 
 ;;;###autoload
-(defcustom compile-command (purecopy "make -k ")
+(defcustom compile-command "make -k "
   "Last shell command used to do a compilation; default for next compilation.
 
 Sometimes it is useful for files to supply local values for this variable.
@@ -1641,9 +1645,9 @@ RULE is the name (symbol) of the rule used or nil if anonymous.
   "Note that a new message with severity TYPE was seen.
 This updates the appropriate variable used by the mode-line."
   (cl-case type
-    (0 (cl-incf compilation-num-infos-found))
-    (1 (cl-incf compilation-num-warnings-found))
-    (2 (cl-incf compilation-num-errors-found))))
+    (0 (incf compilation-num-infos-found))
+    (1 (incf compilation-num-warnings-found))
+    (2 (incf compilation-num-errors-found))))
 
 (defun compilation-parse-errors (start end &rest rules)
   "Parse errors between START and END.

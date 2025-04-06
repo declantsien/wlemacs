@@ -24,10 +24,11 @@ import android.content.Context;
 import android.text.InputType;
 
 import android.view.ContextMenu;
+import android.view.ContextThemeWrapper;
 import android.view.DragEvent;
-import android.view.View;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
@@ -127,32 +128,36 @@ public final class EmacsView extends ViewGroup
   public
   EmacsView (EmacsWindow window)
   {
-    super (EmacsService.SERVICE);
+    /* This is required to guarantee that popup menus respect the
+       default style.  */
+    super (new ContextThemeWrapper (EmacsService.SERVICE,
+				    R.style.EmacsStyle));
+    {
+      Object tem;
+      Context context;
 
-    Object tem;
-    Context context;
+      this.window = window;
+      this.damageRegion = new Region ();
 
-    this.window = window;
-    this.damageRegion = new Region ();
+      setFocusable (true);
+      setFocusableInTouchMode (true);
 
-    setFocusable (true);
-    setFocusableInTouchMode (true);
+      /* Create the surface view.  */
+      this.surfaceView = new EmacsSurfaceView (this);
+      addView (this.surfaceView);
 
-    /* Create the surface view.  */
-    this.surfaceView = new EmacsSurfaceView (this);
-    addView (this.surfaceView);
+      /* Get rid of the default focus highlight.  */
+      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
+	setDefaultFocusHighlightEnabled (false);
 
-    /* Get rid of the default focus highlight.  */
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
-      setDefaultFocusHighlightEnabled (false);
+      /* Obtain the input method manager.  */
+      context = getContext ();
+      tem = context.getSystemService (Context.INPUT_METHOD_SERVICE);
+      imManager = (InputMethodManager) tem;
 
-    /* Obtain the input method manager.  */
-    context = getContext ();
-    tem = context.getSystemService (Context.INPUT_METHOD_SERVICE);
-    imManager = (InputMethodManager) tem;
-
-    /* Add this view as its own global layout listener.  */
-    getViewTreeObserver ().addOnGlobalLayoutListener (this);
+      /* Add this view as its own global layout listener.  */
+      getViewTreeObserver ().addOnGlobalLayoutListener (this);
+    }
   }
 
   private void
@@ -296,6 +301,9 @@ public final class EmacsView extends ViewGroup
 	     && height > MeasureSpec.getSize (heightMeasureSpec))
       height = MeasureSpec.getSize (heightMeasureSpec);
 
+    /* This is strictly necessary to propagate layout requests to
+       children.  */
+    this.measureChildren (widthMeasureSpec, heightMeasureSpec);
     super.setMeasuredDimension (width, height);
   }
 
@@ -467,9 +475,6 @@ public final class EmacsView extends ViewGroup
       }
   }
 
-  /* This method is called from both the UI thread and the Emacs
-     thread.  */
-
   public void
   swapBuffers ()
   {
@@ -620,8 +625,7 @@ public final class EmacsView extends ViewGroup
 	detachViewFromParent (index);
 
 	/* The view at 0 is the surface view.  */
-	attachViewToParent (child, 1,
-			    child.getLayoutParams ());
+	attachViewToParent (child, 1, child.getLayoutParams ());
       }
   }
 
@@ -703,6 +707,8 @@ public final class EmacsView extends ViewGroup
   popupMenu (EmacsContextMenu menu, int xPosition,
 	     int yPosition, boolean force)
   {
+    ContextThemeWrapper context;
+
     if (popupActive && !force)
       return false;
 
@@ -715,6 +721,16 @@ public final class EmacsView extends ViewGroup
 
     contextMenu = menu;
     popupActive = true;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+      {
+	context = (ContextThemeWrapper) getContext ();
+	/* It is necessary to reload the current theme before attempting
+	   to display a new popup menu, or any previously applied system
+	   theme will continue to apply to it.  */
+	context.setTheme (R.style.EmacsStyleOpen);
+	context.setTheme (R.style.EmacsStyle);
+      }
 
     /* Use showContextMenu (float, float) on N to get actual popup
        behavior.  */

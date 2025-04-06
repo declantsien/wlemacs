@@ -1288,7 +1288,7 @@ infinite loops when the code/environment contains a circular object.")
   (while (not (eq sexp (setq sexp (edebug-unwrap sexp)))))
   (cond
    ((consp sexp)
-    (or (gethash sexp edebug--unwrap-cache nil)
+    (or (gethash sexp edebug--unwrap-cache)
 	(let ((remainder sexp)
 	      (current (cons nil nil)))
 	  (prog1 current
@@ -1303,8 +1303,8 @@ infinite loops when the code/environment contains a circular object.")
 		    (setf (cdr current)
 			  (edebug-unwrap* remainder))
 		    nil)
-		   ((gethash remainder edebug--unwrap-cache nil)
-		    (setf (cdr current) (gethash remainder edebug--unwrap-cache nil))
+                   ((gethash remainder edebug--unwrap-cache)
+                    (setf (cdr current) (gethash remainder edebug--unwrap-cache))
 		    nil)
 		   (t (setq current
 			    (setf (cdr current) (cons nil nil)))))))))))
@@ -1369,7 +1369,7 @@ infinite loops when the code/environment contains a circular object.")
 
       ;; Set the name here if it was not set by edebug-make-enter-wrapper.
       (setq edebug-def-name
-	    (or edebug-def-name edebug-old-def-name (cl-gensym "edebug-anon")))
+            (or edebug-def-name edebug-old-def-name (gensym "edebug-anon")))
 
       ;; Add this def as a dependent of containing def.  Buggy.
       '(if (and edebug-containing-def-name
@@ -4255,7 +4255,7 @@ code location is known."
       (let ((new-frame (copy-edebug--frame frame))
             (fun (edebug--frame-fun frame))
             (args (edebug--frame-args frame)))
-        (cl-decf index) ;; FIXME: Not used?
+        (decf index) ;; FIXME: Not used?
         (pcase fun
           ('edebug-enter
 	   (setq skip-next-lambda t
@@ -4594,8 +4594,8 @@ With prefix argument, make it a temporary breakpoint."
     (let ((s 1))
       (while (memq (nth 1 (backtrace-frame i 'called-interactively-p))
                    '(edebug-enter edebug-default-enter))
-        (cl-incf s)
-        (cl-incf i))
+        (incf s)
+        (incf i))
       s)))
 
 ;; Finally, hook edebug into the rest of Emacs.

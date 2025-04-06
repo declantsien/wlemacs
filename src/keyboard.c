@@ -4273,6 +4273,7 @@ kbd_buffer_get_event (KBOARD **kbp,
       case CONFIG_CHANGED_EVENT:
       case FOCUS_OUT_EVENT:
       case SELECT_WINDOW_EVENT:
+      case SLEEP_EVENT:
         {
           obj = make_lispy_event (&event->ie);
           kbd_fetch_ptr = next_kbd_event (event);
@@ -5552,7 +5553,6 @@ static short const scroll_bar_parts[] = {
   SYMBOL_INDEX (Qrightmost), SYMBOL_INDEX (Qend_scroll), SYMBOL_INDEX (Qratio)
 };
 
-#ifdef HAVE_WINDOW_SYSTEM
 /* An array of symbol indexes of internal border parts, indexed by an enum
    internal_border_part value.  Note that Qnil corresponds to
    internal_border_part_none and should not appear in Lisp events.  */
@@ -5563,7 +5563,6 @@ static short const internal_border_parts[] = {
   SYMBOL_INDEX (Qbottom_right_corner), SYMBOL_INDEX (Qbottom_edge),
   SYMBOL_INDEX (Qbottom_left_corner)
 };
-#endif
 
 /* A vector, indexed by button number, giving the down-going location
    of currently depressed buttons, both scroll bar and non-scroll bar.
@@ -5597,6 +5596,96 @@ static Time button_down_time;
 /* The number of clicks in this multiple-click.  */
 
 static int double_click_count;
+
+enum frame_border_side
+{
+  ON_LEFT,
+  ON_TOP,
+  ON_RIGHT,
+  ON_BOTTOM,
+  ON_NONE
+};
+
+/* Handle make_lispy_event when a tty child frame's decorations shall be
+   used in lieu of internal borders.  R denotes the root frame under
+   investigation, MX and MY are the positions of the mouse relative to
+   R.  WINDOW_OR_FRAME denotes the frame previously reported as the
+   frame under (MX, MY).  Note: The decorations of a child frame are
+   always drawn outside the child frame, so WINDOW_OR_FRAME is certainly
+   not the frame we are looking for.  Neither is R.  A candidate frame
+   is any frame but WINDOW_OR_FRAME and R whose root is R, which is not
+   decorated and has a 'drag-internal-border' parameter.  If we find a
+   suitable frame, set WINDOW_OR_FRAME to it and POSN to the part of the
+   internal border corresponding to (MX, MY) on the frame found.
+
+   Value is 1 if MX and MY rest in one of R or its children's
+   decorations, and 0 otherwise.  */
+
+static int
+make_lispy_tty_position (struct frame *r, int mx, int my,
+			 Lisp_Object *window_or_frame, Lisp_Object *posn)
+{
+  enum frame_border_side side = ON_NONE;
+  struct frame *f = NULL;
+  Lisp_Object tail, frame;
+  int ix, iy = 0;
+
+  FOR_EACH_FRAME (tail, frame)
+    {
+      f = XFRAME (frame);
+
+      int left = f->left_pos;
+      int top = f->top_pos;
+      int right = left + f->pixel_width;
+      int bottom = top + f->pixel_height;
+
+      if (root_frame (f) == r && f != r
+	  && !FRAME_UNDECORATED (f)
+	  && !NILP (get_frame_param (f, Qdrag_internal_border)))
+	{
+	  if (left == mx + 1 && my >= top && my <= bottom)
+	    {
+	      side = ON_LEFT;
+	      ix = -1;
+	      iy = my - top + 1;
+	      break;
+	    }
+	  else if (right == mx && my >= top && my <= bottom)
+	    {
+	      side = ON_RIGHT;
+	      ix = f->pixel_width;
+	      iy = my - top + 1;
+	      break;
+	    }
+	  else if (top == my + 1 && mx >= left && mx <= right)
+	    {
+	      side = ON_TOP;
+	      ix = mx - left + 1;
+	      iy = -1;
+	      break;
+	    }
+	  else if (bottom == my && mx >= left && mx <= right)
+	    {
+	      side = ON_BOTTOM;
+	      ix = mx - left + 1;
+	      iy = f->pixel_height;
+	      break;
+	    }
+	}
+    }
+
+  if (side != ON_NONE)
+    {
+      enum internal_border_part part
+	= frame_internal_border_part (f, ix, iy);
+
+      XSETFRAME (*window_or_frame, f);
+      *posn = builtin_lisp_symbol (internal_border_parts[part]);
+      return 1;
+    }
+
+  return 0;
+}
 
 /* X and Y are frame-relative coordinates for a click or wheel event.
    Return a Lisp-style event list.  */
@@ -5676,7 +5765,13 @@ make_lispy_position (struct frame *f, Lisp_Object x, Lisp_Object y,
       window_or_frame = Qnil;	/* see above */
     }
 
-  if (WINDOWP (window_or_frame))
+  if (WINDOWP (window_or_frame) && is_tty_frame (f)
+      && (is_tty_root_frame_with_visible_child (f)
+	  || is_tty_child_frame (f))
+      && make_lispy_tty_position (root_frame (f), mx, my,
+				  &window_or_frame, &posn))
+    ;
+  else if (WINDOWP (window_or_frame))
     {
       /* It's a click in window WINDOW at frame coordinates (X,Y)  */
       struct window *w = XWINDOW (window_or_frame);
@@ -5879,9 +5974,7 @@ make_lispy_position (struct frame *f, Lisp_Object x, Lisp_Object y,
       xret = mx;
       yret = my;
 
-#ifdef HAVE_WINDOW_SYSTEM
-      if (FRAME_WINDOW_P (f)
-	  && FRAME_LIVE_P (f)
+      if (FRAME_LIVE_P (f)
 	  && NILP (posn)
 	  && FRAME_INTERNAL_BORDER_WIDTH (f) > 0
 	  && !NILP (get_frame_param (f, Qdrag_internal_border)))
@@ -5891,7 +5984,6 @@ make_lispy_position (struct frame *f, Lisp_Object x, Lisp_Object y,
 
 	  posn = builtin_lisp_symbol (internal_border_parts[part]);
 	}
-#endif
     }
   else
     {
@@ -6348,7 +6440,7 @@ make_lispy_event (struct input_event *event)
 		    if (NILP (item))
 		      return Qnil;
 
-		    /* ELisp manual 2.4b says (x y) are window
+		    /* Elisp manual 2.4b says (x y) are window
 		       relative but code says they are
 		       frame-relative.  */
 		    position = list4 (event->frame_or_window,
@@ -6835,7 +6927,7 @@ make_lispy_event (struct input_event *event)
 		    if (NILP (item))
 		      return Qnil;
 
-		    /* ELisp manual 2.4b says (x y) are window
+		    /* Elisp manual 2.4b says (x y) are window
 		       relative but code says they are
 		       frame-relative.  */
 		    position = list4 (event->frame_or_window,
@@ -7109,6 +7201,9 @@ make_lispy_event (struct input_event *event)
       return Fcons (Qfile_notify, event->arg);
 #endif
 #endif /* USE_FILE_NOTIFY */
+
+    case SLEEP_EVENT:
+      return Fcons (Qsleep_event, event->arg);
 
     case CONFIG_CHANGED_EVENT:
 	return list3 (Qconfig_changed_event,
@@ -8129,8 +8224,15 @@ tty_read_avail_input (struct terminal *terminal,
       buf.code = cbuf[i];
       /* Set the frame corresponding to the active tty.  Note that the
          value of selected_frame is not reliable here, redisplay tends
-         to temporarily change it.  */
-      buf.frame_or_window = tty->top_frame;
+         to temporarily change it.  However, if the selected frame is a
+         child frame, don't do that since it will cause switch frame
+         events to switch to the root frame instead.  */
+      if (FRAME_PARENT_FRAME (XFRAME (selected_frame))
+	  && (root_frame (XFRAME (selected_frame))
+	      == XFRAME (tty->top_frame)))
+	buf.frame_or_window = selected_frame;
+      else
+	buf.frame_or_window = tty->top_frame;
       buf.arg = Qnil;
 
       kbd_buffer_store_event (&buf);
@@ -11631,6 +11733,63 @@ If CHECK-TIMERS is non-nil, timers that are ready to run will do so.  */)
 	  ? Qt : Qnil);
 }
 
+DEFUN ("insert-special-event", Finsert_special_event, Sinsert_special_event,
+       1, 1, 0,
+       doc: /* Insert the special EVENT into the input event queue.
+Only 'input_event' slots KIND and ARG are set.  */)
+  (Lisp_Object event)
+{
+  /* Check, that it is a special event.  */
+  CHECK_CONS (event);
+  if (NILP (access_keymap
+	    (get_keymap (Vspecial_event_map, 0, 1), event, 0, 0, 1)))
+    signal_error ("Invalid event kind", XCAR (event));
+
+  /* Construct an input event.  */
+  struct input_event ie;
+  EVENT_INIT (ie);
+  ie.kind =
+    (EQ (XCAR (event), Qdelete_frame) ? DELETE_WINDOW_EVENT
+#ifdef HAVE_NTGUI
+     : EQ (XCAR (event), Qend_session) ? END_SESSION_EVENT
+#endif
+#ifdef HAVE_NS
+     : EQ (XCAR (event), Qns_put_working_text) ? KEY_NS_PUT_WORKING_TEXT
+#endif
+#ifdef HAVE_NS
+     : EQ (XCAR (event), Qns_unput_working_text) ? KEY_NS_UNPUT_WORKING_TEXT
+#endif
+     : EQ (XCAR (event), Qiconify_frame) ? ICONIFY_EVENT
+     : EQ (XCAR (event), Qmake_frame_visible) ? DEICONIFY_EVENT
+  /* : EQ (XCAR (event), Qselect_window) ? SELECT_WINDOW_EVENT */
+     : EQ (XCAR (event), Qsave_session) ? SAVE_SESSION_EVENT
+#ifdef HAVE_DBUS
+     : EQ (XCAR (event), Qdbus_event) ? DBUS_EVENT
+#endif
+#ifdef THREADS_ENABLED
+     : EQ (XCAR (event), Qthread_event) ? THREAD_EVENT
+#endif
+#ifdef USE_FILE_NOTIFY
+     : EQ (XCAR (event), Qfile_notify) ? FILE_NOTIFY_EVENT
+#endif /* USE_FILE_NOTIFY */
+     : EQ (XCAR (event), Qconfig_changed_event) ? CONFIG_CHANGED_EVENT
+#if defined (WINDOWSNT)
+     : EQ (XCAR (event), Qlanguage_change) ? LANGUAGE_CHANGE_EVENT
+#endif
+     : EQ (XCAR (event), Qfocus_in) ? FOCUS_IN_EVENT
+     : EQ (XCAR (event), Qfocus_out) ? FOCUS_OUT_EVENT
+     : EQ (XCAR (event), Qmove_frame) ? MOVE_FRAME_EVENT
+     : EQ (XCAR (event), Qsleep_event) ? SLEEP_EVENT
+     : NO_EVENT);
+  ie.frame_or_window = Qnil;
+  ie.arg = CDR (event);
+
+  /* Store it into the input event queue.  */
+  kbd_buffer_store_event (&ie);
+
+  return (Qnil);
+}
+
 /* Reallocate recent_keys copying the recorded keystrokes
    in the right order.  */
 static void
@@ -12504,7 +12663,9 @@ The `posn-' functions access elements of such lists.  */)
      into the left fringe.  */
   if (XFIXNUM (x) != -1)
     CHECK_FIXNAT (x);
-  CHECK_FIXNAT (y);
+  CHECK_FIXNUM (y);
+  if (XFIXNUM (y) != -1)
+    CHECK_FIXNAT (y);
 
   if (NILP (frame_or_window))
     frame_or_window = selected_window;
@@ -12803,6 +12964,7 @@ init_while_no_input_ignore_events (void)
 #ifdef THREADS_ENABLED
   events = Fcons (Qthread_event, events);
 #endif
+  events = Fcons (Qsleep_event, events);
 
   return events;
 }
@@ -12826,6 +12988,7 @@ is_ignored_event (union buffered_input_event *event)
 #ifdef HAVE_DBUS
     case DBUS_EVENT: ignore_event = Qdbus_event; break;
 #endif
+    case SLEEP_EVENT: ignore_event = Qsleep_event; break;
     default: ignore_event = Qnil; break;
     }
 
@@ -12840,14 +13003,14 @@ syms_of_keyboard (void)
   pending_funcalls = Qnil;
   staticpro (&pending_funcalls);
 
-  Vlispy_mouse_stem = build_pure_c_string ("mouse");
+  Vlispy_mouse_stem = build_string ("mouse");
   staticpro (&Vlispy_mouse_stem);
 
-  regular_top_level_message = build_pure_c_string ("Back to top level");
+  regular_top_level_message = build_string ("Back to top level");
   staticpro (&regular_top_level_message);
 #ifdef HAVE_STACK_OVERFLOW_HANDLING
   recover_top_level_message
-    = build_pure_c_string ("Re-entering top level after C stack overflow");
+    = build_string ("Re-entering top level after C stack overflow");
   staticpro (&recover_top_level_message);
 #endif
   DEFVAR_LISP ("internal--top-level-message", Vinternal__top_level_message,
@@ -12931,6 +13094,7 @@ syms_of_keyboard (void)
 #endif /* USE_FILE_NOTIFY */
 
   DEFSYM (Qtouch_end, "touch-end");
+  DEFSYM (Qsleep_event, "sleep-event");
 
   /* Menu and tool bar item parts.  */
   DEFSYM (QCenable, ":enable");
@@ -13144,6 +13308,7 @@ syms_of_keyboard (void)
   defsubr (&Srecursive_edit);
   defsubr (&Sinternal_track_mouse);
   defsubr (&Sinput_pending_p);
+  defsubr (&Sinsert_special_event);
   defsubr (&Slossage_size);
   defsubr (&Srecent_keys);
   defsubr (&Sthis_command_keys);
@@ -13900,7 +14065,10 @@ function is called to remap that sequence.  */);
   pdumper_do_now_and_after_load (syms_of_keyboard_for_pdumper);
 
   DEFSYM (Qactivate_mark_hook, "activate-mark-hook");
+#ifdef HAVE_NS
+  DEFSYM (Qns_put_working_text, "ns-put-working-text");
   DEFSYM (Qns_unput_working_text, "ns-unput-working-text");
+#endif
   DEFSYM (Qinternal_timer_start_idle, "internal-timer-start-idle");
   DEFSYM (Qconcat, "concat");
   DEFSYM (Qsuspend_hook, "suspend-hook");
@@ -13949,10 +14117,12 @@ keys_of_keyboard (void)
   initial_define_lispy_key (Vspecial_event_map, "end-session",
 			    "kill-emacs");
 #endif
+#ifdef HAVE_NS
   initial_define_lispy_key (Vspecial_event_map, "ns-put-working-text",
 			    "ns-put-working-text");
   initial_define_lispy_key (Vspecial_event_map, "ns-unput-working-text",
 			    "ns-unput-working-text");
+#endif
   /* Here we used to use `ignore-event' which would simple set prefix-arg to
      current-prefix-arg, as is done in `handle-switch-frame'.
      But `handle-switch-frame is not run from the special-map.
@@ -14017,6 +14187,8 @@ keys_of_keyboard (void)
 			    "handle-focus-out");
   initial_define_lispy_key (Vspecial_event_map, "move-frame",
 			    "handle-move-frame");
+  initial_define_lispy_key (Vspecial_event_map, "sleep-event",
+			    "ignore");
 }
 
 /* Mark the pointers in the kboard objects.

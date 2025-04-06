@@ -1272,10 +1272,11 @@ particular sessions and/or `let'-bound for spells."
   :group 'erc)
 
 (defcustom erc-mode-hook nil
-  "Hook run after `erc-mode' setup is finished."
+  "Hook run after `erc-mode' setup is finished.
+Members should be robust enough to run in any order and not depend on
+hook depth."
   :group 'erc-hooks
-  :type 'hook
-  :options '(erc-add-scroll-to-bottom))
+  :type 'hook)
 
 (defcustom erc-timer-hook nil
   "Abnormal hook run after each response handler.
@@ -1660,13 +1661,12 @@ capabilities."
 (defun erc--warn-once-before-connect (mode-var &rest args)
   "Display an \"error notice\" once.
 Expect ARGS to be `erc-button--display-error-notice-with-keys'
-compatible parameters, except without any leading buffers or
-processes.  If we're in an ERC buffer with a network process when
-called, print the notice immediately.  Otherwise, if we're in a
-server buffer, arrange to do so after local modules have been set
-up and mode hooks have run.  Otherwise, if MODE-VAR is a global
-module, try again at most once the next time `erc-mode-hook'
-runs."
+compatible parameters, except without any leading buffers or processes.
+If the current buffer has an `erc-server-process', print the notice
+immediately.  Otherwise, if it's a server buffer without a process,
+arrange to do so on `erc-connect-pre-hook'.  In non-ERC buffers, so long
+as MODE-VAR belongs to a global module, try again at most once the next
+time `erc-mode-hook' runs for any connection."
   (declare (indent 1))
   (cl-assert (stringp (car args)))
   (if (derived-mode-p 'erc-mode)
@@ -2661,7 +2661,9 @@ side effect of setting the current buffer to the one it returns.  Use
     (erc--initialize-markers old-point continued-session)
     (erc-determine-parameters server port nick full-name user passwd)
     (save-excursion (run-mode-hooks)
-                    (dolist (mod (car delayed-modules)) (funcall mod +1))
+                    (dolist (mod (car delayed-modules))
+                      (unless (and (boundp mod) (symbol-value mod))
+                        (funcall mod +1)))
                     (dolist (var (cdr delayed-modules)) (set var nil)))
 
     ;; Saving log file on exit
@@ -2918,8 +2920,8 @@ Example client certificate (CertFP) usage:
 
     (erc-tls :server \"irc.libera.chat\" :port 6697
              :client-certificate
-             \\='(\"/home/bandali/my-cert.key\"
-               \"/home/bandali/my-cert.crt\"))
+             \\='(\"/home/bandali/my-key.pem\"
+               \"/home/bandali/my-cert.pem\"))
 
 See the alternative entry-point command `erc' as well as Info
 node `(erc) Connecting' for a fuller description of the various
@@ -9732,7 +9734,7 @@ if yet untried."
   "Format MSG according to ARGS.
 
 See also `format-spec'."
-  (when (eq (logand (length args) 1) 1) ; oddp
+  (unless (cl-evenp (length args))
     (error "Obscure usage of this function appeared"))
   (let ((entry (erc-retrieve-catalog-entry msg)))
     (when (not entry)

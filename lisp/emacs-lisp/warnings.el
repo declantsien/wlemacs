@@ -172,7 +172,7 @@ also call that function before the next warning.")
 ;; safely, testing the existing value, before they call one of the
 ;; warnings functions.
 ;;;###autoload
-(defvar warning-type-format (purecopy " (%s)")
+(defvar warning-type-format " (%s)"
   "Format for displaying the warning type in the warning message.
 The result of formatting the type this way gets included in the
 message under the control of the string in `warning-levels'.")
@@ -373,9 +373,10 @@ entirely by setting `warning-suppress-types' or
 		     (let ((window (display-buffer
 				    buffer
 				    (when warning-display-at-bottom
-				      '(display-buffer--maybe-at-bottom
-					(window-height . (lambda (window)
-					  (fit-window-to-buffer window 10)))
+				      `(display-buffer--maybe-at-bottom
+					(window-height
+					 . ,(lambda (window)
+					      (fit-window-to-buffer window 10)))
 					(category . warning))))))
 		       (when (and window (markerp warning-series)
 				  (eq (marker-buffer warning-series) buffer))

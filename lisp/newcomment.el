@@ -136,7 +136,7 @@ by the close of the first pair.")
 (put 'comment-end-skip 'safe-local-variable 'stringp)
 
 ;;;###autoload
-(defvar comment-end (purecopy "")
+(defvar comment-end ""
   "String to insert to end a new comment.
 Should be an empty string if comments are terminated by end-of-line.")
 ;;;###autoload
@@ -288,7 +288,7 @@ See `comment-styles' for a list of available styles."
   :group 'comment)
 
 ;;;###autoload
-(defcustom comment-padding (purecopy " ")
+(defcustom comment-padding " "
   "Padding string that `comment-region' puts between comment chars and text.
 Can also be an integer which will be automatically turned into a string
 of the corresponding number of spaces.
@@ -918,7 +918,7 @@ comment delimiters."
   (when (> beg end) (setq beg (prog1 end (setq end beg))))
   ;; Bind `comment-use-global-state' to nil.  While uncommenting a region
   ;; (which works a line at a time), a comment can appear to be
-  ;; included in a mult-line string, but it is actually not.
+  ;; included in a multi-line string, but it is actually not.
   (let ((comment-use-global-state nil))
     (save-excursion
       (funcall uncomment-region-function beg end arg))))

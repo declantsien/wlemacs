@@ -269,7 +269,7 @@ INIT-VALUE LIGHTER KEYMAP.
       (setq body (cdr body))
       (pcase keyw
 	(:init-value (setq init-value (pop body)))
-	(:lighter (setq lighter (purecopy (pop body))))
+        (:lighter (setq lighter (pop body)))
 	(:global (setq globalp (pop body))
                  (when (and globalp (symbolp mode))
                    (setq setter `(setq-default ,mode))
@@ -443,8 +443,6 @@ No problems result if this variable is not bound.
 ;;; make global minor mode
 ;;;
 
-;;;###autoload
-(defalias 'define-global-minor-mode #'define-globalized-minor-mode)
 ;;;###autoload
 (defmacro define-globalized-minor-mode (global-mode mode turn-on &rest body)
   "Make a global mode GLOBAL-MODE corresponding to buffer-local minor MODE.
@@ -852,11 +850,14 @@ Interactively, COUNT is the prefix numeric argument, and defaults to 1." name)
          ,@body)
        (put ',prev-sym 'definition-name ',base))))
 
-;; When deleting these two, also delete them from loaddefs-gen.el.
+;; When deleting these, also delete them from loaddefs-gen.el.
 ;;;###autoload
 (define-obsolete-function-alias 'easy-mmode-define-minor-mode #'define-minor-mode "30.1")
 ;;;###autoload
 (define-obsolete-function-alias 'easy-mmode-define-global-mode #'define-globalized-minor-mode "30.1")
+;;;###autoload
+(define-obsolete-function-alias 'define-global-minor-mode
+  #'define-globalized-minor-mode "31.1")
 
 (provide 'easy-mmode)
 

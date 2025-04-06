@@ -776,6 +776,14 @@ to.  The @samp{To} field starts out as the address of the person who
 sent the message you received, and the @samp{CC} field starts out with
 all the other recipients of that message.
 
+@vindex rmail-re-abbrevs
+@vindex rmail-reply-prefix
+@vindex mail-re-regexps
+The @samp{Subject} header field may contain one or more instances of
+@samp{Re:} or localized variants thereof.  These are removed if they
+match @code{rmail-re-abbrevs} (which is initialized from
+@code{mail-re-regexps}), and @code{rmail-reply-prefix} is prepended.
+
 @vindex mail-dont-reply-to-names
   You can exclude certain recipients from being included automatically
 in replies, using the variable @code{mail-dont-reply-to-names}.  Its
@@ -1527,7 +1535,10 @@ This is equivalent to specifying the @samp{file} protocol:
 absolute file name of the @command{movemail} executable.  If it is
 @code{nil}, Rmail searches for @command{movemail} in the directories
 listed in @code{rmail-movemail-search-path}, then in @code{exec-path}
-(@pxref{Shell}), then in @code{exec-directory}.
+(@pxref{Shell}), then in @code{exec-directory}.  This variable should be
+customized before starting Rmail; if you customize it after starting
+Rmail, you will need to set @code{rmail-movemail-variant-in-use} to the
+@code{nil} value, and then restart Rmail.
 
 @node Remote Mailboxes
 @section Retrieving Mail from Remote Mailboxes

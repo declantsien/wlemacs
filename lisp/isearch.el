@@ -115,7 +115,7 @@ is called to let you enter the search string, and RET terminates editing
 and does a nonincremental search.)"
   :type 'boolean)
 
-(defcustom search-whitespace-regexp (purecopy "[ \t]+")
+(defcustom search-whitespace-regexp "[ \t]+"
   "If non-nil, regular expression to match a sequence of whitespace chars.
 When you enter a space or spaces in the incremental search, it
 will match any sequence matched by this regexp.  As an exception,
@@ -497,7 +497,7 @@ this variable is nil.")
 (eval-when-compile (require 'help-macro))
 
 (make-help-screen isearch-help-for-help-internal
-  (purecopy "Type a help option: [bkm] or ?")
+  "Type a help option: [bkm] or ?"
   "You have typed %THIS-KEY%, the help character.  Type a Help option:
 \(Type \\<isearch-help-map>\\[help-quit] to exit the Help command.)
 
@@ -685,10 +685,10 @@ This is like `describe-bindings', but displays only Isearch keys."
 
 (easy-menu-define isearch-menu-bar-map  isearch-mode-map
   "Menu for `isearch-mode'."
-  '("Isearch"
+  `("Isearch"
     ["Cancel search" isearch-cancel
      :help "Cancel current search and return to starting point"
-     :filter (lambda (binding)
+     :filter ,(lambda (binding)
                (if isearch-success 'isearch-abort binding))]
     ["Remove characters not found" isearch-abort
      :help "Quit current search"
@@ -2665,9 +2665,9 @@ always reads a string from the `kill-ring' using the minibuffer."
     (isearch-yank-string (current-kill 1)))))
 
 (defun isearch-yank-x-selection ()
-  "Pull current X selection into search string."
+  "Pull current PRIMARY X selection into the search string."
   (interactive)
-  (isearch-yank-string (gui-get-selection))
+  (isearch-yank-string (ignore-errors (gui-get-primary-selection)))
   ;; If `gui-get-selection' returned the text from the active region,
   ;; then it "used" the mark which we should hence deactivate.
   (when select-active-regions (deactivate-mark)))
@@ -2893,7 +2893,7 @@ The command accepts Unicode names like \"smiling face\" or
 
 (defun isearch-backslash (str)
   "Return t if STR ends in an odd number of backslashes."
-  (= (mod (- (length str) (string-match "\\\\*\\'" str)) 2) 1))
+  (oddp (- (length str) (string-match "\\\\*\\'" str))))
 
 (defun isearch-fallback (want-backslash &optional allow-invalid to-barrier)
   "Return point to previous successful match to allow regexp liberalization.
@@ -3230,7 +3230,7 @@ See more for options in `search-exit-option'."
       (setq isearch-pre-move-point (point)))
      ;; Append control characters to the search string
      ((eq search-exit-option 'append)
-      (unless (memq nil (mapcar (lambda (k) (characterp k)) key))
+      (unless (memq nil (mapcar #'characterp key))
         (isearch-process-search-string key key))
       (setq this-command 'ignore))
      ;; Other characters terminate the search and are then executed normally.
@@ -4098,7 +4098,10 @@ This is called when `isearch-update' is invoked (which can cause the
 search string to change or the window to scroll).  It is also used
 by other Emacs features."
   (when (and (null executing-kbd-macro)
-             (sit-for 0)         ;make sure (window-start) is credible
+             ;; This used to read `(sit-for 0)', but that has proved
+             ;; unreliable when called from within
+             ;; after-change-functions bound to certain special events.
+             (redisplay)         ;make sure (window-start) is credible
              (or (not (equal isearch-string
                              isearch-lazy-highlight-last-string))
                  (not (memq (selected-window)
@@ -4262,7 +4265,7 @@ Attempt to do the search exactly the way the pending Isearch would."
                    (and (eq isearch-lazy-highlight-invisible 'open)
                         'can-be-opened)))
               (funcall isearch-filter-predicate mb me)))
-    (let ((ov (make-overlay mb me)))
+    (let ((ov (make-overlay mb me nil t nil)))
       (push ov isearch-lazy-highlight-overlays)
       ;; 1000 is higher than ediff's 100+,
       ;; but lower than isearch main overlay's 1001
@@ -4654,8 +4657,7 @@ defaults to the value of `isearch-search-fun-default' when nil."
                                          (match-data)))))
             (when found (goto-char found))
             (when match-data (set-match-data
-                              (mapcar (lambda (m) (copy-marker m))
-                                      match-data))))
+                              (mapcar #'copy-marker match-data))))
         (setq found (funcall
                      (or search-fun (isearch-search-fun-default))
                      string (if bound (if isearch-forward

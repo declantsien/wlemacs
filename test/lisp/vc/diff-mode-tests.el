@@ -389,26 +389,26 @@ baz"))))
                  124 127 (face diff-context))))
 
       ;; Test diff-font-lock-syntax.
-      (should (equal (mapcar (lambda (o)
-                               (list (- (overlay-start o) diff-beg)
-                                     (- (overlay-end o) diff-beg)
-                                     (append (and (overlay-get o 'diff-mode)
-                                                  `(diff-mode ,(overlay-get o 'diff-mode)))
-                                             (and (overlay-get o 'face)
-                                                  `(face ,(overlay-get o 'face))))))
+      (should (equal
+               (delq nil
+                     (mapcar (lambda (o)
+                               (when (overlay-get o 'face)
+                                 (list (- (overlay-start o) diff-beg)
+                                       (- (overlay-end o) diff-beg)
+                                       `( diff-mode ,(overlay-get o 'diff-mode)
+                                          face ,(overlay-get o 'face)))))
                              (sort (overlays-in (point-min) (point-max))
-                                   (lambda (a b) (< (overlay-start a) (overlay-start b)))))
-                     '((0 127 (diff-mode fine))
-                       (0 127 (diff-mode syntax))
-                       (17 25 (diff-mode syntax face font-lock-preprocessor-face))
-                       (26 35 (diff-mode syntax face font-lock-string-face))
-                       (37 40 (diff-mode syntax face font-lock-type-face))
-                       (41 45 (diff-mode syntax face font-lock-function-name-face))
-                       (61 78 (diff-mode syntax face font-lock-string-face))
-                       (69 74 (diff-mode fine face diff-refine-removed))
-                       (91 108 (diff-mode syntax face font-lock-string-face))
-                       (99 104 (diff-mode fine face diff-refine-added))
-                       (114 120 (diff-mode syntax face font-lock-keyword-face))))))))
+                                   (lambda (a b)
+                                     (< (overlay-start a) (overlay-start b))))))
+               '((17 25 (diff-mode syntax face font-lock-preprocessor-face))
+                 (26 35 (diff-mode syntax face font-lock-string-face))
+                 (37 40 (diff-mode syntax face font-lock-type-face))
+                 (41 45 (diff-mode syntax face font-lock-function-name-face))
+                 (61 78 (diff-mode syntax face font-lock-string-face))
+                 (69 74 (diff-mode fine face diff-refine-removed))
+                 (91 108 (diff-mode syntax face font-lock-string-face))
+                 (99 104 (diff-mode fine face diff-refine-added))
+                 (114 120 (diff-mode syntax face font-lock-keyword-face))))))))
 
 (ert-deftest diff-mode-test-font-lock-syntax-one-line ()
   "Check diff syntax highlighting for one line with no newline at end."
@@ -556,6 +556,142 @@ baz"))))
 -1
 +1
 ")))))
+
+(ert-deftest diff-mode-test-git-patch ()
+  (let ((file (ert-resource-file "git.patch")))
+   (with-temp-buffer
+     (insert-file-contents file)
+     (diff-mode)
+     (font-lock-ensure)
+     (goto-char (point-min))
+     (re-search-forward "magic_number = 42")
+     (should (eq (get-text-property (match-beginning 0) 'face)
+                 'diff-removed))
+     (re-search-forward "magic_number = 73")
+     (should (eq (get-text-property (match-beginning 0) 'face)
+                 'diff-added)))))
+
+(ert-deftest diff-mode-test-git-patch/before-first-hunk ()
+  (let ((file (ert-resource-file "git.patch")))
+   (with-temp-buffer
+     (insert-file-contents file)
+     (diff-mode)
+     (font-lock-ensure)
+     (goto-char (point-min))
+     (re-search-forward "This is not a removed line")
+     (should (eq (get-text-property (match-beginning 0) 'face)
+                  'diff-context))
+     (re-search-forward "This is not an added line")
+     (font-lock-ensure)
+     (should (eq (get-text-property (match-beginning 0) 'face)
+                 'diff-context)))))
+
+(ert-deftest diff-mode-test-git-patch/signature ()
+  (let ((file (ert-resource-file "git.patch")))
+   (with-temp-buffer
+     (insert-file-contents file)
+     (diff-mode)
+     (font-lock-ensure)
+     (goto-char (point-max))
+     (re-search-backward "^-- $")
+     (should (eq (get-text-property (match-beginning 0) 'face)
+                  'diff-context)))))
+
+(ert-deftest diff-mode-test-topmost-addition-undo ()
+  (let ((patch "diff --git a/fruits b/fruits
+index 0dcecd3..d0eb2e7 100644
+--- a/fruits
++++ b/fruits
+@@ -1,2 +1,3 @@
++fruits
+ apple
+ orange
+")
+        (text-before "apple
+orange
+")
+        (text-after "fruits
+apple
+orange
+"))
+    (ert-with-temp-directory temp-dir
+      (let ((buf-after
+             (find-file-noselect (format "%s/%s" temp-dir "fruits"))))
+        (cd temp-dir)
+
+        (with-current-buffer buf-after (insert text-after) (save-buffer))
+        (with-temp-buffer
+          (insert patch)
+          (goto-char (point-min))
+          (diff-hunk-next)
+          ;; Undo hunk by non-nil REVERSE argument (C-u C-c C-a)
+          (diff-apply-hunk t))
+        (with-current-buffer buf-after
+          (should (string-equal (buffer-string) text-before)))
+
+        (with-current-buffer buf-after
+          (erase-buffer) (insert text-after) (save-buffer))
+        (with-temp-buffer
+          (insert patch)
+          (goto-char (point-min))
+          (diff-hunk-next)
+          ;; Undo hunk by dwim behaviour
+          (cl-letf (((symbol-function 'y-or-n-p) #'always))
+            (diff-apply-hunk)))
+        (with-current-buffer buf-after
+          (should (string-equal (buffer-string) text-before)))
+
+        (with-current-buffer buf-after
+          (set-buffer-modified-p nil)
+          (kill-buffer buf-after))))))
+
+(ert-deftest diff-mode-test-bottommost-addition-undo ()
+  (let ((patch "diff --git a/fruits b/fruits
+index 0dcecd3..6f210ff 100644
+--- a/fruits
++++ b/fruits
+@@ -1,2 +1,3 @@
+ apple
+ orange
++plum
+")
+        (text-before "apple
+orange
+")
+        (text-after "apple
+orange
+plum
+"))
+    (ert-with-temp-directory temp-dir
+      (let ((buf-after
+             (find-file-noselect (format "%s/%s" temp-dir "fruits"))))
+        (cd temp-dir)
+
+        (with-current-buffer buf-after (insert text-after) (save-buffer))
+        (with-temp-buffer
+          (insert patch)
+          (goto-char (point-min))
+          (diff-hunk-next)
+          ;; Undo hunk by non-nil REVERSE argument (C-u C-c C-a)
+          (diff-apply-hunk t))
+        (with-current-buffer buf-after
+          (should (string-equal (buffer-string) text-before)))
+
+        (with-current-buffer buf-after
+          (erase-buffer) (insert text-after) (save-buffer))
+        (with-temp-buffer
+          (insert patch)
+          (goto-char (point-min))
+          (diff-hunk-next)
+          ;; Undo hunk by dwim behaviour
+          (cl-letf (((symbol-function 'y-or-n-p) #'always))
+            (diff-apply-hunk)))
+        (with-current-buffer buf-after
+          (should (string-equal (buffer-string) text-before)))
+
+        (with-current-buffer buf-after
+          (set-buffer-modified-p nil)
+          (kill-buffer buf-after))))))
 
 (provide 'diff-mode-tests)
 ;;; diff-mode-tests.el ends here

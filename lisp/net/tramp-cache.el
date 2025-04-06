@@ -68,10 +68,13 @@
 
 ;; Some properties are handled special:
 ;;
-;; - Properties which start with a space, like " process-name", are
-;;   not saved in the file `tramp-persistency-file-name', although
-;;   being connection properties related to a `tramp-file-name'
-;;   structure.
+;; - Ephemeral properties which start with a space, like
+;;   " process-name", are not saved in the file
+;;   `tramp-persistency-file-name', although being connection
+;;   properties related to a `tramp-file-name' structure.
+;;
+;; - Properties retrieved from `tramp-connection-properties' are not
+;;   saved in the file `tramp-persistency-file-name'.
 ;;
 ;; - Reusable properties, which should not be saved, are kept in the
 ;;   process key retrieved by `tramp-get-process' (the main connection
@@ -79,11 +82,14 @@
 ;;   recomputation when a new asynchronous process is created by
 ;;   `make-process'.  Examples are "unsafe-temporary-file",
 ;;   "remote-path", "device" (tramp-adb.el) or "share" (tramp-gvfs.el).
+;;   FIXME: Shall they be converted to ephemeral connection properties?
 
 ;;; Code:
 
 (require 'tramp-compat)
 (require 'time-stamp)
+
+(declare-function tramp-get-method-parameter "tramp")
 
 ;;; -- Cache --
 
@@ -97,8 +103,11 @@
 Every entry has the form (REGEXP PROPERTY VALUE).  The regexp
 matches remote file names.  It can be nil.  PROPERTY is a string,
 and VALUE the corresponding value.  They are used, if there is no
-matching entry for PROPERTY in `tramp-cache-data'.  For more
-details see the info pages."
+matching entry for PROPERTY in `tramp-cache-data'.
+
+PROPERTY can also be a string representing a parameter in
+`tramp-methods'.  For more details see the Info node `(tramp) Predefined
+connection information'."
   :group 'tramp
   :version "24.4"
   :type '(repeat (list (choice :tag "File Name regexp" regexp (const nil))
@@ -132,17 +141,20 @@ If it doesn't exist yet, it is created and initialized with
 matching entries of `tramp-connection-properties'.
 If KEY is `tramp-cache-undefined', don't create anything, and return nil."
   ;; (declare (tramp-suppress-trace t))
-  (unless (eq key tramp-cache-undefined)
-    (or (gethash key tramp-cache-data)
-	(let ((hash
-	       (puthash key (make-hash-table :test #'equal) tramp-cache-data)))
-	  (when (tramp-file-name-p key)
-	    (dolist (elt tramp-connection-properties)
-	      (when (string-match-p
-		     (or (nth 0 elt) "")
-		     (tramp-make-tramp-file-name key 'noloc))
-		(tramp-set-connection-property key (nth 1 elt) (nth 2 elt)))))
-	  hash))))
+  (let ((tramp-verbose 0))
+    (unless (eq key tramp-cache-undefined)
+      (or (gethash key tramp-cache-data)
+	  (let ((hash
+		 (puthash key (make-hash-table :test #'equal) tramp-cache-data)))
+	    (when (tramp-file-name-p key)
+	      (dolist (elt tramp-connection-properties)
+		(when (string-match-p
+		       (or (nth 0 elt) "")
+		       (tramp-make-tramp-file-name key 'noloc))
+		  ;; Mark it as taken from `tramp-connection-properties'.
+		  (tramp-set-connection-property
+		   key (propertize (nth 1 elt) 'tramp-default t) (nth 2 elt)))))
+	    hash)))))
 
 ;; We cannot use the `declare' form for `tramp-suppress-trace' in
 ;; autoloaded functions, because the tramp-loaddefs.el generation
@@ -478,8 +490,10 @@ used to cache connection properties of the local machine."
 	  (hash (tramp-get-hash-table key))
 	  (cached (and (hash-table-p hash)
 		       (gethash ,property hash tramp-cache-undefined))))
+     (tramp-message key 7 "Saved %s %s" ,property cached)
      (unwind-protect (progn ,@body)
        ;; Reset PROPERTY.  Recompute hash, it could have been flushed.
+       (tramp-message key 7 "Restored %s %s" ,property cached)
        (setq hash (tramp-get-hash-table key))
        (if (not (eq cached tramp-cache-undefined))
 	   (puthash ,property cached hash)
@@ -496,9 +510,13 @@ PROPERTIES is a list of file properties (strings)."
 	   (mapcar
 	    (lambda (property)
 	      (cons property (gethash property hash tramp-cache-undefined)))
-	    ,properties)))
+	    ,properties))
+	  ;; Avoid superfluous debug buffers during host name completion.
+	  (tramp-verbose (if minibuffer-completing-file-name 0 tramp-verbose)))
+     (tramp-message key 7 "Saved %s" values)
      (unwind-protect (progn ,@body)
        ;; Reset PROPERTIES.  Recompute hash, it could have been flushed.
+       (tramp-message key 7 "Restored %s" values)
        (setq hash (tramp-get-hash-table key))
        (dolist (value values)
 	 (if (not (eq (cdr value) tramp-cache-undefined))
@@ -572,12 +590,11 @@ PROPERTIES is a list of file properties (strings)."
 	    print-length print-level)
 	;; Remove `tramp-null-hop'.
 	(remhash tramp-null-hop cache)
-	;; Remove temporary data.  If there is the key "login-as", we
-	;; don't save either, because all other properties might
-	;; depend on the login name, and we want to give the
-	;; possibility to use another login name later on.  Key
-	;; "started" exists for the "ftp" method only, which must not
-	;; be kept persistent.
+	;; If there is the key "login-as", we don't save, because all
+	;; other properties might depend on the login name, and we
+	;; want to give the possibility to use another login name
+	;; later on.  Key "started" exists for the "ftp" method only,
+	;; which must not be kept persistent.
 	(maphash
 	 (lambda (key value)
 	   (if (and (tramp-file-name-p key) (hash-table-p value)
@@ -586,9 +603,14 @@ PROPERTIES is a list of file properties (strings)."
 		    (not (tramp-file-name-localname key))
 		    (not (gethash "login-as" value))
 		    (not (gethash "started" value)))
-	       (dolist (k (hash-table-keys value))
-		 (when (string-prefix-p " " k)
-		   (remhash k value)))
+	       (progn
+		 (dolist (k (hash-table-keys value))
+		   ;; Suppress ephemeral properties.
+		   (when (or (string-prefix-p " " k)
+			     (get-text-property 0 'tramp-default k))
+		     (remhash k value)))
+		 (unless (hash-table-keys value)
+		   (remhash key cache)))
 	     (remhash key cache)))
 	 cache)
 	;; Dump it.
@@ -625,15 +647,17 @@ your laptop to different networks frequently."
   "Return a list of (user host) tuples allowed to access for METHOD.
 This function is added always in `tramp-get-completion-function'
 for all methods.  Resulting data are derived from connection history."
-  (and tramp-completion-use-cache
-       (mapcar
-	(lambda (key)
-	  (and (tramp-file-name-p key)
-	       (string-equal method (tramp-file-name-method key))
-	       (not (tramp-file-name-localname key))
-	       (list (tramp-file-name-user key)
-		     (tramp-file-name-host key))))
-	(hash-table-keys tramp-cache-data))))
+  (mapcar
+   (lambda (key)
+     (let ((tramp-verbose 0))
+       (and (tramp-file-name-p key)
+	    (string-equal method (tramp-file-name-method key))
+	    (not (tramp-file-name-localname key))
+	    (tramp-get-method-parameter
+	     key 'tramp-completion-use-cache tramp-completion-use-cache)
+	    (list (tramp-file-name-user key)
+		  (tramp-file-name-host key)))))
+   (hash-table-keys tramp-cache-data)))
 
 ;; When "emacs -Q" has been called, both variables are nil.  We do not
 ;; load the persistency file then, in order to have a clean test environment.

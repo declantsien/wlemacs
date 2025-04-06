@@ -184,9 +184,15 @@ tty_send_additional_strings (struct terminal *terminal, Lisp_Object sym)
       Lisp_Object string = XCAR (extra_codes);
       if (STRINGP (string))
         {
-	  fwrite (SDATA (string), 1, SBYTES (string), tty->output);
+	  struct Lisp_String *str = XSTRING (string);
+	  /* Don't use SBYTES, as that is not protected from GC.  */
+	  ptrdiff_t sbytes
+	    = (str->u.s.size_byte < 0
+	       ? str->u.s.size & ~ARRAY_MARK_FLAG
+	       : str->u.s.size_byte);
+	  fwrite (SDATA (string), 1, sbytes, tty->output);
           if (tty->termscript)
-	    fwrite (SDATA (string), 1, SBYTES (string), tty->termscript);
+	    fwrite (SDATA (string), 1, sbytes, tty->termscript);
         }
     }
 }
@@ -750,19 +756,13 @@ encode_terminal_code (struct glyph *src, int src_len,
 /* An implementation of write_glyphs for termcap frames. */
 
 static void
-tty_write_glyphs (struct frame *f, struct glyph *string, int len)
+tty_write_glyphs_1 (struct frame *f, struct glyph *string, int len)
 {
   struct tty_display_info *tty = FRAME_TTY (f);
   tty_turn_off_insert (tty);
   tty_hide_cursor (tty);
 
-  /* Don't dare write in last column of bottom line, if Auto-Wrap,
-     since that would scroll the whole frame on some terminals.  */
-  if (AutoWrap (tty)
-      && curY (tty) + 1 == FRAME_TOTAL_LINES (f)
-      && (curX (tty) + len) == FRAME_COLS (f))
-    len --;
-  if (len <= 0)
+  if (len == 0)
     return;
 
   cmplus (tty, len);
@@ -966,6 +966,40 @@ tty_insert_glyphs (struct frame *f, struct glyph *start, int len)
     }
 
   cmcheckmagic (tty);
+}
+
+static void
+tty_write_glyphs (struct frame *f, struct glyph *string, int len)
+{
+  struct tty_display_info *tty = FRAME_TTY (f);
+  /* Don't dare write in last column of bottom line, if Auto-Wrap,
+     since that would scroll the whole frame on some terminals.  */
+  if (AutoWrap (tty)
+      && curY (tty) + 1 == FRAME_TOTAL_LINES (f)
+      && curX (tty) + len == FRAME_COLS (f)
+      && len > 0)
+    {
+      /* If writing only one glyph in the last column, make that two so
+	 that we can shift that one glyph into the last column.  FIXME:
+	 Assuming a display width of 1 looks questionable, but that's
+	 done everywhere else involving auto-wrap.  */
+      if (len == 1)
+	{
+	  cmgoto (tty, curY (tty), curX (tty) - 1);
+	  --string;
+	  ++len;
+	}
+
+      /* Write glyphs except the first.  */
+      int old_x = curX (tty), old_y = curY (tty);
+      tty_write_glyphs_1 (f, string + 1, len - 1);
+
+      /* Insert the first glyph, shifting the rest right.  */
+      cmgoto (tty, old_y, old_x);
+      tty_insert_glyphs (f, string, 1);
+    }
+  else
+    tty_write_glyphs_1 (f, string, len);
 }
 
 /* An implementation of delete_glyphs for termcap frames. */
@@ -2559,36 +2593,89 @@ A value of zero means TTY uses the system's default value.  */)
 #if !defined DOS_NT && !defined HAVE_ANDROID
 
 /* Implementation of draw_row_with_mouse_face for TTY/GPM and macOS.  */
+
 void
-tty_draw_row_with_mouse_face (struct window *w, struct glyph_row *row,
-			      int start_hpos, int end_hpos,
+tty_draw_row_with_mouse_face (struct window *w, struct glyph_row *window_row,
+			      int window_start_x,
+			      int window_end_x,
 			      enum draw_glyphs_face draw)
 {
-  int nglyphs = end_hpos - start_hpos;
-  struct frame *f = XFRAME (WINDOW_FRAME (w));
-  struct tty_display_info *tty = FRAME_TTY (f);
-  int face_id = tty->mouse_highlight.mouse_face_face_id;
+  struct frame *f = XFRAME (w->frame);
+  struct frame *root = root_frame (f);
 
-  if (end_hpos >= row->used[TEXT_AREA])
-    nglyphs = row->used[TEXT_AREA] - start_hpos;
+  /* Window coordinates are relative to the text area.  Make
+     them relative to the window's left edge,  */
+  window_end_x = min (window_end_x, window_row->used[TEXT_AREA]);
+  window_start_x += window_row->used[LEFT_MARGIN_AREA];
+  window_end_x += window_row->used[LEFT_MARGIN_AREA];
 
-  int pos_y = row->y + WINDOW_TOP_EDGE_Y (w);
-  int pos_x = row->used[LEFT_MARGIN_AREA] + start_hpos + WINDOW_LEFT_EDGE_X (w);
+  /* Translate from window to window's frame.  */
+  int frame_start_x = WINDOW_LEFT_EDGE_X (w) + window_start_x;
+  int frame_end_x = WINDOW_LEFT_EDGE_X (w) + window_end_x;
+  int frame_y = window_row->y + WINDOW_TOP_EDGE_Y (w);
 
-  /* Save current cursor coordinates.  */
-  int save_y = curY (tty);
+  /* Translate from (possible) child frame to root frame.  */
+  int root_start_x, root_end_x, root_y;
+  root_xy (f, frame_start_x, frame_y, &root_start_x, &root_y);
+  root_xy (f, frame_end_x, frame_y, &root_end_x, &root_y);
+  struct glyph_row *root_row = MATRIX_ROW (root->current_matrix, root_y);
+
+  /* Remember current cursor coordinates so that we can restore
+     them at the end.  */
+  struct tty_display_info *tty = FRAME_TTY (root);
   int save_x = curX (tty);
-  cursor_to (f, pos_y, pos_x);
+  int save_y = curY (tty);
 
-  if (draw == DRAW_MOUSE_FACE)
+  /* If the root frame displays child frames, we cannot naively
+     write to the terminal what the window thinks should be drawn.
+     Instead, write only those parts that are not obscured by
+     other frames.  */
+  for (int root_x = root_start_x; root_x < root_end_x; )
     {
-      struct glyph *glyph = row->glyphs[TEXT_AREA] + start_hpos;
-      struct face *face = FACE_FROM_ID (f, face_id);
-      tty_write_glyphs_with_face (f, glyph, nglyphs, face);
-    }
-  else if (draw == DRAW_NORMAL_TEXT)
-    write_glyphs (f, row->glyphs[TEXT_AREA] + start_hpos, nglyphs);
+      /* Find the start of a run of glyphs from frame F.  */
+      struct glyph *root_start = root_row->glyphs[TEXT_AREA] + root_x;
+      while (root_x < root_end_x && root_start->frame != f)
+	++root_x, ++root_start;
 
+      /* If start of a run of glyphs from F found.  */
+      int root_run_start_x = root_x;
+      if (root_run_start_x < root_end_x)
+	{
+	  /* Find the end of the run of glyphs from frame F.  */
+	  struct glyph *root_end = root_start;
+	  while (root_x < root_end_x && root_end->frame == f)
+	    ++root_x, ++root_end;
+
+	  /* If we have a run glyphs to output, do it.  */
+	  if (root_end > root_start)
+	    {
+	      cursor_to (root, root_y, root_run_start_x);
+	      ptrdiff_t n = root_end - root_start;
+	      switch (draw)
+		{
+		case DRAW_NORMAL_TEXT:
+		  write_glyphs (f, root_start, n);
+		  break;
+
+		case DRAW_MOUSE_FACE:
+		  {
+		    int face_id = tty->mouse_highlight.mouse_face_face_id;
+		    struct face *face = FACE_FROM_ID (f, face_id);
+		    tty_write_glyphs_with_face (f, root_start, n, face);
+		  }
+		  break;
+
+		case DRAW_INVERSE_VIDEO:
+		case DRAW_CURSOR:
+		case DRAW_IMAGE_RAISED:
+		case DRAW_IMAGE_SUNKEN:
+		  emacs_abort ();
+		}
+	    }
+	}
+    }
+
+  /* Restore cursor where it was before.  */
   cursor_to (f, save_y, save_x);
 }
 
@@ -2597,6 +2684,7 @@ tty_draw_row_with_mouse_face (struct window *w, struct glyph_row *row,
 static Lisp_Object
 tty_frame_at (int x, int y, int *cx, int *cy)
 {
+#ifndef HAVE_ANDROID
   for (Lisp_Object frames = Ftty_frame_list_z_order (Qnil);
        !NILP (frames);
        frames = Fcdr (frames))
@@ -2604,21 +2692,78 @@ tty_frame_at (int x, int y, int *cx, int *cy)
       Lisp_Object frame = Fcar (frames);
       struct frame *f = XFRAME (frame);
       int fx, fy;
+      bool on_border = false;
+
       root_xy (f, 0, 0, &fx, &fy);
 
-      if ((fx <= x && x < fx + f->pixel_width)
-	  && (fy <= y && y < fy + f->pixel_height))
+      if (!FRAME_UNDECORATED (f) && FRAME_PARENT_FRAME (f))
+	{
+	  if (fy - 1 <= y && y <= fy + f->pixel_height + 1)
+	    {
+	      if (fx == x + 1)
+		{
+		  *cx = -1;
+		  on_border = true;
+		}
+	      else if (fx + f->pixel_width == x)
+		{
+		  *cx = f->pixel_width;
+		  on_border = true;
+		}
+
+	      if (on_border)
+		{
+		  *cy = y - fy;
+
+		  return frame;
+		}
+	    }
+
+	  if (fx - 1 <= x && x <= fx + f->pixel_width + 1)
+	    {
+	      if (fy == y + 1)
+		{
+		  *cy = -1;
+		  on_border = true;
+		}
+	      else if (fy + f->pixel_height == y)
+		{
+		  *cy = f->pixel_height;
+		  on_border = true;
+		}
+
+	      if (on_border)
+		{
+		  *cx = x - fx;
+
+		  return frame;
+		}
+	    }
+
+
+	  if ((fx <= x && x <= fx + f->pixel_width)
+	      && (fy <= y && y <= fy + f->pixel_height))
+	    {
+	      child_xy (XFRAME (frame), x, y, cx, cy);
+
+	      return frame;
+	    }
+	}
+      else if ((fx <= x && x <= fx + f->pixel_width)
+	       && (fy <= y && y <= fy + f->pixel_height))
 	{
 	  child_xy (XFRAME (frame), x, y, cx, cy);
+
 	  return frame;
 	}
     }
+#endif /* !HAVE_ANDROID */
 
   return Qnil;
 }
 
 DEFUN ("tty-frame-at", Ftty_frame_at, Stty_frame_at, 2, 2, 0,
-       doc : /* Return tty frame containing absolute pixel position (X, Y).
+       doc: /* Return tty frame containing absolute pixel position (X, Y).
 Value is nil if no frame found.  Otherwise it is a list (FRAME CX CY),
 where FRAME is the frame containing (X, Y) and CX and CY are X and Y
 relative to FRAME.  */)
@@ -2632,6 +2777,7 @@ relative to FRAME.  */)
   Lisp_Object frame = tty_frame_at (XFIXNUM (x), XFIXNUM (y), &cx, &cy);
   if (NILP (frame))
     return Qnil;
+
   return list3 (frame, make_fixnum (cx), make_fixnum (cy));
 }
 
@@ -2765,9 +2911,11 @@ term_mouse_click (struct input_event *result, Gpm_Event *event,
 int
 handle_one_term_event (struct tty_display_info *tty, const Gpm_Event *event_in)
 {
+  int child_x = event_in->x, child_y = event_in->y;
+  Lisp_Object frame = tty_frame_at (child_x, child_y, &child_x, &child_y);
   Gpm_Event event = *event_in;
-  int gpm_x = event.x, gpm_y = event.y;
-  Lisp_Object frame = tty_frame_at (event_in->x, event_in->y, &gpm_x, &gpm_y);
+  event.x = child_x;
+  event.y = child_y;
   struct frame *f = decode_live_frame (frame);
 
   struct input_event ie;
@@ -3621,7 +3769,7 @@ tty_menu_help_callback (char const *help_string, int pane, int item)
   /* (menu-item MENU-NAME PANE-NUMBER)  */
   menu_object = list3 (Qmenu_item, pane_name, make_fixnum (pane));
   show_help_echo (help_string ? build_string (help_string) : Qnil,
- 		  Qnil, menu_object, make_fixnum (item));
+		  Qnil, menu_object, make_fixnum (item));
 }
 
 struct tty_pop_down_menu
@@ -4020,7 +4168,8 @@ create_tty_output (struct frame *f)
   f->output_data.tty = t;
 }
 
-/* Delete frame F's face cache, and its tty-dependent part.  */
+/* Delete frame F's face cache, and its tty-dependent part.  This is
+   installed as a delete_frame_hook.  */
 
 static void
 tty_free_frame_resources (struct frame *f)
@@ -4028,6 +4177,11 @@ tty_free_frame_resources (struct frame *f)
   eassert (FRAME_TERMCAP_P (f));
   free_frame_faces (f);
   xfree (f->output_data.tty);
+
+  /* Deleting a child frame means we have to thoroughly redisplay its
+     root frame to make sure the child disappears from the display.  */
+  if (FRAME_PARENT_FRAME (f))
+    SET_FRAME_GARBAGED (root_frame (f));
 }
 
 #elif defined MSDOS
@@ -4039,6 +4193,10 @@ tty_free_frame_resources (struct frame *f)
 {
   eassert (FRAME_TERMCAP_P (f) || FRAME_MSDOS_P (f));
   free_frame_faces (f);
+  /* Deleting a child frame means we have to thoroughly redisplay its
+     root frame to make sure the child disappears from the display.  */
+  if (FRAME_PARENT_FRAME (f))
+    SET_FRAME_GARBAGED (root_frame (f));
 }
 
 #endif

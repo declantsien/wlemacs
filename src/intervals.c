@@ -44,7 +44,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "lisp.h"
 #include "intervals.h"
 #include "buffer.h"
-#include "puresize.h"
 #include "keymap.h"
 
 /* Test for membership, allowing for t (actually any non-cons) to mean the
@@ -101,7 +100,6 @@ create_root_interval (Lisp_Object parent)
     }
   else
     {
-      CHECK_IMPURE (parent, XSTRING (parent));
       new->total_length = SCHARS (parent);
       eassert (TOTAL_LENGTH (new) >= 0);
       set_string_intervals (parent, new);
@@ -2053,17 +2051,17 @@ set_point_both (ptrdiff_t charpos, ptrdiff_t bytepos)
 
       if (! EQ (leave_before, enter_before) && !NILP (leave_before))
 	calln (leave_before, make_fixnum (old_position),
-      	       make_fixnum (charpos));
+	       make_fixnum (charpos));
       if (! EQ (leave_after, enter_after) && !NILP (leave_after))
 	calln (leave_after, make_fixnum (old_position),
-      	       make_fixnum (charpos));
+	       make_fixnum (charpos));
 
       if (! EQ (enter_before, leave_before) && !NILP (enter_before))
 	calln (enter_before, make_fixnum (old_position),
-      	       make_fixnum (charpos));
+	       make_fixnum (charpos));
       if (! EQ (enter_after, leave_after) && !NILP (enter_after))
 	calln (enter_after, make_fixnum (old_position),
-      	       make_fixnum (charpos));
+	       make_fixnum (charpos));
     }
 }
 

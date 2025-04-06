@@ -1003,6 +1003,7 @@ and may be called only if no window on SIDE exists yet."
 	 ;; window and not make a new parent window unless needed.
 	 (window-combination-resize 'side)
 	 (window-combination-limit nil)
+	 (ignore-window-parameters t)
 	 (window (split-window-no-error next-to nil on-side))
          (alist (if (assq 'dedicated alist)
                     alist
@@ -2615,7 +2616,36 @@ selected frame and no others."
 	  (setq best-window window))))
     best-window))
 
-(defun get-buffer-window-list (&optional buffer-or-name minibuf all-frames)
+(defun window-indirect-buffer-p (&optional window buffer-or-name)
+  "Return non-nil if specified WINDOW is indirectly related to BUFFER-OR-NAME.
+WINDOW must be a live window and defaults to the selected window.
+BUFFER-OR-NAME may be a buffer or the name of an existing buffer and
+defaults to the current buffer.
+
+WINODW is indirectly related to BUFFER-OR-NAME if one of the following
+conditions hold:
+
+- BUFFER-OR-NAME specifies an indirect buffer and WINDOW's buffer is its
+  base buffer.
+
+- WINDOW's buffer is an indirect buffer whose base buffer is the buffer
+  specified by BUFFER-OR-NAME.
+
+- Both, WINDOW's buffer and the buffer specified by BUFFER-OR-NAME, are
+  indirect buffer's sharing the same base buffer.
+
+Return nil if none of the above holds."
+  (let* ((window (window-normalize-window window t))
+	 (window-buffer (window-buffer window))
+	 (window-base-buffer (buffer-base-buffer window-buffer))
+	 (buffer (window-normalize-buffer buffer-or-name))
+	 (buffer-base-buffer (buffer-base-buffer buffer)))
+    (or (eq buffer-base-buffer window-buffer)
+	(eq window-base-buffer buffer)
+	(and buffer-base-buffer
+	     (eq buffer-base-buffer window-base-buffer)))))
+
+(defun get-buffer-window-list (&optional buffer-or-name minibuf all-frames indirect)
   "Return list of all windows displaying BUFFER-OR-NAME, or nil if none.
 BUFFER-OR-NAME may be a buffer or the name of an existing buffer
 and defaults to the current buffer.  If the selected window displays
@@ -2644,12 +2674,23 @@ non-nil values of ALL-FRAMES have special meanings:
 - A frame means consider all windows on that frame only.
 
 Anything else means consider all windows on the selected frame
-and no others."
+and no others.
+
+INDIRECT non-nil means to append to the list of windows showing
+BUFFER-OR-NAME a list of all windows that are indirectly related to
+BUFFER-OR-NAME, that is, windows for which `window-indirect-buffer-p'
+with the window and the buffer specified by BUFFER-OR-NAME as arguments
+returns non-nil."
   (let ((buffer (window-normalize-buffer buffer-or-name))
+	(window-list (window-list-1 (selected-window) minibuf all-frames))
 	windows)
-    (dolist (window (window-list-1 (selected-window) minibuf all-frames))
+    (dolist (window window-list)
       (when (eq (window-buffer window) buffer)
 	(setq windows (cons window windows))))
+    (when indirect
+      (dolist (window window-list)
+	(when (window-indirect-buffer-p window buffer)
+	  (setq windows (cons window windows)))))
     (nreverse windows)))
 
 (defun minibuffer-window-active-p (window)
@@ -4108,7 +4149,7 @@ and no others."
 
 ;;; Deleting windows.
 (defcustom window-deletable-functions nil
-   "Abnormal hook to decide whether a window may be implicitly deleted.
+  "Abnormal hook to decide whether a window may be implicitly deleted.
 The value should be a list of functions that take two arguments.  The
 first argument is the window about to be deleted.  The second argument
 if non-nil, means that the window is the only window on its frame and
@@ -4133,6 +4174,9 @@ WINDOW must be a valid window and defaults to the selected one.
 Return `frame' if WINDOW is the root window of its frame and that
 frame can be safely deleted.
 
+Return `tab' if WINDOW's tab can be safely closed that will
+effectively delete the window.
+
 Unless the optional argument NO-RUN is non-nil, run the abnormal hook
 `window-deletable-functions' and return nil if any function on that hook
 returns nil."
@@ -4146,6 +4190,20 @@ returns nil."
 
   (let ((frame (window-frame window)))
     (cond
+     ((and (> (frame-parameter frame 'tab-bar-lines) 0)
+           ;; Fall back to frame handling in case of less than 2 tabs.
+           (> (length (funcall tab-bar-tabs-function frame)) 1)
+           ;; Close the tab with the initial window (bug#59862).
+           (or (eq (nth 1 (window-parameter window 'quit-restore)) 'tab)
+               ;; Or with the only window on the frame (bug#71386).
+               (frame-root-window-p window))
+           ;; Don't close the tab if more windows were created explicitly.
+           (< (seq-count (lambda (w)
+                           (memq (car (window-parameter w 'quit-restore))
+                                 '(window tab frame same)))
+                         (window-list-1 nil 'nomini frame))
+              2))
+      'tab)
      ((frame-root-window-p window)
       ;; WINDOW's frame can be deleted only if there are other frames
       ;; on the same terminal, and it does not contain the active
@@ -4981,6 +5039,10 @@ if WINDOW gets deleted or its frame is auto-hidden."
   (unless (and dedicated-only (not (window-dedicated-p window)))
     (let ((deletable (window-deletable-p window)))
       (cond
+       ((eq deletable 'tab)
+        (tab-bar-close-tab)
+        (message "Tab closed after deleting the last window")
+        'tab)
        ((eq deletable 'frame)
 	(let ((frame (window-frame window)))
 	  (cond
@@ -5224,7 +5286,12 @@ buffer by itself."
 	(cond
 	 ((window-minibuffer-p window))
 	 (kill-buffer-quit-windows
-	  (quit-restore-window window 'killing))
+	  ;; Try to preserve the current buffer set up by 'kill-buffer'
+	  ;; before running the hooks on 'kill-buffer-hook' (Bug#75949).
+	  (let ((current-buffer (current-buffer)))
+	    (quit-restore-window window 'killing)
+	    (when (buffer-live-p current-buffer)
+	      (set-buffer current-buffer))))
 	 (t
 	  (let ((dedicated-side (eq (window-dedicated-p window) 'side)))
             (when (or dedicated-side (not (window--delete window t 'kill)))
@@ -5342,13 +5409,7 @@ elsewhere.  This value is used by `quit-windows-on'."
       ;; If the previously selected window is still alive, select it.
       (window--quit-restore-select-window quit-restore-2))
      ((and (not prev-buffer)
-	   (eq (nth 1 quit-restore) 'tab)
-	   (eq (nth 3 quit-restore) buffer))
-      (tab-bar-close-tab)
-      ;; If the previously selected window is still alive, select it.
-      (window--quit-restore-select-window quit-restore-2))
-     ((and (not prev-buffer)
-	   (or (eq (nth 1 quit-restore) 'frame)
+	   (or (memq (nth 1 quit-restore) '(frame tab))
 	       (and (eq (nth 1 quit-restore) 'window)
 		    ;; If the window has been created on an existing
 		    ;; frame and ended up as the sole window on that
@@ -5441,6 +5502,21 @@ elsewhere.  This value is used by `quit-windows-on'."
      ((eq bury-or-kill 'bury)
       (bury-buffer-internal buffer)))))
 
+(defcustom quit-window-kill-buffer nil
+  "Non-nil means `quit-window' will try to kill WINDOW's buffer.
+If this is nil and the KILL argument is nil, `quit-window' will bury
+WINDOW's buffer.  If this is t, `quit-window' will always try to kill
+WINDOW's buffer.  Otherwise, this should be a list of major modes.
+`quit-window' will kill the buffer of its WINDOW argument regardless of
+the value of KILL if that buffer's major mode is either a member of this
+list or is derived from a member of this list.  In any other case,
+`quit-window' will kill the buffer only if KILL is non-nil and bury it
+otherwise."
+  :type '(choice (boolean :tag "All major modes")
+		 (repeat (symbol :tag "Major mode")))
+  :version "31.1"
+  :group 'windows)
+
 (defun quit-window (&optional kill window)
   "Quit WINDOW and bury its buffer.
 WINDOW must be a live window and defaults to the selected one.
@@ -5454,11 +5530,19 @@ Windows' for more details.
 The functions in `quit-window-hook' will be run before doing
 anything else."
   (interactive "P")
-  ;; Run the hook from the buffer implied to get any buffer-local
-  ;; values.
-  (with-current-buffer (window-buffer (window-normalize-window window))
-    (run-hooks 'quit-window-hook))
-  (quit-restore-window window (if kill 'kill 'bury)))
+  (let (kill-from-mode)
+    (with-current-buffer (window-buffer (window-normalize-window window))
+      ;; Run the hook from the buffer implied to get any buffer-local
+      ;; values.
+      (run-hooks 'quit-window-hook)
+
+      (setq kill-from-mode
+	    (or (eq quit-window-kill-buffer t)
+		(and (listp quit-window-kill-buffer)
+		     (derived-mode-p quit-window-kill-buffer)))))
+
+    (quit-restore-window
+     window (if (or kill kill-from-mode) 'kill 'bury))))
 
 (defun quit-windows-on (&optional buffer-or-name kill frame)
   "Quit all windows showing BUFFER-OR-NAME.
@@ -5644,6 +5728,7 @@ changed by this function."
        ;; frame's root window, split the frame's main window instead
        ;; (Bug#73627).
        ((and (eq window (frame-root-window frame))
+	     (not ignore-window-parameters)
 	     (window-with-parameter 'window-side nil frame))
 	(throw 'done (split-window (window-main-window frame)
 				   size side pixelwise refer)))
@@ -6230,6 +6315,22 @@ specific buffers."
     ))
 
 ;;; Window states, how to get them and how to put them in a window.
+
+(defvar window-state-normalize-buffer-name nil
+  "Non-nil means accommodate buffer names under `uniquify' management.
+`uniquify' prefixes and suffixes will be removed.")
+
+(defun window--state-normalize-buffer-name (buffer)
+  "Normalize BUFFER name, accommodating `uniquify'.
+If BUFFER is under `uniquify' management, return its `buffer-name' with
+its prefixes and suffixes removed; otherwise return BUFFER's
+`buffer-name'."
+  (or (and window-state-normalize-buffer-name
+           (fboundp 'uniquify-buffer-base-name)
+           (with-current-buffer buffer
+             (uniquify-buffer-base-name)))
+      (buffer-name buffer)))
+
 (defun window--state-get-1 (window &optional writable)
   "Helper function for `window-state-get'."
   (let* ((type
@@ -6282,7 +6383,8 @@ specific buffers."
 		(let ((point (window-point window))
 		      (start (window-start window)))
 		  `((buffer
-		     ,(if writable (buffer-name buffer) buffer)
+		     ,(if writable (window--state-normalize-buffer-name
+                                    buffer) buffer)
 		     (selected . ,selected)
 		     (hscroll . ,(window-hscroll window))
 		     (fringes . ,(window-fringes window))
@@ -6304,14 +6406,15 @@ specific buffers."
             ,@(when next-buffers
                 `((next-buffers
                    . ,(if writable
-                          (mapcar (lambda (buffer) (buffer-name buffer))
+                          (mapcar #'window--state-normalize-buffer-name
                                   next-buffers)
                         next-buffers))))
             ,@(when prev-buffers
                 `((prev-buffers
                    . ,(if writable
                           (mapcar (lambda (entry)
-                                    (list (buffer-name (nth 0 entry))
+                                    (list (window--state-normalize-buffer-name
+                                           (nth 0 entry))
                                           (marker-position (nth 1 entry))
                                           (marker-position (nth 2 entry))))
                                   prev-buffers)
@@ -6839,8 +6942,9 @@ WINDOW's buffer (although WINDOW may show BUFFER already).
 TYPE specifies the type of the calling operation and must be one
 of the symbols `reuse' (meaning that WINDOW exists already and
 will be used for displaying BUFFER), `window' (WINDOW was created
-on an already existing frame) or `frame' (WINDOW was created on a
-new frame).
+on an already existing frame), `frame' (WINDOW was created on a
+new frame) or `tab' (WINDOW is the selected window and BUFFER was
+created in a new tab).
 
 This function installs or updates the `quit-restore' parameter of
 WINDOW.  The `quit-restore' parameter is a list of four elements:
@@ -7389,20 +7493,64 @@ hold:
 		      (* 2 (max window-min-height
 				(if mode-line-format 2 1))))))))))
 
+(defcustom split-window-preferred-direction 'vertical
+  "The first direction tried when Emacs needs to split a window.
+This variable controls in which order `split-window-sensibly' will try to
+split the window.  That order specially matters when both dimensions of
+the frame are long enough to be split according to
+`split-width-threshold' and `split-height-threshold'.  If this is set to
+`vertical' (the default), `split-window-sensibly' tries to split
+vertically first and then horizontally.  If set to `horizontal' it does
+the opposite.  If set to `longest', the first direction tried
+depends on the frame shape: in landscape orientation it will be like
+`horizontal', but in portrait it will be like `vertical'.  Basically,
+the longest of the two dimension is split first.
+
+If both `split-width-threshold' and `split-height-threshold' cannot be
+satisfied, it will fallback to split vertically.
+
+See `split-window-preferred-function' for more control of the splitting
+strategy."
+  :type '(radio
+          (const :tag "Try to split vertically first"
+                 vertical)
+          (const :tag "Try to split horizontally first"
+                 horizontal)
+          (const :tag "Try to split along the longest edge first"
+                 longest))
+  :version "31.1"
+  :group 'windows)
+
+(defun window--try-vertical-split (window)
+  "Helper function for `split-window-sensibly'"
+  (when (window-splittable-p window)
+    (with-selected-window window
+      (split-window-below))))
+
+(defun window--try-horizontal-split (window)
+  "Helper function for `split-window-sensibly'"
+  (when (window-splittable-p window t)
+    (with-selected-window window
+      (split-window-right))))
+
 (defun split-window-sensibly (&optional window)
   "Split WINDOW in a way suitable for `display-buffer'.
-WINDOW defaults to the currently selected window.
-If `split-height-threshold' specifies an integer, WINDOW is at
-least `split-height-threshold' lines tall and can be split
-vertically, split WINDOW into two windows one above the other and
-return the lower window.  Otherwise, if `split-width-threshold'
-specifies an integer, WINDOW is at least `split-width-threshold'
-columns wide and can be split horizontally, split WINDOW into two
-windows side by side and return the window on the right.  If this
-can't be done either and WINDOW is the only window on its frame,
-try to split WINDOW vertically disregarding any value specified
-by `split-height-threshold'.  If that succeeds, return the lower
-window.  Return nil otherwise.
+The variable `split-window-preferred-direction' prescribes an order of
+directions in which Emacs should try to split WINDOW.  If that order
+mandates starting with a vertical split, and `split-height-threshold'
+specifies an integer that is at least as large a WINDOW's height, split
+WINDOW into two windows one below the other and return the lower one.
+If that order mandates starting with a horizontal split, and
+`split-width-threshold' specifies an integer that is at least as large
+as WINDOW's width, split WINDOW into two windows side by side and return
+the one on the right.
+
+In either case, if the first attempt to split WINDOW fails, try to split
+the window in the other direction in the same manner as described above.
+If that attempt fails too, and WINDOW is the only window on its frame,
+try splitting WINDOW into two windows, one below the other, disregarding
+the value of `split-height-threshold' and return the window on the
+bottom.
 
 By default `display-buffer' routines call this function to split
 the largest or least recently used window.  To change the default
@@ -7422,14 +7570,14 @@ Have a look at the function `window-splittable-p' if you want to
 know how `split-window-sensibly' determines whether WINDOW can be
 split."
   (let ((window (or window (selected-window))))
-    (or (and (window-splittable-p window)
-	     ;; Split window vertically.
-	     (with-selected-window window
-	       (split-window-below)))
-	(and (window-splittable-p window t)
-	     ;; Split window horizontally.
-	     (with-selected-window window
-	       (split-window-right)))
+    (or (if (or
+             (eql split-window-preferred-direction 'horizontal)
+             (and (eql split-window-preferred-direction 'longest)
+                  (> (frame-width) (frame-height))))
+            (or (window--try-horizontal-split window)
+                (window--try-vertical-split window))
+          (or (window--try-vertical-split window)
+              (window--try-horizontal-split window)))
 	(and
          ;; If WINDOW is the only usable window on its frame (it is
          ;; the only one or, not being the only one, all the other
@@ -7447,10 +7595,8 @@ split."
                                 frame nil 'nomini)
               t)))
 	 (not (window-minibuffer-p window))
-	 (let ((split-height-threshold 0))
-	   (when (window-splittable-p window)
-	     (with-selected-window window
-	       (split-window-below))))))))
+         (let ((split-height-threshold 0))
+           (window--try-vertical-split window))))))
 
 (defun window--try-to-split-window (window &optional alist)
   "Try to split WINDOW.
@@ -7545,7 +7691,8 @@ as compiled by `display-buffer'.
 TYPE must be one of the following symbols: `reuse' (which means
 WINDOW existed before the call of `display-buffer' and may
 already show BUFFER or not), `window' (WINDOW was created on an
-existing frame) or `frame' (WINDOW was created on a new frame).
+existing frame), `frame' (WINDOW was created on a new frame), or `tab'
+(WINDOW is the selected window and BUFFER was displayed in a new tab).
 TYPE is passed unaltered to `display-buffer-record-window'.
 
 Handle WINDOW's dedicated flag as follows: If WINDOW already
@@ -7579,7 +7726,8 @@ Return WINDOW if BUFFER and WINDOW are live."
        ;; Don't dedicate WINDOW if it is dedicated because it shows
        ;; BUFFER already or it is reused and is not a side window.
        ((or (window-dedicated-p window)
-            (and (eq type 'reuse) (not (eq (cdr alist-dedicated) 'side)))))
+            (and (eq type 'reuse)
+		 (not (window-parameter window 'window-side)))))
        ;; Otherwise, if ALIST contains a 'dedicated' entry, use that
        ;; entry's value (which may be nil).
        (alist-dedicated
@@ -8277,35 +8425,56 @@ If ALIST has a non-nil `inhibit-switch-frame' entry, then in the
 event that a window on another frame is chosen, avoid raising
 that frame.
 
+If ALIST has a non-nil `reuse-indirect' entry and no window showing
+BUFFER has been found, try to find a window that is indirectly related
+to BUFFER and return that window.  This would be a window for which
+`window-indirect-buffer-p' with the window and BUFFER as arguments
+returns non-nil.  If a suitable window has been found and the cdr of the
+entry equals the symbol `buffer', do not replace the buffer of that
+window with BUFFER but return the window with its old buffer in place.
+Otherwise, put BUFFER into that window and return the window.
+
 This is an action function for buffer display, see Info
 node `(elisp) Buffer Display Action Functions'.  It should be
 called only by `display-buffer' or a function directly or
 indirectly called by the latter."
-  (let* ((alist-entry (assq 'reusable-frames alist))
-	 (frames (cond (alist-entry (cdr alist-entry))
+  (let* ((reusable-frames (assq 'reusable-frames alist))
+	 (reuse-indirect (assq 'reuse-indirect alist))
+	 (frames (cond (reusable-frames (cdr reusable-frames))
 		       ((window--pop-up-frames alist)
 			0)
 		       (display-buffer-reuse-frames 0)
 		       (t (last-nonminibuffer-frame))))
-	 (window (if (and (eq buffer (window-buffer))
-			  (not (cdr (assq 'inhibit-same-window alist))))
-		     (selected-window)
-                   ;; Preferably use a window on the selected frame,
-                   ;; if such a window exists (Bug#36680).
-                   (let* ((windows (delq (selected-window)
-                                         (get-buffer-window-list
-                                          buffer 'nomini frames)))
-                          (first (car windows))
-                          (this-frame (selected-frame)))
-                     (cond
-                      ((eq (window-frame first) this-frame)
-                       first)
-                      ((catch 'found
-                         (dolist (next (cdr windows))
-                           (when (eq (window-frame next) this-frame)
-                             (throw 'found next)))))
-                      (t first))))))
+	 (inhibit-same (cdr (assq 'inhibit-same-window alist)))
+	 (window
+	  ;; Avoid calling 'get-buffer-window-list' if the selected
+	  ;; window already shows BUFFER and can be used.
+	  (if (and (eq buffer (window-buffer)) (not inhibit-same))
+	      (selected-window)
+            ;; Preferably use a window on the selected frame,
+            ;; if such a window exists (Bug#36680).
+            (let* ((windows-raw
+		    (get-buffer-window-list
+                     buffer 'nomini frames reuse-indirect))
+		   (windows (if inhibit-same
+				(delq (selected-window) windows-raw)
+			      windows-raw))
+                   (first (car windows))
+                   (this-frame (selected-frame)))
+              (cond
+               ((eq (window-frame first) this-frame)
+                first)
+               ((catch 'found
+                  (dolist (next (cdr windows))
+                    (when (eq (window-frame next) this-frame)
+                      (throw 'found next)))))
+               (t first))))))
     (when (window-live-p window)
+      (when (and (eq (cdr reuse-indirect) 'buffer)
+		 (not (eq (window-buffer window) buffer)))
+	;; Pretend we were asking for a window showing the buffer of
+	;; that window.
+	(setq buffer (window-buffer window)))
       (prog1 (window--display-buffer buffer window 'reuse alist)
 	(unless (cdr (assq 'inhibit-switch-frame alist))
 	  (window--maybe-raise-frame (window-frame window)))))))
@@ -8360,6 +8529,8 @@ indirectly called by the latter."
                  (cond ((memq major-mode allowed-modes) 'same)
                        ((derived-mode-p allowed-modes)  'derived)))))
           (when (and mode?
+                     (or (not (window-dedicated-p window))
+                         (eq buffer (window-buffer window)))
                      (not (and inhibit-same-window-p
                                (eq window curwin))))
             (push window (if (eq curframe (window-frame window))

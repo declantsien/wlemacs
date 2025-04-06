@@ -531,7 +531,6 @@ vga_installed (void)
 void
 dos_set_window_size (int *rows, int *cols)
 {
-  char video_name[30];
   union REGS regs;
   Lisp_Object video_mode;
   int video_mode_value, have_vga = 0;
@@ -547,7 +546,7 @@ dos_set_window_size (int *rows, int *cols)
      use that mode.  */
   video_mode
     = Fsymbol_value (Fintern_soft (make_formatted_string
-				   (video_name, "screen-dimensions-%dx%d",
+				   ("screen-dimensions-%dx%d",
 				    *rows, *cols), Qnil));
 
   if (FIXNUMP (video_mode)
@@ -1716,19 +1715,19 @@ IT_set_frame_parameters (struct frame *f, Lisp_Object alist)
      a nuumber of other flags.  */
   if (is_tty_child_frame (f))
     {
-      int x = tty_child_pos_param (f, Qleft, alist, f->left_pos);
-      int y = tty_child_pos_param (f, Qtop, alist, f->top_pos);
+      int w = tty_child_size_param (f, Qwidth, alist, f->total_cols);
+      int h = tty_child_size_param (f, Qheight, alist, f->total_lines);
+      if (w != f->total_cols || h != f->total_lines)
+	change_frame_size (f, w, h, false, false, false);
+
+      int x = tty_child_pos_param (f, Qleft, alist, f->left_pos, w);
+      int y = tty_child_pos_param (f, Qtop, alist, f->top_pos, h);
       if (x != f->left_pos || y != f->top_pos)
 	{
 	  f->left_pos = x;
 	  f->top_pos = y;
 	  SET_FRAME_GARBAGED (root_frame (f));
 	}
-
-      int w = tty_child_size_param (f, Qwidth, alist, f->total_cols);
-      int h = tty_child_size_param (f, Qheight, alist, f->total_lines);
-      if (w != f->total_cols || h != f->total_lines)
-	change_frame_size (f, w, h, false, false, false);
 
       Lisp_Object visible = Fassq (Qvisibility, alist);
       if (CONSP (visible))
@@ -2678,8 +2677,6 @@ dos_rawgetc (void)
 	  /* Generate SELECT_WINDOW_EVENTs when needed.  */
 	  if (!NILP (Vmouse_autoselect_window))
 	    {
-	      static Lisp_Object last_mouse_window;
-
 	      mouse_window = window_from_coordinates
 		(SELECTED_FRAME (), mouse_last_x, mouse_last_y, 0, 0, 0, 0);
 	      /* A window will be selected only when it is not

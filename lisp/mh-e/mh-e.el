@@ -42,9 +42,9 @@
 ;;   M-x mh-smail to send mail.  From within the mail reader, "s" works, too.
 
 ;; Your .emacs might benefit from these bindings:
-;;   (global-set-key "\C-cr" 'mh-rmail)
-;;   (global-set-key "\C-xm" 'mh-smail)
-;;   (global-set-key "\C-x4m" 'mh-smail-other-window)
+;;   (keymap-global-set "C-c r" #'mh-rmail)
+;;   (keymap-global-set "C-x m" #'mh-smail)
+;;   (keymap-global-set "C-x 4 m" #'mh-smail-other-window)
 
 ;; Mailing Lists:
 ;;   mh-e-users@lists.sourceforge.net
@@ -143,6 +143,10 @@ This directory contains, among other things, the mhl program.")
 
 ;;;###autoload
 (put 'mh-lib-progs 'risky-local-variable t)
+
+(defvar mh-default-directory "~/"
+  "Default directory for MH-E folder buffers.
+Set to nil to have MH-E buffers inherit default-directory.")
 
 ;; Profile Components
 
@@ -438,6 +442,12 @@ gnus-version)
              (error "Bad element: %s" element))))
     new-list))
 
+(defun mh-set-default-directory ()
+  "Set `default-directory' to `mh-default-directory' unless it is nil."
+  (when (stringp mh-default-directory)
+    (setq default-directory (file-name-as-directory
+                             (expand-file-name mh-default-directory)))))
+
 
 
 ;;; MH-E Process Support
@@ -463,7 +473,7 @@ all the strings have been used."
               (push (buffer-substring-no-properties (point)
                                                     (line-end-position))
                     arg-list)
-              (cl-incf count)
+              (incf count)
               (forward-line))
             (apply #'call-process cmd nil (list out nil) nil
                    (nreverse arg-list))))
@@ -878,7 +888,7 @@ finally GNU mailutils MH."
     (sit-for 5)
     (setq variant (concat "gnu-mh" (substring variant (match-end 0)))))
 
-  (let ((valid-list (mapcar (lambda (x) (car x)) (mh-variants))))
+  (let ((valid-list (mapcar #'car (mh-variants))))
     (cond
      ((eq variant 'none))
      ((eq variant 'autodetect)

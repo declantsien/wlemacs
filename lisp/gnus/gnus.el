@@ -757,15 +757,22 @@ be used directly.")
     (september "#bf9900" "#ffcc00"))
   "Color alist used for the Gnus logo.")
 
+(defcustom gnus-logo-colors nil
+  "Colors used for the Gnus logo."
+  :set-after '(gnus-logo-color-style)
+  :type '(choice (const :tag "Use default" nil)
+                 (list color color))
+  :group 'gnus-xmas)
+
 (defcustom gnus-logo-color-style 'ma
   "Color styles used for the Gnus logo."
   :type `(choice ,@(mapcar (lambda (elem) (list 'const (car elem)))
 			   gnus-logo-color-alist))
+  :set (lambda (sym val)
+         (set-default-toplevel-value sym val)
+         (set-default-toplevel-value 'gnus-logo-colors
+                                     (cdr (assq val gnus-logo-color-alist))))
   :group 'gnus-xmas)
-
-(defvar gnus-logo-colors
-  (cdr (assq gnus-logo-color-style gnus-logo-color-alist))
-  "Colors used for the Gnus logo.")
 
 (defvar image-load-path)
 (declare-function image-size "image.c" (spec &optional pixels frame))
@@ -1918,7 +1925,6 @@ spam-autodetect-recheck-messages is set.")
 	  (variable-item spam-use-bsfilter-headers)
 	  (variable-item spam-use-stat)
 	  (variable-item spam-use-blackholes)
-	  (variable-item spam-use-hashcash)
 	  (variable-item spam-use-bogofilter-headers)
 	  (variable-item spam-use-bogofilter)))
    :function-document
@@ -1951,7 +1957,6 @@ set."
 	(variable-item spam-use-crm114)
 	(variable-item spam-use-stat)
 	(variable-item spam-use-blackholes)
-	(variable-item spam-use-hashcash)
 	(variable-item spam-use-spamassassin)
 	(variable-item spam-use-spamassassin-headers)
 	(variable-item spam-use-bsfilter)
@@ -2798,23 +2803,27 @@ See Info node `(gnus)Formatting Variables'."
 ;;;
 
 (defun gnus-suppress-keymap (keymap)
+  (declare (obsolete nil "31.1"))
   (suppress-keymap keymap)
   (let ((keys '([delete] "\177" "\M-u"))) ;[mouse-2]
     (while keys
       (define-key keymap (pop keys) 'undefined))))
 
-(defvar gnus-article-mode-map
-  (let ((keymap (make-sparse-keymap)))
-    (gnus-suppress-keymap keymap)
-    keymap))
-(defvar gnus-summary-mode-map
-  (let ((keymap (make-keymap)))
-    (gnus-suppress-keymap keymap)
-    keymap))
-(defvar gnus-group-mode-map
-  (let ((keymap (make-keymap)))
-    (gnus-suppress-keymap keymap)
-    keymap))
+(defvar-keymap gnus-article-mode-map
+  :suppress t
+  "<delete>" #'undefined
+  "DEL"      #'undefined
+  "M-u"      #'undefined)
+(defvar-keymap gnus-summary-mode-map
+  :full t :suppress t
+  "<delete>" #'undefined
+  "DEL"      #'undefined
+  "M-u"      #'undefined)
+(defvar-keymap gnus-group-mode-map
+  :full t :suppress t
+  "<delete>" #'undefined
+  "DEL"      #'undefined
+  "M-u"      #'undefined)
 
 
 
@@ -3780,7 +3789,7 @@ just the host name."
 		gsep "."))
 	(setq levels (- glen levels))
 	(dolist (g glist)
-	  (push (if (>= (cl-decf levels) 0)
+          (push (if (>= (decf levels) 0)
 		    (if (zerop (length g))
 			""
 		      (substring g 0 1))

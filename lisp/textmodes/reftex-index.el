@@ -210,16 +210,16 @@ will prompt for other arguments."
                 i -1
                 val nil)
           (catch 'exit
-            (while (and (< (cl-incf i) len) (null val))
+            (while (and (< (incf i) len) (null val))
               (unless (assq (aref tag i) tag-alist)
                 (push (list (aref tag i)
                             tag
                             (concat (substring tag 0 i)
-                                    "[" (substring tag i (cl-incf i)) "]"
+                                    "[" (substring tag i (incf i)) "]"
                                     (substring tag i)))
                       tag-alist)
                 (throw 'exit t)))
-            (push (list (+ ?0 (cl-incf cnt)) tag
+            (push (list (+ ?0 (incf cnt)) tag
                         (concat "[" (int-to-string cnt) "]:" tag))
                   tag-alist)))
         (setq tag-alist (nreverse tag-alist))
@@ -475,7 +475,7 @@ With prefix 3, restrict index to region."
          (docstruct-symbol reftex-docstruct-symbol)
          (index-tag (or tag (reftex-index-select-tag)))
          (master (reftex-TeX-master-file))
-         (calling-file (buffer-file-name))
+         (calling-file (reftex--get-buffer-identifier))
          (restriction
           (or overriding-restriction
               (and (not redo)
@@ -531,7 +531,7 @@ Restriction: <%s>
 SPC=view TAB=goto RET=goto+hide [e]dit [q]uit [r]escan [f]ollow [?]Help
 ------------------------------------------------------------------------------
 "
-               index-tag (abbreviate-file-name master)
+               index-tag (reftex--abbreviate-name master)
                (if (eq (car (car reftex-index-restriction-data)) 'toc)
                    (nth 2 (car reftex-index-restriction-data))
                  reftex-index-restriction-indicator)))
@@ -1107,7 +1107,8 @@ values are accessible individually."
       (when (and (re-search-forward (reftex-everything-regexp) nil t)
                  (match-end 10)
                  (< (abs (- (match-beginning 10) beg)) (length new))
-                 (setq info (reftex-index-info-safe buffer-file-name)))
+                 (setq info (reftex-index-info-safe
+                             (reftex--get-buffer-identifier))))
         (setcdr data (cdr info))))
     (let ((buffer-read-only nil))
       (save-excursion
@@ -1281,14 +1282,16 @@ You get a chance to edit the entry in the phrases buffer - finish with
   (interactive)
   (reftex-access-scan-info)
   (set-marker reftex-index-return-marker (point))
-  (let* ((master (reftex-TeX-master-file))
-         (name (concat (file-name-sans-extension master)
-                       reftex-index-phrase-file-extension)))
-    (find-file name)
-    (unless (eq major-mode 'reftex-index-phrases-mode)
-      (reftex-index-phrases-mode))
-    (if (= (buffer-size) 0)
-        (reftex-index-initialize-phrases-buffer master))))
+  (let ((master (reftex-TeX-master-file)))
+    (when (bufferp master)
+      (user-error "RefTeX phrases buffer requires a file buffer"))
+    (let ((name (concat (file-name-sans-extension master)
+                        reftex-index-phrase-file-extension)))
+      (find-file name)
+      (unless (eq major-mode 'reftex-index-phrases-mode)
+        (reftex-index-phrases-mode))
+      (if (= (buffer-size) 0)
+          (reftex-index-initialize-phrases-buffer master)))))
 
 (defun reftex-index-initialize-phrases-buffer (&optional master)
   "Initialize the phrases buffer by creating the header.
@@ -1396,7 +1399,7 @@ Here are all local bindings.
   (interactive "p")
   (reftex-index-phrases-parse-header t)
   (while (> arg 0)
-    (cl-decf arg)
+    (decf arg)
     (end-of-line)
     (if (re-search-forward reftex-index-phrases-phrase-regexp12 nil t)
         (progn
@@ -1622,11 +1625,11 @@ this function repeatedly."
           (widen)
           (goto-char (point-min))
           (while (re-search-forward re1 nil t)
-            (cl-incf ntimes1))
+            (incf ntimes1))
           (goto-char (point-min))
           (while (re-search-forward re2 nil t)
             (push (cons (count-lines 1 (point)) (match-string 1)) superphrases)
-            (cl-incf ntimes2))))
+            (incf ntimes2))))
       (save-current-buffer
         (while (setq file (pop files))
           (setq buf (reftex-get-file-buffer-force file))
@@ -1639,7 +1642,7 @@ this function repeatedly."
                 (let ((case-fold-search reftex-index-phrases-case-fold-search))
                   (while (re-search-forward re nil t)
                     (or (reftex-in-comment)
-                        (cl-incf nmatches)))))))))
+                        (incf nmatches)))))))))
       (with-output-to-temp-buffer "*Help*"
         (princ (format "       Phrase:  %s\n" phrase))
         (princ (format "    Macro key:  %s\n" char))
@@ -1649,7 +1652,7 @@ this function repeatedly."
          (index-key
           (let ((iks index-keys) (cnt 0) ik)
             (while (setq ik (pop iks))
-              (princ (format "Index entry %d:  %s\n" (cl-incf cnt) ik)))))
+              (princ (format "Index entry %d:  %s\n" (incf cnt) ik)))))
          (repeat
           (princ (format "  Index entry:  %s\n" phrase)))
          (t
@@ -1911,7 +1914,7 @@ both ends."
                    (cond ((member char '(?y ?Y ?\ ))
                           ;; Yes!
                           (replace-match rpl t t)
-                          (cl-incf replace-count)
+                          (incf replace-count)
                           ;; See if we should insert newlines to shorten lines
                           (and reftex-index-phrases-wrap-long-lines
                                (reftex-index-phrases-fixup-line beg end))

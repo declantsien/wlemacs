@@ -608,8 +608,8 @@ thumbnail buffer to be selected."
           (when (string-match-p (image-dired--file-name-regexp) file)
             (image-dired-insert-thumbnail
              (image-dired--get-create-thumbnail-file file) file dired-buf)
-            (cl-incf image-dired--number-of-thumbnails))))
-      (if (> image-dired--number-of-thumbnails 0)
+            (incf image-dired--number-of-thumbnails))))
+      (if (plusp image-dired--number-of-thumbnails)
           (if do-not-pop
               (display-buffer buf)
             (pop-to-buffer buf))
@@ -697,21 +697,21 @@ point is on the last image, move to the last one and vice versa."
   (setq arg (or arg 1))
   (let (pos)
     (dotimes (_ (abs arg))
-      (if (and (not (if (> arg 0) (eobp) (bobp)))
+      (if (and (not (if (plusp arg) (eobp) (bobp)))
                (save-excursion
-                 (forward-char (if (> arg 0) 1 -1))
-                 (while (and (not (if (> arg 0) (eobp) (bobp)))
+                 (forward-char (if (plusp arg) 1 -1))
+                 (while (and (not (if (plusp arg) (eobp) (bobp)))
                              (not (image-dired-image-at-point-p)))
-                   (forward-char (if (> arg 0) 1 -1)))
+                   (forward-char (if (plusp arg) 1 -1)))
                  (setq pos (point))
                  (image-dired-image-at-point-p)))
           (goto-char pos)
         (if wrap-around
-            (goto-char (if (> arg 0)
+            (goto-char (if (plusp arg)
                            (point-min)
                          ;; There are two spaces after the last image.
                          (- (point-max) 2)))
-          (message "At %s image" (if (> arg 0) "last" "first"))))))
+          (message "At %s image" (if (plusp arg) "last" "first"))))))
   (image-dired--update-header-line)
   (when image-dired-track-movement
     (image-dired-track-original-file)))
@@ -950,6 +950,15 @@ You probably want to use this together with
 
 (defvar-keymap image-dired-thumbnail-mode-map
   :doc "Keymap for `image-dired-thumbnail-mode'."
+
+  ;; Regular navigation
+  "f"          #'image-dired-forward-image
+  "b"          #'image-dired-backward-image
+  "n"          #'image-dired-next-line
+  "p"          #'image-dired-previous-line
+  "a"          #'image-dired-move-beginning-of-line
+  "e"          #'image-dired-move-end-of-line
+
   "d"          #'image-dired-flag-thumb-original-file
   "<delete>"   #'image-dired-flag-thumb-original-file
   "m"          #'image-dired-mark-thumb-original-file
@@ -1124,7 +1133,7 @@ With a negative prefix argument, prompt user for the delay."
   (let ((delay
          (cond ((not arg)
                 image-dired-slideshow-delay)
-               ((> arg 0)
+               ((plusp arg)
                 arg)
                ((<= arg 0)
                 (string-to-number
@@ -1175,7 +1184,7 @@ With a negative prefix argument, prompt user for the delay."
   (interactive nil image-dired-thumbnail-mode)
   (let ((inhibit-read-only t))
     (delete-char 1)
-    (cl-decf image-dired--number-of-thumbnails))
+    (decf image-dired--number-of-thumbnails))
   (let ((pos (point)))
     (image-dired--line-up-with-method)
     (goto-char pos)
@@ -1207,9 +1216,9 @@ See also `image-dired-line-up-dynamic'."
         (forward-char)
         (if (= image-dired-thumbs-per-row 1)
             (insert "\n")
-          (cl-incf thumb-prev-pos thumb-width-chars)
+          (incf thumb-prev-pos thumb-width-chars)
           (insert (propertize " " 'display `(space :align-to ,thumb-prev-pos)))
-          (cl-incf seen)
+          (incf seen)
           (when (and (= seen (- image-dired-thumbs-per-row 1))
                      (not (eobp)))
             (forward-char)
@@ -1238,7 +1247,7 @@ Ask user how many thumbnails should be displayed per row."
   (interactive nil image-dired-thumbnail-mode)
   (let ((image-dired-thumbs-per-row
          (string-to-number (read-string "How many thumbs per row: "))))
-    (if (not (> image-dired-thumbs-per-row 0))
+    (if (not (plusp image-dired-thumbs-per-row))
         (message "Number must be greater than 0")
       (image-dired-line-up))))
 
@@ -1981,7 +1990,7 @@ when using per-directory thumbnail file storage"))
               (setq tag-link-list
                     (append tag-link-list (list (cons tag tag-link))))
             (setq tag-link-list (list (cons tag tag-link))))
-          (setq count (1+ count))))
+          (incf count)))
       (setq count 1)
       ;; Main loop where we generated thumbnail pages per tag
       (dolist (curr tags)
@@ -2028,7 +2037,7 @@ when using per-directory thumbnail file storage"))
             (insert "  <p><a href=\"index.html\">Index</a></p>\n")
             (insert "  </body>\n")
             (insert "</html>\n"))
-          (setq count (1+ count))))
+          (incf count)))
       (insert "  </body>\n")
       (insert "</html>"))))
 
@@ -2084,13 +2093,13 @@ when using per-directory thumbnail file storage"))
 ;;            ;; Sort function.  Compare time between two files.
 ;;            (lambda (l1 l2)
 ;;               (time-less-p (car l1) (car l2)))))
-;;          (dirsize (apply '+ (mapcar (lambda (x) (cadr x)) files))))
+;;          (dirsize (apply #'+ (mapcar #'cadr files))))
 ;;     (while (> dirsize image-dired-dir-max-size)
 ;;       (y-or-n-p
 ;;        (format "Size of thumbnail directory: %d, delete old file %s? "
 ;;                dirsize (cadr (cdar files))))
 ;;       (delete-file (cadr (cdar files)))
-;;       (setq dirsize (- dirsize (car (cdar files))))
+;;       (decf dirsize (car (cdar files)))
 ;;       (setq files (cdr files)))))
 
 (provide 'image-dired)

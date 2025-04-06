@@ -37,10 +37,14 @@
 ;;
 ;; For indenting statements:
 ;;
-;; - Set `c-ts-common-indent-offset', and
-;;   `c-ts-common-indent-type-regexp-alist', then use simple-indent
-;;   offset `c-ts-common-statement-offset' in
-;;   `treesit-simple-indent-rules'.
+;; - Set `c-ts-common-indent-offset'.  Use
+;;   `c-ts-common-baseline-indent-rule' as the fallback indent rule, and
+;;   add override rules to tweak the behavior.
+;;
+;; - There's also a node-level-based indentation algorithm, it's not as
+;;   good as `c-ts-common-baseline-indent-rule', but if you want to play
+;;   with it, set `c-ts-common-indent-type-regexp-alist' and use
+;;   `c-ts-common-statement-offset'.
 
 ;;; Code:
 
@@ -491,7 +495,7 @@ characters on the current line."
     ;; one level because the code below assumes NODE is a statement
     ;; _inside_ a {} block.
     (when (c-ts-common--node-is node 'block 'close-bracket)
-      (cl-decf level))
+      (decf level))
     ;; If point is on an empty line, NODE would be nil, but we pretend
     ;; there is a statement node.
     (when (null node)
@@ -503,7 +507,7 @@ characters on the current line."
       (let ((parent (treesit-node-parent node)))
         ;; Increment level for every bracket (with exception).
         (when (c-ts-common--node-is node 'block)
-          (cl-incf level)
+          (incf level)
           (save-excursion
             (goto-char (treesit-node-start node))
             ;; Add an extra level if the opening bracket is on its own
@@ -515,12 +519,12 @@ characters on the current line."
                   ;; Add a level.
                   ((looking-back (rx bol (* whitespace))
                                  (line-beginning-position))
-                   (cl-incf level)))))
+                   (incf level)))))
         ;; Fix bracketless statements.
         (when (and (c-ts-common--node-is parent
                        'if 'do 'while 'for)
                    (not (c-ts-common--node-is node 'block)))
-          (cl-incf level))
+          (incf level))
         ;; Flatten "else if" statements.
         (when (and (c-ts-common--node-is node 'else)
                    (c-ts-common--node-is node 'if)
@@ -530,7 +534,7 @@ characters on the current line."
                           (goto-char (treesit-node-start node))
                           (looking-back (rx bol (* whitespace))
                                         (line-beginning-position)))))
-          (cl-decf level)))
+          (decf level)))
       ;; Go up the tree.
       (setq node (treesit-node-parent node)))
     (* level (symbol-value c-ts-common-indent-offset))))
@@ -538,7 +542,7 @@ characters on the current line."
 ;;; Baseline indent rule
 
 (defvar c-ts-common-list-indent-style 'align
-  "Intructs `c-ts-common-baseline-indent-rule' how to indent lists.
+  "Instructs `c-ts-common-baseline-indent-rule' how to indent lists.
 
 If the value is `align', indent lists like this:
 
@@ -554,32 +558,87 @@ const a = [
   4, 5, 6,
 ];")
 
+(defun c-ts-common--standalone-predicate (node)
+  "Return an anchor if NODE is on the start of a line.
+
+Return nil if not.  Handles method chaining.  Caller needs to cal
+`save-excursion'."
+  (goto-char (treesit-node-start node))
+  (or (and (looking-back (rx bol (* whitespace) (? "."))
+                         (line-beginning-position))
+           (point))
+      ;; The above check is not enough, because often in a method
+      ;; chaining, the method name is part of a node, and the arg list
+      ;; is another node:
+      ;;
+      ;;     func       ---> func.method is one node.
+      ;;     .method({
+      ;;       return 1;     ({ return 1; }) is another node
+      ;;     })
+      ;;
+      ;; So when we go up the parse tree, we go through the block
+      ;; ({...}), then the next parent is already the whole call
+      ;; expression, and we never stops at the beginning of "method".
+      ;; Therefore we need this heuristic.
+      (and (progn (back-to-indentation)
+                  (eq (char-after) ?.))
+           (point))))
+
 (defun c-ts-common--standalone-parent (parent)
   "Find the first parent that starts on a new line.
 Start searching from PARENT, so if PARENT satisfies the condition, it'll
 be returned.  Return the starting position of the parent, return nil if
-no parent satisfies the condition."
-  (save-excursion
-    (catch 'term
-      (while parent
-        (goto-char (treesit-node-start parent))
-        (when (looking-back (rx bol (* whitespace))
-                            (line-beginning-position))
-          (throw 'term (point)))
-        (setq parent (treesit-node-parent parent))))))
+no parent satisfies the condition.
+
+Unlike simple-indent's standalone preset, this function handles method
+chaining like
+
+    func
+    .method() <-- Considered standalone even if there's a \".\" in
+    .method()     front of the node.
+
+But ff `treesit-simple-indent-standalone-predicate' is non-nil, use that
+for determining standalone line."
+  (let (anchor)
+    (save-excursion
+      (catch 'term
+        (while parent
+          (goto-char (treesit-node-start parent))
+          (when (setq anchor
+                      (if treesit-simple-indent-standalone-predicate
+                          (funcall treesit-simple-indent-standalone-predicate
+                                   parent)
+                        (c-ts-common--standalone-predicate parent)))
+            (throw 'term (if (numberp anchor) anchor (point))))
+          (setq parent (treesit-node-parent parent)))))))
 
 (defun c-ts-common--prev-standalone-sibling (node)
-  "Return the previous sibling of NODE that starts on a new line.
-Return nil if no sibling satisfies the condition."
+  "Return the start of the previous sibling of NODE that starts on a new line.
+Return nil if no sibling satisfies the condition.
+
+Unlike simple-indent's standalone preset, this function handles method
+chaining like
+
+    func
+    .method() <-- Considered standalone even if there's a \".\" in
+    .method()     front of the node.
+
+But ff `treesit-simple-indent-standalone-predicate' is non-nil, use that
+for determining standalone line."
   (save-excursion
     (setq node (treesit-node-prev-sibling node 'named))
     (goto-char (treesit-node-start node))
-    (while (and node
-                (goto-char (treesit-node-start node))
-                (not (looking-back (rx bol (* whitespace))
-                                   (pos-bol))))
-      (setq node (treesit-node-prev-sibling node 'named)))
-    node))
+    (let (anchor)
+      (while (and node
+                  (goto-char (treesit-node-start node))
+                  (not (setq anchor
+                             (if treesit-simple-indent-standalone-predicate
+                                 (funcall
+                                  treesit-simple-indent-standalone-predicate
+                                  node)
+                               (c-ts-common--standalone-predicate node)))))
+        (setq node (treesit-node-prev-sibling node 'named)))
+      (if (numberp anchor) anchor (treesit-node-start node)))))
 
 (defun c-ts-common-parent-ignore-preproc (node)
   "Return the parent of NODE, skipping preproc nodes."
@@ -629,7 +688,13 @@ This rule tries to be smart and ignore proprocessor node in some
 situations.  By default, any node that has \"proproc\" in its type are
 considered a preprocessor node.  If that heuristic is inaccurate, define
 a `preproc' thing in `treesit-thing-settings', and this rule will use
-the thing definition instead."
+the thing definition instead.
+
+The rule also handles method chaining like
+
+    func
+    .method() <-- Considered \"starts at a newline\" even if there's
+    .method()     a \".\" in front of the node."
   (let ((prev-line-node (treesit--indent-prev-line-node bol))
         (offset (symbol-value c-ts-common-indent-offset)))
     (cond
@@ -648,8 +713,11 @@ the thing definition instead."
      ((treesit-node-match-p (treesit-node-child parent 0)
                             (rx (or "(" "[")))
       (let ((first-sibling (treesit-node-child parent 0 'named)))
+        (while (treesit-node-match-p
+                first-sibling c-ts-common--comment-regexp 'ignore-missing)
+          (setq first-sibling (treesit-node-next-sibling first-sibling 'named)))
         (cond
-         ;; Closing delimeters.
+         ;; Closing delimiters.
          ((treesit-node-match-p node (rx (or ")" "]")))
           (if (eq c-ts-common-list-indent-style 'align)
               (cons (treesit-node-start (treesit-node-child parent 0))
@@ -664,9 +732,8 @@ the thing definition instead."
             (cons (c-ts-common--standalone-parent parent)
                   offset)))
          ;; Not first sibling
-         (t (cons (treesit-node-start
-                   (or (c-ts-common--prev-standalone-sibling node)
-                       first-sibling))
+         (t (cons (or (c-ts-common--prev-standalone-sibling node)
+                      (treesit-node-start first-sibling))
                   0)))))
      ;; Condition 2 for initializer list, only apply to
      ;; second line. Eg,

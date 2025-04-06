@@ -1,10 +1,10 @@
 ;;; eieio.el --- Enhanced Implementation of Emacs Interpreted Objects  -*- lexical-binding:t -*-
 ;;;              or maybe Eric's Implementation of Emacs Interpreted Objects
 
-;; Copyright (C) 1995-1996, 1998-2025 Free Software Foundation, Inc.
+;; Copyright (C) 1995-2025 Free Software Foundation, Inc.
 
 ;; Author: Eric M. Ludlam <zappo@gnu.org>
-;; Version: 1.4
+;; Old-Version: 1.4
 ;; Keywords: OO, lisp
 
 ;; This file is part of GNU Emacs.
@@ -44,20 +44,13 @@
 
 ;;; Code:
 
-(defvar eieio-version "1.4"
-  "Current version of EIEIO.")
-
-(defun eieio-version ()
-  "Display the current version of EIEIO."
-  (interactive)
-  (message eieio-version))
-
 (require 'eieio-core)
 (eval-when-compile (require 'subr-x))
 
 
 ;;; Defining a new class
 ;;
+;;;###autoload
 (defmacro defclass (name superclasses slots &rest options-and-doc)
   "Define NAME as a new class derived from SUPERCLASS with SLOTS.
 OPTIONS-AND-DOC is used as the class' options and base documentation.
@@ -114,10 +107,10 @@ and reference them using the function `class-option'."
   (cl-check-type superclasses list)
 
   (cond ((and (stringp (car options-and-doc))
-              (/= 1 (% (length options-and-doc) 2)))
+              (evenp (length options-and-doc)))
          (error "Too many arguments to `defclass'"))
         ((and (symbolp (car options-and-doc))
-              (/= 0 (% (length options-and-doc) 2)))
+              (oddp (length options-and-doc)))
          (error "Too many arguments to `defclass'")))
 
   (if (stringp (car options-and-doc))
@@ -296,20 +289,22 @@ and reference them using the function `class-option'."
           `(defun ,name (&rest slots)
              ,(internal--format-docstring-line
                "Create a new object of class type `%S'." name)
-             (declare (compiler-macro
-                       (lambda (whole)
-                         (if (not (stringp (car slots)))
-                             whole
-                           (macroexp-warn-and-return
-                            (format "Obsolete name arg %S to constructor %S"
-                                    (car slots) (car whole))
-                            ;; Keep the name arg, for backward compatibility,
-                            ;; but hide it so we don't trigger indefinitely.
-                            `(,(car whole) (identity ,(car slots))
-                              ,@(cdr slots))
-                            nil nil (car slots))))))
+             (declare (compiler-macro eieio--constructor-macro))
              (apply #'make-instance ',name slots))))))
 
+(defun eieio--constructor-macro (whole &rest slots)
+  (if (or (null slots) (keywordp (car slots))
+          ;; Detect the second pass!
+          (eq 'identity (car-safe (car slots))))
+      whole
+    (macroexp-warn-and-return
+     (format "Obsolete name arg %S to constructor %S"
+             (car slots) (car whole))
+     ;; Keep the name arg, for backward compatibility,
+     ;; but hide it so we don't trigger indefinitely.
+     `(,(car whole) (identity ,(car slots))
+       ,@(cdr slots))
+     nil nil (car slots))))
 
 ;;; Get/Set slots in an object.
 ;;
@@ -1002,6 +997,19 @@ This may create or delete slots, but does not affect the return value
 of `eq'."
   (error "EIEIO: `change-class' is unimplemented"))
 (define-obsolete-function-alias 'change-class #'eieio-change-class "26.1")
+
+
+;;; Obsolete
+;;
+(make-obsolete-variable 'eieio-version 'emacs-version "31.1")
+(defvar eieio-version "1.4"
+  "Current version of EIEIO.")
+
+(defun eieio-version ()
+  "Display the current version of EIEIO."
+  (declare (obsolete emacs-version "31.1"))
+  (interactive)
+  (message eieio-version))
 
 (provide 'eieio)
 

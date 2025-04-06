@@ -28,7 +28,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'cl-extra)
 (require 'transient)
 (require 'multisession)
 (require 'generate-lisp-file)
@@ -222,7 +221,7 @@ the name is not known."
       (cl-loop for i from 0
                for glyph in alist
                do
-               (when (and (cl-plusp i)
+               (when (and (plusp i)
                           (zerop (mod i width)))
                  (insert "\n"))
                (insert
@@ -680,7 +679,7 @@ We prefer the earliest unique letter."
                                "")))
                      strings)))))
            nil t)))
-    (if (cl-plusp (length name))
+    (if (plusp (length name))
         (let ((glyph (if emoji-alternate-names
                          (cadr (split-string name "\t"))
                        (gethash name emoji--all-bases))))

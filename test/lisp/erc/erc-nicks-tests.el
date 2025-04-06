@@ -615,6 +615,8 @@
   (erc-tests-common-kill-buffers))
 
 (ert-deftest erc-nicks-track-faces/prioritize ()
+  :tags '(:unstable)
+
   (should (eq erc-nicks-track-faces 'prioritize))
   (erc-nicks-tests--track-faces
    (lambda (set-faces assert-result add-face bob-face alice-face)
@@ -681,6 +683,7 @@
      (funcall assert-result '(7 . erc-notice-face)))))
 
 (ert-deftest erc-nicks-track-faces/defer ()
+  :tags '(:unstable)
   (when (< emacs-major-version 28)
     (ert-skip "Possible intermittent failures on 27"))
 
@@ -749,6 +752,8 @@
        (funcall assert-result '(7 . erc-notice-face))))))
 
 (ert-deftest erc-nicks-track-faces/nil ()
+  :tags '(:unstable)
+
   (should (eq erc-nicks-track-faces 'prioritize))
   (let (erc-nicks-track-faces)
     (erc-nicks-tests--track-faces
@@ -793,6 +798,8 @@
        (funcall assert-result '(5 . erc-notice-face))))))
 
 (ert-deftest erc-nicks-track-faces/t ()
+  :tags '(:unstable)
+
   (should (eq erc-nicks-track-faces 'prioritize))
   (let ((erc-nicks-track-faces t))
     (erc-nicks-tests--track-faces

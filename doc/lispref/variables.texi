@@ -285,7 +285,7 @@ previous example is equivalent to using nested @code{let} bindings:
 @defspec letrec (bindings@dots{}) forms@dots{}
 This special form is like @code{let*}, but all the variables are bound
 before any of the local values are computed.  The values are then
-assigned to the locally bound variables.  This is only useful when
+assigned to the locally bound variables.  This is useful only when
 lexical binding is in effect, and you want to create closures that
 refer to bindings that would otherwise not yet be in effect when using
 @code{let*}.
@@ -351,7 +351,7 @@ A function call is in the tail position if it's the very last thing
 done so that the value returned by the call is the value of @var{body}
 itself, as is the case in the recursive call to @code{sum} above.
 
-@code{named-let} can only be used when lexical-binding is enabled.
+@code{named-let} can be used only when lexical-binding is enabled.
 @xref{Lexical Binding}.
 @end defspec
 
@@ -392,7 +392,7 @@ object can be; but it is still a value.  If a variable is void, trying
 to evaluate the variable signals a @code{void-variable} error, instead
 of returning a value.
 
-  Under the optional lexical scoping rule, the value cell only holds
+  Under the optional lexical scoping rule, the value cell holds only
 the variable's global value---the value outside of any lexical binding
 construct.  When a variable is lexically bound, the local value is
 determined by the lexical environment; hence, variables can have local
@@ -499,33 +499,37 @@ initializes it only if it is originally void.
 Definitions}.
 
 @defspec defvar symbol [value [doc-string]]
-This special form defines @var{symbol} as a variable.  Note that
-@var{symbol} is not evaluated; the symbol to be defined should appear
-explicitly in the @code{defvar} form.  The variable is marked as
-@dfn{special}, meaning that it should always be dynamically bound
+This special form defines @var{symbol} as a variable and optionally
+initializes and documents it.  Note that it doesn't evaluate
+@var{symbol}; the symbol to be defined should appear explicitly in the
+@code{defvar} form.  @code{defvar} also marks @var{symbol} as
+@dfn{special}, meaning that its bindings should always be dynamic
 (@pxref{Variable Scoping}).
 
 If @var{value} is specified, and @var{symbol} is void (i.e., it has no
-dynamically bound value; @pxref{Void Variables}), then @var{value} is
-evaluated and @var{symbol} is set to the result.  But if @var{symbol}
-is not void, @var{value} is not evaluated, and @var{symbol}'s value is
-left unchanged.  If @var{value} is omitted, the value of @var{symbol}
-is not changed in any case.
+dynamically bound value; @pxref{Void Variables}), then @code{defvar}
+evaluates @var{value}, and initializes @var{symbol} by setting it to the
+result of the evaluation.  But if @var{symbol} is not void,
+@code{defvar} does not evaluate @var{value}, and leaves @var{symbol}'s
+value unchanged.  If @var{value} is omitted, @code{defvar} doesn't
+change the value of @var{symbol} in any case.
 
 Note that specifying a value, even @code{nil}, marks the variable as
-special permanently.  Whereas if @var{value} is omitted then the
-variable is only marked special locally (i.e.@: within the current
-lexical scope, or file if at the top-level).  This can be useful for
-suppressing byte compilation warnings, see @ref{Compiler Errors}.
+special permanently.  Whereas if @var{value} is omitted, then
+@code{defvar} marks the variable special only locally (i.e.@: within the
+current lexical scope, or within the current file, if @code{defvar} is
+at the top-level).  This can be useful for suppressing byte compilation
+warnings, see @ref{Compiler Errors}.
 
-If @var{symbol} has a buffer-local binding in the current buffer,
-@code{defvar} acts on the default value, which is buffer-independent,
-rather than the buffer-local binding.  It sets the default value if
-the default value is void.  @xref{Buffer-Local Variables}.
+If @var{symbol} has a buffer-local binding in the current buffer, and
+@var{value} is specified, @code{defvar} modifies the default value of
+@var{symbol}, which is buffer-independent, rather than the buffer-local
+binding.  It sets the default value if the default value is void.
+@xref{Buffer-Local Variables}.
 
-If @var{symbol} is already let bound (e.g., if the @code{defvar}
-form occurs in a @code{let} form), then @code{defvar} sets the toplevel
-default value, like @code{set-default-toplevel-value}.
+If @var{symbol} is already let bound (e.g., if the @code{defvar} form
+occurs in a @code{let} form), then @code{defvar} sets the toplevel
+default value of @var{symbol}, like @code{set-default-toplevel-value}.
 The let binding remains in effect until its binding construct exits.
 @xref{Variable Scoping}.
 
@@ -706,8 +710,8 @@ completely.
   The usual way to reference a variable is to write the symbol which
 names it.  @xref{Symbol Forms}.
 
-  Occasionally, you may want to reference a variable which is only
-determined at run time.  In that case, you cannot specify the variable
+  Occasionally, you may want to reference a variable which is determined
+only at run time.  In that case, you cannot specify the variable
 name in the text of the program.  You can use the @code{symbol-value}
 function to extract the value.
 
@@ -1645,7 +1649,7 @@ on having separate values in separate buffers, then using
 @code{make-variable-buffer-local} can be the best solution.
 @end deffn
 
-@defmac defvar-local variable value &optional docstring
+@defmac defvar-local variable &optional value docstring
 This macro defines @var{variable} as a variable with initial value
 @var{value} and @var{docstring}, and marks it as automatically
 buffer-local.  It is equivalent to calling @code{defvar} followed by
@@ -1987,8 +1991,8 @@ to use this, @pxref{Auto Major Mode}.
 
 @defvar permanently-enabled-local-variables
 Some local variable settings will, by default, be heeded even if
-@code{enable-local-variables} is @code{nil}.  By default, this is only
-the case for the @code{lexical-binding} local variable setting, but
+@code{enable-local-variables} is @code{nil}.  By default, this is the
+case only for the @code{lexical-binding} local variable setting, but
 this can be controlled by using this variable, which is a list of
 symbols.
 @end defvar
@@ -2011,14 +2015,21 @@ function does not look for the @samp{mode:} local variable in the
 @w{@samp{-*-}} line.  @code{set-auto-mode} does that, also taking
 @code{enable-local-variables} into account (@pxref{Auto Major Mode}).
 
-This function works by walking the alist stored in
-@code{file-local-variables-alist} and applying each local variable in
-turn.  It calls @code{before-hack-local-variables-hook} and
+This function also puts into effect directory-local variables as
+specified in @file{.dir-locals.el}.  If the buffer is not visiting any
+file, then the directory-local variables that apply are those which
+would be applicable to files in the @code{default-directory}
+(@pxref{Directory Local Variables}).
+
+This function works by walking the alists stored in
+@code{file-local-variables-alist} and @code{dir-local-variables-alist}
+and applying each local variable in turn.  It calls
+@code{before-hack-local-variables-hook} and
 @code{hack-local-variables-hook} before and after applying the
-variables, respectively.  It only calls the before-hook if the alist
-is non-@code{nil}; it always calls the other hook.  This
-function ignores a @samp{mode} element if it specifies the same major
-mode as the buffer already has.
+variables, respectively.  It only calls the before-hook if
+@code{file-local-variables-alist} is non-@code{nil}; it always calls the
+other hook.  This function ignores a @samp{mode} element if it specifies
+the same major mode as the buffer already has.
 
 If the optional argument @var{handle-mode} is @code{t}, then all this
 function does is return a symbol specifying the major mode, if the
@@ -2212,8 +2223,9 @@ If some of the subdirectories have their own @file{.dir-locals.el}
 files, Emacs uses the settings from the deepest file it finds starting
 from the file's directory and moving up the directory tree.  This
 constant is also used to derive the name of a second dir-locals file
-@file{.dir-locals-2.el}.  If this second dir-locals file is present,
-then that is loaded in addition to @file{.dir-locals.el}.  This is useful
+@file{.dir-locals-2.el}.  If this second dir-locals file is present in
+the same directory as @file{.dir-locals.el}, then it will be loaded in
+addition to @file{.dir-locals.el}.  This is useful
 when @file{.dir-locals.el} is under version control in a shared
 repository and cannot be used for personal customizations.  The file
 specifies local variables as a specially formatted list; see
@@ -2288,6 +2300,17 @@ This alist holds directory names, their assigned class names, and
 modification times of the associated directory local variables file
 (if there is one).  The function @code{dir-locals-set-directory-class}
 updates this list.
+@end defvar
+
+@defvar dir-local-variables-alist
+This buffer-local variable holds the alist of directory-local variable
+settings.  Each element of the alist is of the form @w{@code{(@var{var}
+. @var{value})}}, where @var{var} is a symbol of the local variable and
+@var{value} is its value (this is the same structure as that of
+@code{file-local-variables-alist}, @pxref{File Local Variables}).  When
+Emacs visits a file, it collects all the directory-local variables into
+this alist, and then the @code{hack-local-variables} function applies
+them one by one (again, @pxref{File Local Variables}).
 @end defvar
 
 @defvar hack-dir-local-get-variables-functions
@@ -2897,6 +2920,10 @@ the list stored in @var{place}.  It is analogous to @code{(setf
 subforms.  Note that @code{push} and @code{pop} on an @code{nthcdr}
 place can be used to insert or delete at any position in a list.
 
+Similarly, the macros @code{incf} and @code{decf} (@pxref{Arithmetic
+Operations}) can be used to increment or decrement generalized
+variables that are numbers.
+
 The @file{cl-lib} library defines various extensions for generalized
 variables, including additional @code{setf} places.
 @xref{Generalized Variables,,, cl, Common Lisp Extensions}.
@@ -3125,7 +3152,7 @@ If the multisession variable is synchronized, setting it may update
 the value first.  For instance:
 
 @lisp
-(cl-incf (multisession-value foo-bar))
+(incf (multisession-value foo-bar))
 @end lisp
 
 This first checks whether the value has changed in a different

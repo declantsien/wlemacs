@@ -3,7 +3,7 @@
 ;; Copyright (C) 1997-2025 Free Software Foundation, Inc.
 
 ;; Author: Eric M. Ludlam <zappo@gnu.org>
-;; Old-Version: 0.6.2
+;; Maintainer: emacs-devel@gnu.org
 ;; Keywords: docs, maint, lisp
 
 ;; This file is part of GNU Emacs.
@@ -322,6 +322,14 @@ variable `checkdoc-common-verbs-wrong-voice' if you wish to add your own."
 Do not set this by hand, use a function like `checkdoc-current-buffer'
 with a universal argument.")
 
+(defcustom checkdoc-allow-quoting-nil-and-t nil
+  "If non-nil, don't warn when the symbols nil and t are quoted.
+
+In other words, it allows writing them like this: \\=`nil\\=', \\=`t\\='."
+  :type 'boolean
+  :version "31.1")
+;;;###autoload(put 'checkdoc-allow-quoting-nil-and-t 'safe-local-variable #'booleanp)
+
 (defcustom checkdoc-symbol-words
   '("beginning-of-buffer" "beginning-of-line" "byte-code"
     "byte-compile" "command-line" "end-of-buffer" "end-of-line"
@@ -345,19 +353,19 @@ See Info node `(elisp) Documentation Tips' for background."
 ;; This is how you can use checkdoc to make mass fixes on the Emacs
 ;; source tree:
 ;;
-;; (setq checkdoc--argument-missing-flag nil)      ; optional
+;; (setq checkdoc-arguments-missing-flag nil)      ; optional
 ;; (setq checkdoc--disambiguate-symbol-flag nil)   ; optional
 ;; (setq checkdoc--interactive-docstring-flag nil) ; optional
 ;; (setq checkdoc-permit-comma-termination-flag t) ; optional
-;; (setq checkdoc-verb-check-experimental-flag nil)
 ;; Then use `M-x find-dired' ("-name '*.el'") and `M-x checkdoc-dired'
 
-(defvar checkdoc--argument-missing-flag t
-  "Non-nil means warn if arguments are missing from docstring.
-This variable is intended for use on Emacs itself, where the
-large number of libraries means it is impractical to fix all
-of these warnings en masse.  In almost any other case, setting
-this to anything but t is likely to be counter-productive.")
+(define-obsolete-variable-alias 'checkdoc--argument-missing-flag
+  'checkdoc-arguments-missing-flag "31.1")
+(defcustom checkdoc-arguments-missing-flag t
+  "Non-nil means warn if function arguments are missing from docstring."
+  :type 'boolean
+  :version "31.1")
+;;;###autoload(put 'checkdoc-arguments-missing-flag 'safe-local-variable 'booleanp)
 
 (defvar checkdoc--disambiguate-symbol-flag t
   "Non-nil means ask to disambiguate Lisp symbol.
@@ -1275,7 +1283,8 @@ generating a buffered list of errors.")
   "Used to create the return error text returned from all engines.
 TEXT, START, END and UNFIXABLE conform to
 `checkdoc-create-error-function', which see."
-  (funcall checkdoc-create-error-function text start end unfixable))
+  (funcall checkdoc-create-error-function
+           (substitute-quotes text) start end unfixable))
 
 (defun checkdoc--create-error-for-checkdoc (text start end &optional unfixable)
   "Create an error for Checkdoc.
@@ -1685,35 +1694,6 @@ function,command,variable,option or symbol." ms1))))))
 	 (if ret
 	     (checkdoc-create-error ret mb me)
 	   nil)))
-     ;; * Format the documentation string so that it fits in an
-     ;;   Emacs window on an 80-column screen.  It is a good idea
-     ;;   for most lines to be no wider than 60 characters.  The
-     ;;   first line can be wider if necessary to fit the
-     ;;   information that ought to be there.
-     (save-excursion
-       (let* ((start (point))
-              (eol nil)
-              ;; Respect this file local variable.
-              (max-column (max 80 byte-compile-docstring-max-column))
-              ;; Allow the first line to be three characters longer, to
-              ;; fit the leading ` "' while still having a docstring
-              ;; shorter than e.g. 80 characters.
-              (first t)
-              (get-max-column (lambda () (+ max-column (if first 3 0)))))
-	 (while (and (< (point) e)
-		     (or (progn (end-of-line) (setq eol (point))
-                                (< (current-column) (funcall get-max-column)))
-			 (progn (beginning-of-line)
-				(re-search-forward "\\\\\\\\[[<{]"
-						   eol t))
-                         (checkdoc-in-sample-code-p start e)))
-           (setq first nil)
-	   (forward-line 1))
-	 (end-of-line)
-         (if (and (< (point) e) (> (current-column) (funcall get-max-column)))
-	     (checkdoc-create-error
-              (format "Some lines are over %d columns wide" max-column)
-	      s (save-excursion (goto-char s) (line-end-position))))))
      ;; Here we deviate to tests based on a variable or function.
      ;; We must do this before checking for symbols in quotes because there
      ;; is a chance that just such a symbol might really be an argument.
@@ -1844,7 +1824,7 @@ function,command,variable,option or symbol." ms1))))))
 						  (looking-at "[.?!]")))
 			     (insert "."))
 			 nil)
-                     (when checkdoc--argument-missing-flag
+                     (when checkdoc-arguments-missing-flag
                        (checkdoc-create-error
                         (format-message
                          "Argument `%s' should appear (as %s) in the doc string"
@@ -1956,17 +1936,18 @@ Replace with \"%s\"?" original replace)
 				       (length ms)))
 	   nil)))
      ;; t and nil case
-     (save-excursion
-       (if (re-search-forward "\\([`‘]\\(t\\|nil\\)['’]\\)" e t)
-	   (if (checkdoc-autofix-ask-replace
-		(match-beginning 1) (match-end 1)
-                (format "%s should not appear in quotes.  Remove?"
-			(match-string 2))
-		(match-string 2) t)
-	       nil
-	     (checkdoc-create-error
-	      "Symbols t and nil should not appear in single quotes"
-	      (match-beginning 1) (match-end 1)))))
+     (unless checkdoc-allow-quoting-nil-and-t
+       (save-excursion
+         (if (re-search-forward "\\([`‘]\\(t\\|nil\\)['’]\\)" e t)
+             (if (checkdoc-autofix-ask-replace
+                  (match-beginning 1) (match-end 1)
+                  (format "%s should not appear in quotes.  Remove?"
+                          (match-string 2))
+                  (match-string 2) t)
+                 nil
+               (checkdoc-create-error
+                "Symbols t and nil should not appear in single quotes"
+                (match-beginning 1) (match-end 1))))))
      ;; Here is some basic sentence formatting
      (checkdoc-sentencespace-region-engine (point) e)
      ;; Here are common proper nouns that should always appear capitalized.
@@ -2109,7 +2090,7 @@ The text checked is between START and LIMIT."
 	(goto-char start)
 	(while (and (< (point) p) (re-search-forward "\\\\\"" limit t))
 	  (setq c (1+ c)))
-	(and (< 0 c) (= (% c 2) 0))))))
+	(and (< 0 c) (evenp c))))))
 
 (defun checkdoc-in-abbreviation-p (begin)
   "Return non-nil if point is at an abbreviation.

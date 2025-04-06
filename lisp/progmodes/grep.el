@@ -543,18 +543,18 @@ redundant).")
 This gets tacked on the end of the generated expressions.")
 
 ;;;###autoload
-(defvar grep-program (purecopy "grep")
+(defvar grep-program "grep"
   "The default grep program for `grep-command' and `grep-find-command'.
 This variable's value takes effect when `grep-compute-defaults' is called.")
 
 ;;;###autoload
-(defvar find-program (purecopy "find")
+(defvar find-program "find"
   "The default find program.
 This is used by commands like `grep-find-command', `find-dired'
 and others.")
 
 ;;;###autoload
-(defvar xargs-program (purecopy "xargs")
+(defvar xargs-program "xargs"
   "The default xargs program for `grep-find-command'.
 See `grep-find-use-xargs'.
 This variable's value takes effect when `grep-compute-defaults' is called.")
@@ -648,7 +648,7 @@ This function is called from `compilation-filter-hook'."
           (replace-match (propertize (match-string 1)
                                      'face nil 'font-lock-face grep-match-face)
                          t t)
-          (cl-incf grep-num-matches-found))
+          (incf grep-num-matches-found))
         ;; Delete all remaining escape sequences
         (goto-char beg)
         (while (re-search-forward "\033\\[[0-9;]*[mK]" end 1)
@@ -1332,7 +1332,7 @@ command before it's run."
 	   (list regexp files dir confirm))))))
   (when (and (stringp regexp) (> (length regexp) 0))
     (unless (and dir (file-accessible-directory-p dir))
-      (setq dir default-directory))
+      (user-error "Unable to open directory: %s" dir))
     (unless (string-equal (file-remote-p dir) (file-remote-p default-directory))
       (let ((default-directory dir))
         (grep-compute-defaults)))
@@ -1437,7 +1437,7 @@ to indicate whether the grep should be case sensitive or not."
     (grep-compute-defaults))
   (when (and (stringp regexp) (> (length regexp) 0))
     (unless (and dir (file-accessible-directory-p dir))
-      (setq dir default-directory))
+      (user-error "Unable to open directory: %s" dir))
     (unless (string-equal (file-remote-p dir) (file-remote-p default-directory))
       (let ((default-directory dir))
         (grep-compute-defaults)))

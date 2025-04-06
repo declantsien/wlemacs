@@ -484,11 +484,11 @@ Emacs dired can't find files."
     (with-tramp-file-property v localname "file-executable-p"
       ;; Examine `file-attributes' cache to see if request can be
       ;; satisfied without remote operation.
-      (if (tramp-use-file-attributes v)
-	  (or (tramp-check-cached-permissions v ?x)
-	      (tramp-check-cached-permissions v ?s))
-	(tramp-adb-send-command-and-check
-	 v (format "test -x %s" (tramp-shell-quote-argument localname)))))))
+      (or (tramp-check-cached-permissions v ?x)
+	  (tramp-check-cached-permissions v ?s)
+	  (tramp-check-cached-permissions v ?t)
+	  (tramp-adb-send-command-and-check
+	   v (format "test -x %s" (tramp-shell-quote-argument localname)))))))
 
 (defun tramp-adb-handle-file-exists-p (filename)
   "Like `file-exists-p' for Tramp files."
@@ -502,10 +502,9 @@ Emacs dired can't find files."
     (with-tramp-file-property v localname "file-readable-p"
       ;; Examine `file-attributes' cache to see if request can be
       ;; satisfied without remote operation.
-      (if (tramp-use-file-attributes v)
-	  (tramp-handle-file-readable-p filename)
-	(tramp-adb-send-command-and-check
-	 v (format "test -r %s" (tramp-shell-quote-argument localname)))))))
+      (or (tramp-handle-file-readable-p filename)
+	  (tramp-adb-send-command-and-check
+	   v (format "test -r %s" (tramp-shell-quote-argument localname)))))))
 
 (defun tramp-adb-handle-file-writable-p (filename)
   "Like `file-writable-p' for Tramp files."
@@ -997,7 +996,7 @@ error and non-nil on success."
       ;; <https://android.stackexchange.com/questions/226638/how-to-use-multibyte-file-names-in-adb-shell/232379#232379>
       ;; mksh uses UTF-8 internally, but is currently limited to the
       ;; BMP (basic multilingua plane), which means U+0000 to
-      ;; U+FFFD. If you want to use SMP codepoints (U-00010000 to
+      ;; U+FFFD.  If you want to use SMP codepoints (U-00010000 to
       ;; U-0010FFFD) on the input line, you currently have to disable
       ;; the UTF-8 mode (sorry).
       (tramp-adb-execute-adb-command vec "shell" command)

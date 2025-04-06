@@ -57,7 +57,7 @@ buffer.")
 
 (defun help-key ()
   "Return `help-char' in a format suitable for the `keymap-set' KEY argument."
-  (key-description (char-to-string help-char)))
+  (key-description (vector help-char)))
 
 (defvar-keymap help-map
   :doc "Keymap for characters following the Help key."
@@ -395,7 +395,7 @@ Do not call this in the scope of `with-help-window'."
 
 (defalias 'help #'help-for-help)
 (make-help-screen help-for-help
-  (purecopy "Type a help option: [abcCdefFgiIkKlLmnprstvw.] C-[cdefmnoptw] or ?")
+  "Type a help option: [abcCdefFgiIkKlLmnprstvw.] C-[cdefmnoptw] or ?"
   (concat
    "(Type "
    (help--key-description-fontified (kbd "<PageDown>"))
@@ -2200,18 +2200,17 @@ The `temp-buffer-window-setup-hook' hook is called."
                                    (current-active-maps t)))))
     (catch 'res
       (dolist (val help-event-list)
-        (let ((key (vector (if (eql val 'help)
-                               help-char
-                             val))))
-          (unless (seq-find (lambda (map) (and (keymapp map) (lookup-key map key)))
-                            bindings)
-            (throw 'res
-                   (concat
-                    str
-                    (substitute-command-keys
-                     (format
-                      " (\\`%s' for help)"
-                      (key-description key))))))))
+        (when (setq val (if (eql val 'help) help-char val))
+          (let ((key (vector val)))
+            (unless (seq-find (lambda (map) (and (keymapp map) (lookup-key map key)))
+                              bindings)
+              (throw 'res
+                     (concat
+                      str
+                      (substitute-command-keys
+                       (format
+                        " (\\`%s' for help)"
+                        (key-description key)))))))))
       str)))
 
 
@@ -2309,7 +2308,7 @@ the same names as used in the original source code, when possible."
             (dolist (arg arglist)
               (unless (and (symbolp arg)
                            (let ((name (symbol-name arg)))
-                             (if (eq (aref name 0) ?&)
+                             (if (and (> (length name) 0) (eq (aref name 0) ?&))
                                  (memq arg '(&rest &optional))
                                (not (string-search "." name)))))
                 (setq valid nil)))

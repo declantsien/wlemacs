@@ -444,7 +444,6 @@ be added."
     ;; Let mouse-1 follow the link.
     (define-key map [follow-link] 'mouse-face)
 
-    (define-key map [remap advertised-undo] #'archive-undo)
     (define-key map [remap undo] #'archive-undo)
 
     (define-key map [mouse-2] 'archive-extract)
@@ -1692,7 +1691,7 @@ This doesn't recover lost files, it just undoes changes in the buffer itself."
                        (t (+ (string-width uid) (string-width gid) 1)))))
             (if (> len maxidlen) (setq maxidlen len))))
         (let ((size (archive--file-desc-size desc)))
-          (cl-incf totalsize size)
+          (incf totalsize size)
           (if (> size maxsize) (setq maxsize size))))
       (let* ((sizelen (length (number-to-string maxsize)))
              (dash
@@ -2090,8 +2089,7 @@ This doesn't recover lost files, it just undoes changes in the buffer itself."
 			    ((memq creator '(0 5 6 7 10 11 15)) ; Dos etc.
 			     (logior ?\444
 				     (if isdir (logior 16384 ?\111) 0)
-				     (if (zerop
-					  (logand 1 (get-byte (+ p 38))))
+				     (if (evenp (get-byte (+ p 38)))
 					 ?\222 0)))
 			    (t nil)))
 	     (fiddle  (and archive-zip-case-fiddle

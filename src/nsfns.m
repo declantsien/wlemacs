@@ -66,10 +66,6 @@ static Lisp_Object tip_frame;
 /* The X and Y deltas of the last call to `x-show-tip'.  */
 static Lisp_Object tip_dx, tip_dy;
 
-/* The window-system window corresponding to the frame of the
-   currently visible tooltip.  */
-static NSWindow *tip_window;
-
 /* A timer that hides or deletes the currently visible tooltip when it
    fires.  */
 static Lisp_Object tip_timer;
@@ -1408,12 +1404,7 @@ DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
 #ifdef NS_IMPL_COCOA
   tem = gui_display_get_arg (dpyinfo, parms, Qns_appearance, NULL, NULL,
                              RES_TYPE_SYMBOL);
-  if (EQ (tem, Qdark))
-    FRAME_NS_APPEARANCE (f) = ns_appearance_vibrant_dark;
-  else if (EQ (tem, Qlight))
-    FRAME_NS_APPEARANCE (f) = ns_appearance_aqua;
-  else
-    FRAME_NS_APPEARANCE (f) = ns_appearance_system_default;
+  ns_set_appearance_1 (f, tem);
   store_frame_param (f, Qns_appearance,
                      (!NILP (tem) && !EQ (tem, Qunbound)) ? tem : Qnil);
 
@@ -2959,10 +2950,7 @@ unwind_create_tip_frame (Lisp_Object frame)
 
   deleted = unwind_create_frame (frame);
   if (EQ (deleted, Qt))
-    {
-      tip_window = NULL;
-      tip_frame = Qnil;
-    }
+    tip_frame = Qnil;
 }
 
 /* Create a frame for a tooltip on the display described by DPYINFO.

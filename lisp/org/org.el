@@ -3157,16 +3157,16 @@ There are multiple ways to set the category.  One way is to set
 it in the document property drawer.  For example:
 
 :PROPERTIES:
-:CATEGORY: ELisp
+:CATEGORY: Elisp
 :END:
 
 Other ways to define it is as an Emacs file variable, for example
 
-#   -*- mode: org; org-category: \"ELisp\"
+#   -*- mode: org; org-category: \"Elisp\"
 
 or for the file to contain a special line:
 
-#+CATEGORY: ELisp
+#+CATEGORY: Elisp
 
 If the file does not specify a category, then file's base name
 is used instead.")
@@ -4283,7 +4283,7 @@ related expressions."
 		  '("ARCHIVE" "CATEGORY" "COLUMNS" "PRIORITIES"))))
       ;; Startup options.  Get this early since it does change
       ;; behavior for other options (e.g., tags).
-      (let ((startup (cl-mapcan (lambda (value) (split-string value))
+      (let ((startup (cl-mapcan #'split-string
 				(cdr (assoc "STARTUP" alist)))))
 	(dolist (option startup)
 	  (pcase (assoc-string option org-startup-options t)
@@ -9422,7 +9422,7 @@ With numeric prefix arg, switch to the Nth state.
 With a numeric prefix arg of 0, inhibit note taking for the change.
 With a numeric prefix arg of -1, cancel repeater to allow marking as DONE.
 
-When called through ELisp, arg is also interpreted in the following way:
+When called through Elisp, arg is also interpreted in the following way:
 `none'        -> empty state
 \"\"            -> switch to empty state
 `done'        -> switch to DONE
@@ -12800,7 +12800,7 @@ variables is set."
 	  (cond
 	   (increment
 	    (unless allowed (user-error "Allowed effort values are not set"))
-	    (or (cl-caadr (member (list current) allowed))
+            (or (caadr (member (list current) allowed))
 		(user-error "Unknown value %S among allowed values" current)))
 	   (value
 	    (if (stringp value) value

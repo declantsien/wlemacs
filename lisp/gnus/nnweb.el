@@ -42,7 +42,7 @@
 
 (defvoo nnweb-type 'google
   "What search engine type is being used.
-Valid types include `google' and `dejanews'.")
+The only valid type is currently `google'.")
 
 (defvar nnweb-type-definition
   '((google
@@ -357,11 +357,11 @@ Valid types include `google' and `dejanews'.")
 		     (current-time-string)))
 	(setq From (match-string 4)))
       (widen)
-      (cl-incf i)
+      (incf i)
       (unless (nnweb-get-hashtb url)
 	(push
 	 (list
-	  (cl-incf (cdr active))
+          (incf (cdr active))
 	  (make-full-mail-header
 	   (cdr active) (if Newsgroups
 			    (concat  "(" Newsgroups ") " Subject)
@@ -393,7 +393,7 @@ Valid types include `google' and `dejanews'.")
 		  (nconc nnweb-articles (nnweb-google-parse-1)))
 	    ;; Check if there are more articles to fetch
 	    (goto-char (point-min))
-	    (cl-incf i 100)
+            (incf i 100)
 	    (if (or (not (re-search-forward
 			  "<a [^>]+href=\"\n?\\([^>\" \n\t]+\\)[^<]*<img[^>]+src=[^>]+next"
 			  nil t))
@@ -473,7 +473,7 @@ Valid types include `google' and `dejanews'.")
 		      (rfc2047-encode-string subject))
 
 		(unless (nnweb-get-hashtb (mail-header-xref header))
-		  (setf (mail-header-number header) (cl-incf (cdr active)))
+                  (setf (mail-header-number header) (incf (cdr active)))
 		  (push (list (mail-header-number header) header) map)
 		  (nnweb-set-hashtb (cadar map) (car map))))))
 	  (forward-line 1)))

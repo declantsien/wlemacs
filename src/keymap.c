@@ -50,7 +50,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "keyboard.h"
 #include "termhooks.h"
 #include "blockinput.h"
-#include "puresize.h"
 #include "intervals.h"
 #include "keymap.h"
 #include "window.h"
@@ -121,8 +120,6 @@ in case you use it as a menu with `x-popup-menu'.  */)
 {
   if (!NILP (string))
     {
-      if (!NILP (Vpurify_flag))
-	string = Fpurecopy (string);
       return list2 (Qkeymap, string);
     }
   return list1 (Qkeymap);
@@ -301,7 +298,6 @@ Return PARENT.  PARENT should be nil or another keymap.  */)
 	 If we came to the end, add the parent in PREV.  */
       if (!CONSP (list) || KEYMAPP (list))
 	{
-	  CHECK_IMPURE (prev, XCONS (prev));
 	  XSETCDR (prev, parent);
 	  return parent;
 	}
@@ -744,7 +740,7 @@ store_in_keymap (Lisp_Object keymap, register Lisp_Object idx,
 
   /* If we are preparing to dump, and DEF is a menu element
      with a menu item indicator, copy it to ensure it is not pure.  */
-  if (CONSP (def) && PURE_P (XCONS (def))
+  if (CONSP (def)
       && (EQ (XCAR (def), Qmenu_item) || STRINGP (XCAR (def))))
     def = Fcons (XCAR (def), XCDR (def));
 
@@ -788,7 +784,6 @@ store_in_keymap (Lisp_Object keymap, register Lisp_Object idx,
 	  {
 	    if (FIXNATP (idx) && XFIXNAT (idx) < ASIZE (elt))
 	      {
-		CHECK_IMPURE (elt, XVECTOR (elt));
 		ASET (elt, XFIXNAT (idx), def);
 		return def;
 	      }
@@ -846,7 +841,6 @@ store_in_keymap (Lisp_Object keymap, register Lisp_Object idx,
 	      }
 	    else if (EQ (idx, XCAR (elt)))
 	      {
-		CHECK_IMPURE (elt, XCONS (elt));
 		if (remove)
 		  /* Remove the element. */
 		  insertion_point = Fdelq (elt, insertion_point);
@@ -901,7 +895,6 @@ store_in_keymap (Lisp_Object keymap, register Lisp_Object idx,
 	  }
 	else
 	  elt = Fcons (idx, def);
-	CHECK_IMPURE (insertion_point, XCONS (insertion_point));
 	XSETCDR (insertion_point, Fcons (elt, XCDR (insertion_point)));
       }
   }
@@ -1659,7 +1652,8 @@ DEFUN ("current-active-maps", Fcurrent_active_maps, Scurrent_active_maps,
        doc: /* Return a list of the currently active keymaps.
 OLP if non-nil indicates that we should obey `overriding-local-map' and
 `overriding-terminal-local-map'.  POSITION can specify a click position
-like in the respective argument of `key-binding'.  */)
+like in the respective argument of `key-binding' or a live window which
+means to return the active maps for that window's buffer.  */)
   (Lisp_Object olp, Lisp_Object position)
 {
   specpdl_ref count = SPECPDL_INDEX ();
@@ -1687,6 +1681,16 @@ like in the respective argument of `key-binding'.  */)
 	  */
 	  record_unwind_current_buffer ();
 	  set_buffer_internal (XBUFFER (XWINDOW (window)->contents));
+	}
+    }
+  else if (WINDOW_LIVE_P (position))
+    {
+      if (BUFFERP (XWINDOW (position)->contents)
+	  && XBUFFER (XWINDOW (position)->contents) != current_buffer)
+	{
+	  /* See comment above.  */
+	  record_unwind_current_buffer ();
+	  set_buffer_internal (XBUFFER (XWINDOW (position)->contents));
 	}
     }
 
@@ -2873,7 +2877,7 @@ You type        Translation\n\
 	    if (alternate_heading)
 	      {
 		insert_string (alternate_heading);
-		alternate_heading = 0;
+		alternate_heading = NULL;
 	      }
 
 	    bufend = push_key_description (translate[c], buf);
@@ -2900,9 +2904,7 @@ You type        Translation\n\
     }
 
   /* Print the (major mode) local map.  */
-  Lisp_Object start1 = Qnil;
-  if (!NILP (KVAR (current_kboard, Voverriding_terminal_local_map)))
-    start1 = KVAR (current_kboard, Voverriding_terminal_local_map);
+  Lisp_Object start1 = KVAR (current_kboard, Voverriding_terminal_local_map);
 
   if (!NILP (start1))
     {
@@ -3357,12 +3359,12 @@ syms_of_keymap (void)
   current_global_map = Qnil;
   staticpro (&current_global_map);
 
-  exclude_keys = pure_list
-    (pure_cons (build_pure_c_string ("DEL"), build_pure_c_string ("\\d")),
-     pure_cons (build_pure_c_string ("TAB"), build_pure_c_string ("\\t")),
-     pure_cons (build_pure_c_string ("RET"), build_pure_c_string ("\\r")),
-     pure_cons (build_pure_c_string ("ESC"), build_pure_c_string ("\\e")),
-     pure_cons (build_pure_c_string ("SPC"), build_pure_c_string (" ")));
+  exclude_keys = list
+    (Fcons (build_string ("DEL"), build_string ("\\d")),
+     Fcons (build_string ("TAB"), build_string ("\\t")),
+     Fcons (build_string ("RET"), build_string ("\\r")),
+     Fcons (build_string ("ESC"), build_string ("\\e")),
+     Fcons (build_string ("SPC"), build_string (" ")));
   staticpro (&exclude_keys);
 
   DEFVAR_LISP ("minibuffer-local-map", Vminibuffer_local_map,
@@ -3424,13 +3426,13 @@ that describe key bindings.  That is why the default is nil.  */);
   DEFSYM (Qmode_line, "mode-line");
 
   staticpro (&Vmouse_events);
-  Vmouse_events = pure_list (Qmenu_bar, Qtab_bar, Qtool_bar,
-			     Qtab_line, Qheader_line, Qmode_line,
-			     intern_c_string ("mouse-1"),
-			     intern_c_string ("mouse-2"),
-			     intern_c_string ("mouse-3"),
-			     intern_c_string ("mouse-4"),
-			     intern_c_string ("mouse-5"));
+  Vmouse_events = list (Qmenu_bar, Qtab_bar, Qtool_bar, Qtab_line,
+			Qheader_line, Qmode_line,
+			intern_c_string ("mouse-1"),
+			intern_c_string ("mouse-2"),
+			intern_c_string ("mouse-3"),
+			intern_c_string ("mouse-4"),
+			intern_c_string ("mouse-5"));
 
   /* Keymap used for minibuffers when doing completion.  */
   /* Keymap used for minibuffers when doing completion and require a match.  */

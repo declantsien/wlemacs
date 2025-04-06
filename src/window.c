@@ -106,6 +106,9 @@ Lisp_Object minibuf_window;
    shown as the selected window when the minibuffer is selected.  */
 Lisp_Object minibuf_selected_window;
 
+/* Non-nil means it is the window containing the last mouse movement.  */
+Lisp_Object last_mouse_window;
+
 /* Incremented for each window created.  */
 static EMACS_INT sequence_number;
 
@@ -1754,6 +1757,13 @@ function returns nil.  */)
   (Lisp_Object x, Lisp_Object y, Lisp_Object frame)
 {
   struct frame *f = decode_live_frame (frame);
+
+  CHECK_INTEGER (x);
+  CHECK_INTEGER (y);
+
+  if (XFIXNUM (x) < 0 || XFIXNUM (x) > FRAME_PIXEL_WIDTH (f)
+      || XFIXNUM (y) < 0 || XFIXNUM (y) > FRAME_PIXEL_HEIGHT (f))
+    return Qnil;
 
   CHECK_NUMBER (x);
   CHECK_NUMBER (y);
@@ -8778,6 +8788,8 @@ init_window_once (void)
 
   minibuf_selected_window = Qnil;
   staticpro (&minibuf_selected_window);
+  last_mouse_window = Qnil;
+  staticpro (&last_mouse_window);
   old_selected_window = Qnil;
   staticpro (&old_selected_window);
 
@@ -8796,6 +8808,7 @@ static void init_window_once_for_pdumper (void)
   PDUMPER_RESET_LV (selected_window, Qnil);
   PDUMPER_RESET_LV (Vwindow_list, Qnil);
   PDUMPER_RESET_LV (minibuf_selected_window, Qnil);
+  PDUMPER_RESET_LV (last_mouse_window, Qnil);
 
   /* Hack: if mode_line_in_non_selected_windows is true (which it may
      be, if we're restoring from a dump) the guts of

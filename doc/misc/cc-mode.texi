@@ -582,7 +582,7 @@ you are going to be editing AWK files, @file{README} describes how to
 configure your (X)Emacs so that @ccmode{} will supersede the obsolete
 @code{awk-mode.el} which might have been supplied with your (X)Emacs.
 @ccmode{} might not work with older versions of Emacs or XEmacs.  See
-the @ccmode{} release notes at @uref{https://cc-mode.sourceforge.net}
+the @ccmode{} release notes at @uref{https://www.nongnu.org/cc-mode/}
 for the latest information on Emacs version and package compatibility
 (@pxref{Updating CC Mode}).
 
@@ -3190,11 +3190,11 @@ margins of the texts kept intact:
 @cindex Filladapt mode
 It's also possible to use other adaptive filling packages, notably Kyle
 E. Jones' Filladapt package@footnote{It's available from
-@uref{http://www.wonderworks.com/}.  As of version 2.12, it does however
+@uref{https://elpa.gnu.org/packages/filladapt.html}.  As of version 2.12, it does however
 lack a feature that makes it work suboptimally when
 @code{c-comment-prefix-regexp} matches the empty string (which it does
 by default).  A patch for that is available from
-@uref{https://cc-mode.sourceforge.net/,, the CC Mode web site}.},
+@uref{https://www.nongnu.org/cc-mode/,, the CC Mode web site}.},
 @c 2005/11/22:  The above is still believed to be the case.
 which handles things like bulleted lists nicely.  There's a convenience
 function @code{c-setup-filladapt} that tunes the relevant variables in
@@ -4188,7 +4188,7 @@ position of a later line.  Instead, that anchor position is the latest
 line at the same level of nesting before the labeled line without a
 leading label or comment.  If there is no such line, the latest line
 containing an enclosing opening brace or parenthesis, which doesn't
-start with a label or comment, provides the anchor postion.  In this
+start with a label or comment, provides the anchor position.  In this
 case extra syntactic element(s) with syntactic symbol
 @code{defun-block-intro}, @code{statement-block-intro}, or some other
 ``-intro'' symbol are inserted into the syntactic context to allow the
@@ -4316,6 +4316,9 @@ annotations.  @ref{Java Symbols}.
 First line in a member initialization list.  @ref{Class Symbols}.
 @item member-init-cont
 Subsequent member initialization list lines.  @ref{Class Symbols}.
+@item class-field-cont
+Lines continuing the first line inside a class/struct etc. definition.
+@ref{Class Symbols}.
 @item inher-intro
 First line of a multiple inheritance list.  @ref{Class Symbols}.
 @item inher-cont
@@ -4668,6 +4671,25 @@ elements:
 
 The @code{friend} and @code{inline-open} syntactic symbols are
 modifiers that do not have anchor positions.
+
+@ssindex class-field-cont
+In the following example, line 1 gets the syntax @code{topmost-intro},
+and line 2 @code{((inclass 1) (topmost-intro 1))} as expected.  Lines
+3, 4, and 5 are given the syntax @code{(class-field-cont 18 12)}
+rather than @code{topmost-intro-cont}.  This makes it easier to indent
+several comma separated fields with respect to their defining type,
+when @code{topmost-intro-cont} would tend to leave elements directly
+underneath their type.  @xref{Function Symbols}.  The anchor points are
+the positions of the type and the enclosing class's brace.
+
+@example
+ 1. struct foo @{
+ 2.     long
+ 3.         a,
+ 4.         b,
+ 5.         c;
+ 6. @};
+@end example
 
 @ssindex template-args-cont
 Template definitions introduce yet another syntactic symbol:
@@ -7531,7 +7553,7 @@ caches syntactic information much better, so that the delay caused by
 searching for such a brace when it's not in column 0 is minimal,
 except perhaps when you've just moved a long way inside the file.
 
-@findex defun-prompt-regexp
+@vindex defun-prompt-regexp
 @vindex c-Java-defun-prompt-regexp
 @vindex Java-defun-prompt-regexp @r{(c-)}
 A special note about @code{defun-prompt-regexp} in Java mode: The common
@@ -7804,7 +7826,7 @@ have old versions of @ccmode{} and so should be upgraded.  Access to the
 compatibility, etc.@: are all available on the web site:
 
 @quotation
-@uref{https://cc-mode.sourceforge.net/}
+@uref{https://www.nongnu.org/cc-mode/}
 @end quotation
 
 
@@ -7838,7 +7860,7 @@ the GNU Bug Tracker at @url{https://debbugs.gnu.org}, then sends it on
 to @email{bug-cc-mode@@gnu.org}.  You can also send reports, other
 questions, and suggestions (kudos?@: @t{;-)} to that address.  It's a
 mailing list which you can join or browse an archive of; see the web site at
-@uref{https://cc-mode.sourceforge.net/} for further details.
+@uref{https://www.nongnu.org/cc-mode/} for further details.
 
 @cindex announcement mailing list
 If you want to get announcements of new @ccmode{} releases, send the

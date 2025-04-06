@@ -30,6 +30,7 @@
 
 (eval-when-compile (require 'cl-lib))
 
+(declare-function widget-apply "wid-edit" (widget property &rest args))
 (declare-function widget-convert "wid-edit" (type &rest args))
 
 ;;; From compile.el
@@ -177,7 +178,7 @@ changes."
 (defvar next-error-highlight-timer nil)
 
 (defvar next-error-overlay-arrow-position nil)
-(put 'next-error-overlay-arrow-position 'overlay-arrow-string (purecopy "=>"))
+(put 'next-error-overlay-arrow-position 'overlay-arrow-string "=>")
 (add-to-list 'overlay-arrow-variable-list 'next-error-overlay-arrow-position)
 
 (defvar next-error-last-buffer nil
@@ -2275,7 +2276,7 @@ This is used by the \\<minibuffer-local-must-match-map>\\[execute-extended-comma
   "Minor mode used for completion in `read-extended-command'.")
 
 (defun read-extended-command (&optional prompt)
-  "Read command name to invoke via `execute-extended-command'.
+  "Read and return name of command to invoke via `execute-extended-command'.
 Use `read-extended-command-predicate' to determine which commands
 to include among completion candidates.
 
@@ -3234,8 +3235,7 @@ Return 0 if current buffer is not a minibuffer."
 ;; isearch minibuffer history
 (add-hook 'minibuffer-setup-hook 'minibuffer-history-isearch-setup)
 
-(defvar minibuffer-history-isearch-message-overlay)
-(make-variable-buffer-local 'minibuffer-history-isearch-message-overlay)
+(defvar-local minibuffer-history-isearch-message-overlay)
 
 (defun minibuffer-history-isearch-setup ()
   "Set up a minibuffer for using isearch to search the minibuffer history.
@@ -3379,9 +3379,6 @@ the minibuffer contents."
                                minibuffer-prompt-properties))))
 
 
-;Put this on C-x u, so we can force that rather than C-_ into startup msg
-(define-obsolete-function-alias 'advertised-undo 'undo "23.2")
-
 (defconst undo-equiv-table (make-hash-table :test 'eq :weakness t)
   "Table mapping redo records to the corresponding undo one.
 A redo record for an undo in region maps to `undo-in-region'.
@@ -4272,7 +4269,7 @@ which is defined in the `warnings' library.\n")
 Maximum length of the history list is determined by the value
 of `history-length', which see.")
 
-(defvar shell-command-switch (purecopy "-c")
+(defvar shell-command-switch "-c"
   "Switch used to have the shell execute its command line argument.")
 
 (defvar shell-command-default-error-buffer nil
@@ -4314,7 +4311,7 @@ after the default value."
   "Keymap used for completing shell commands in minibuffer.")
 
 (defun read-shell-command (prompt &optional initial-contents hist &rest args)
-  "Read a shell command from the minibuffer.
+  "Read a shell command from the minibuffer, and return it as a string.
 The arguments are the same as the ones of `read-from-minibuffer',
 except READ and KEYMAP are missing and HIST defaults
 to `shell-command-history'."
@@ -4718,6 +4715,9 @@ impose the use of a shell (with its need to quote arguments)."
 	      (with-current-buffer buffer
                 (shell-command-save-pos-or-erase)
 		(setq default-directory directory)
+                ;; There could be left connection-local values.  (Bug#76888)
+                (kill-local-variable 'shell-file-name)
+                (kill-local-variable 'shell-command-switch)
                 (require 'shell)
                 (let ((process-environment
                        (append
@@ -5230,10 +5230,8 @@ File name handlers might not support pty association, if PROGRAM is nil."
 
 (defvar process-menu-query-only nil)
 
-(defvar process-menu-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [?d] 'process-menu-delete-process)
-    map))
+(defvar-keymap process-menu-mode-map
+  "d" #'process-menu-delete-process)
 
 (define-derived-mode process-menu-mode tabulated-list-mode "Process Menu"
   "Major mode for listing the processes called by Emacs."
@@ -6464,7 +6462,8 @@ variable to determine how strings should be escaped."
 (defvar read-from-kill-ring-history)
 (defun read-from-kill-ring (prompt)
   "Read a `kill-ring' entry using completion and minibuffer history.
-PROMPT is a string to prompt with."
+PROMPT is a string to prompt with.
+Return the entry as a string."
   ;; `current-kill' updates `kill-ring' with a possible interprogram-paste
   (current-kill 0)
   (let* ((history-add-new-input nil)
@@ -6947,7 +6946,7 @@ START and END specify the portion of the current buffer to be copied."
       (save-excursion
 	(insert-buffer-substring oldbuf start end)))))
 
-(define-error 'mark-inactive (purecopy "The mark is not active now"))
+(define-error 'mark-inactive "The mark is not active now")
 
 (defvar activate-mark-hook nil
   "Hook run when the mark becomes active.
@@ -7456,26 +7455,48 @@ Does not set point.  Does nothing if mark ring is empty."
     (pop mark-ring))
   (deactivate-mark))
 
+(defcustom exchange-point-and-mark-highlight-region t
+  "Activate region when exchanging point and mark.
+
+When set to nil, this modifies `exchange-point-and-mark' so that it
+doesn't activate the mark if it is not already active, except when there
+is a prefix argument.  Setting this variable to nil effectively swaps
+the meanings of the presence and absence of a prefix argument to
+`exchange-point-and-mark'.
+
+This variable has no effect when Transient Mark mode is off."
+  :type 'boolean
+  :group 'editing-basics
+  :version "31.1")
+
 (defun exchange-point-and-mark (&optional arg)
   "Put the mark where point is now, and point where the mark is now.
-This command works even when the mark is not active,
-and it reactivates the mark.
+This command works even when the mark is not active, and it reactivates
+the mark unless `exchange-point-and-mark-highlight-region' is nil.
 
-If Transient Mark mode is on, a prefix ARG deactivates the mark
-if it is active, and otherwise avoids reactivating it.  If
-Transient Mark mode is off, a prefix ARG enables Transient Mark
-mode temporarily."
+If Transient Mark mode is on, a prefix ARG deactivates the mark if it is
+active, and otherwise avoids reactivating it.  However, if
+`exchange-point-and-mark-highlight-region' is nil, then using a prefix
+argument does reactivate the mark; effectively, when Transient Mark mode
+is on, setting `exchange-point-and-mark-highlight-region' to nil swaps
+the meanings of the presence and absence of a prefix argument.
+
+If Transient Mark mode is off, a prefix ARG enables Transient Mark mode
+temporarily."
   (interactive "P")
   (let ((omark (mark t))
+        (region-was-active (region-active-p))
 	(temp-highlight (eq (car-safe transient-mark-mode) 'only)))
     (if (null omark)
         (user-error "No mark set in this buffer"))
     (set-mark (point))
     (goto-char omark)
-    (or temp-highlight
-        (cond ((xor arg (not (region-active-p)))
-	       (deactivate-mark))
-	      (t (activate-mark))))
+    (cond (temp-highlight)
+          ((xor arg (if exchange-point-and-mark-highlight-region
+                        (not (region-active-p))
+                      (not region-was-active)))
+	   (deactivate-mark))
+	  (t (activate-mark)))
     nil))
 
 (defcustom shift-select-mode t
@@ -9263,9 +9284,9 @@ if long lines are truncated."
   (message "Word wrapping %s"
 	   (if word-wrap "enabled" "disabled")))
 
-(defvar overwrite-mode-textual (purecopy " Ovwrt")
+(defvar overwrite-mode-textual " Ovwrt"
   "The string displayed in the mode line when in overwrite mode.")
-(defvar overwrite-mode-binary (purecopy " Bin Ovwrt")
+(defvar overwrite-mode-binary " Bin Ovwrt"
   "The string displayed in the mode line when in binary overwrite mode.")
 
 (define-minor-mode overwrite-mode
@@ -9622,11 +9643,11 @@ More precisely, a char with closeparen syntax is self-inserted.")
 	     ;; Verify an even number of quoting characters precede the close.
              ;; FIXME: Also check if this parenthesis closes a comment as
              ;; can happen in Pascal and SML.
-	     (= 1 (logand 1 (- (point)
-			       (save-excursion
-				 (forward-char -1)
-				 (skip-syntax-backward "/\\")
-				 (point))))))
+	     (oddp (- (point)
+		      (save-excursion
+			(forward-char -1)
+			(skip-syntax-backward "/\\")
+			(point)))))
     (funcall blink-paren-function)))
 
 (put 'blink-paren-post-self-insert-function 'priority 100)
@@ -10256,7 +10277,7 @@ The optional argument PT defaults to (point)."
   (when (cond
          ((and (/= pt (point-max))
                (get-text-property pt 'completion--string))
-          (cl-incf pt))
+          (incf pt))
          ((and (/= pt (point-min))
                (get-text-property (1- pt) 'completion--string))))
     (setq pt (or (previous-single-property-change pt 'completion--string) pt))
@@ -10455,10 +10476,12 @@ Called from `temp-buffer-show-hook'."
                 (buffer-substring (minibuffer-prompt-end) (point)))))))
     (with-current-buffer standard-output
       (let ((base-position completion-base-position)
-            (insert-fun completion-list-insert-choice-function))
+            (insert-fun completion-list-insert-choice-function)
+            (lazy-button completions--lazy-insert-button))
         (completion-list-mode)
         (when completions-highlight-face
           (setq-local cursor-face-highlight-nonselected-window t))
+        (setq-local completions--lazy-insert-button lazy-button)
         (setq-local completion-base-position base-position)
         (setq-local completion-list-insert-choice-function insert-fun))
       (setq-local completion-reference-buffer mainbuf)
@@ -10504,6 +10527,7 @@ to move point between completions.\n\n")))))))
                           (progn (minibuffer-completion-help)
                                  (get-buffer-window "*Completions*" 0)))))
     (select-window window)
+    (completion--lazy-insert-strings)
     (when (bobp)
       (cond
        ((and (memq this-command '(completion-at-point minibuffer-complete))
@@ -10999,11 +11023,9 @@ and setting it to nil."
     (setq buffer-invisibility-spec nil)))
 
 
-(defvar messages-buffer-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map special-mode-map)
-    (define-key map "g" nil)            ; nothing to revert
-    map))
+(defvar-keymap messages-buffer-mode-map
+  :parent special-mode-map
+  "g" nil) ; nothing to revert
 
 (define-derived-mode messages-buffer-mode special-mode "Messages"
   "Major mode used in the \"*Messages*\" buffer."
@@ -11249,7 +11271,9 @@ too short to have a dst element.
           (when initial-scratch-message
             (insert (substitute-command-keys initial-scratch-message))
             (set-buffer-modified-p nil))
-          (funcall initial-major-mode))
+          (funcall initial-major-mode)
+          (when (eq initial-major-mode 'lisp-interaction-mode)
+            (setq-local trusted-content :all)))
         scratch)))
 
 (defun scratch-buffer ()
@@ -11286,7 +11310,9 @@ killed."
   (string= string ""))
 
 (defun read-signal-name ()
-  "Read a signal number or name."
+  "Read a signal number or name.
+Return the signal number, if the user entered a number, otherwise
+the signal symbol."
   (let ((value
          (completing-read "Signal code or name: "
                           (signal-names)

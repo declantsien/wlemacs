@@ -2654,7 +2654,7 @@ unwind_create_tip_frame (Lisp_Object frame)
    when this happens.  */
 
 static Lisp_Object
-x_create_tip_frame (struct pgtk_display_info *dpyinfo, Lisp_Object parms, struct frame *p)
+pgtk_create_tip_frame (struct pgtk_display_info *dpyinfo, Lisp_Object parms, struct frame *p)
 {
   struct frame *f;
   Lisp_Object frame;
@@ -2917,8 +2917,8 @@ compute_tip_xy (struct frame *f, Lisp_Object parms, Lisp_Object dx,
 
   /* Move the tooltip window where the mouse pointer is.  Resize and
      show it.  */
-  if ((!INTEGERP (left) && !INTEGERP (right))
-      || (!INTEGERP (top) && !INTEGERP (bottom)))
+  if ((!FIXNUMP (left) && !FIXNUMP (right))
+      || (!FIXNUMP (top) && !FIXNUMP (bottom)))
     {
       Lisp_Object frame, attributes, monitor, geometry;
       GdkSeat *seat =
@@ -2967,9 +2967,9 @@ compute_tip_xy (struct frame *f, Lisp_Object parms, Lisp_Object dx,
       max_y = pgtk_display_pixel_height (FRAME_DISPLAY_INFO (f));
     }
 
-  if (INTEGERP (top))
+  if (FIXNUMP (top))
     *root_y = XFIXNUM (top);
-  else if (INTEGERP (bottom))
+  else if (FIXNUMP (bottom))
     *root_y = XFIXNUM (bottom) - height;
   else if (*root_y + XFIXNUM (dy) <= min_y)
     *root_y = min_y;		/* Can happen for negative dy */
@@ -2983,9 +2983,9 @@ compute_tip_xy (struct frame *f, Lisp_Object parms, Lisp_Object dx,
     /* Put it on the top.  */
     *root_y = min_y;
 
-  if (INTEGERP (left))
+  if (FIXNUMP (left))
     *root_x = XFIXNUM (left);
-  else if (INTEGERP (right))
+  else if (FIXNUMP (right))
     *root_x = XFIXNUM (right) - width;
   else if (*root_x + XFIXNUM (dx) <= min_x)
     *root_x = 0;		/* Can happen for negative dx */
@@ -3276,10 +3276,13 @@ Text larger than the specified size is clipped.  */)
 
       /* Create a frame for the tooltip, and record it in the global
 	 variable tip_frame.  */
-      if (NILP (tip_frame = x_create_tip_frame (FRAME_DISPLAY_INFO (f), parms, f)))
+      if (NILP ((tip_frame = pgtk_create_tip_frame (FRAME_DISPLAY_INFO (f),
+						    parms, f))))
 	/* Creating the tip frame failed.  */
 	return unbind_to (count, Qnil);
     }
+  else
+    tip_window = FRAME_X_WINDOW (XFRAME (tip_frame));
 
   tip_f = XFRAME (tip_frame);
   window = FRAME_ROOT_WINDOW (tip_f);
@@ -3895,7 +3898,7 @@ syms_of_pgtkfns (void)
 				 GTK_MAJOR_VERSION, GTK_MINOR_VERSION,
 				 GTK_MICRO_VERSION);
     int len = strlen (ver);
-    Vgtk_version_string = make_pure_string (ver, len, len, false);
+    Vgtk_version_string = make_specified_string (ver, len, len, false);
     g_free (ver);
   }
 
@@ -3909,7 +3912,7 @@ syms_of_pgtkfns (void)
 				 CAIRO_VERSION_MAJOR, CAIRO_VERSION_MINOR,
 				 CAIRO_VERSION_MICRO);
     int len = strlen (ver);
-    Vcairo_version_string = make_pure_string (ver, len, len, false);
+    Vcairo_version_string = make_specified_string (ver, len, len, false);
     g_free (ver);
   }
 

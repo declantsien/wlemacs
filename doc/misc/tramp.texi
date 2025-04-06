@@ -101,6 +101,7 @@ For the developer:
 * GNU Free Documentation License:: The license for this documentation.
 * Function Index::              @value{tramp} functions.
 * Variable Index::              User options and variables.
+* Key Index::                   Key bindings for @value{tramp} commands.
 * Concept Index::               An item for each concept.
 
 @detailmenu
@@ -1154,7 +1155,8 @@ command to transfer is similar to the @option{scp} method.
 
 @command{rsync} performs much better than @command{scp} when
 transferring files that exist on both hosts.  However, this advantage
-is lost if the file exists only on one side of the connection.
+is lost if the file exists only on one side of the connection, during
+the first file transfer.
 
 This method supports the @samp{-p} argument.
 
@@ -2388,9 +2390,9 @@ to a remote home directory, like @option{adb}, @option{rclone} and
 @item @t{"tmpdir"}
 
 The temporary directory on the remote host.  If not specified, the
-default value is @t{"/data/local/tmp"} for the @option{adb} method,
-@t{"/C$/Temp"} for the @option{smb} method, and @t{"/tmp"} otherwise.
-@xref{Temporary directory}.
+default value is @t{"/data/local/tmp"} for the @option{adb} and
+@option{androidsu} methods, @t{"/C$/Temp"} for the @option{smb}
+method, and @t{"/tmp"} otherwise.  @xref{Temporary directory}.
 
 @item @t{"posix"}
 
@@ -3370,8 +3372,8 @@ Another option is to create better backup file naming with user and
 host names prefixed to the file name.  For example, transforming
 @file{/etc/secretfile} to
 @file{~/.emacs.d/backups/!su:root@@localhost:!etc!secretfile}, set the
-@value{tramp} user option @code{tramp-backup-directory-alist} from
-the existing user option @code{backup-directory-alist}.
+@value{tramp} user option @code{tramp-backup-directory-alist} from the
+existing user option @code{backup-directory-alist}.
 
 Then @value{tramp} backs up to a file name that is transformed with a
 prefix consisting of the DIRECTORY name.  This file name prefixing
@@ -3393,10 +3395,12 @@ Example:
 The backup file name of
 @file{@trampfn{su,root@@localhost,/etc/secretfile}} would be
 @ifset unified
-@file{@trampfn{su,root@@localhost,~/.emacs.d/backups/!su:root@@localhost:!etc!secretfile~}}.
+@file{@trampfn{su,root@@localhost,~/.emacs.d/backups/@c
+!su:root@@localhost:!etc!secretfile~}}.
 @end ifset
 @ifset separate
-@file{@trampfn{su,root@@localhost,~/.emacs.d/backups/![su!root@@localhost]!etc!secretfile~}}.
+@file{@trampfn{su,root@@localhost,~/.emacs.d/backups/@c
+![su!root@@localhost]!etc!secretfile~}}.
 @end ifset
 
 @vindex auto-save-file-name-transforms
@@ -3795,7 +3799,18 @@ completion lists.  If you want to suppress this completion because
 there are invalid entries in the persistency file, for example if the
 host configuration changes often, or if you plug your laptop to
 different networks frequently, you can set the user option
-@code{tramp-completion-use-cache} to @code{nil}.
+@code{tramp-completion-use-cache} to @code{nil}.  This is set per
+default for all container-based methods, like @option{docker} or
+@option{podman}.  If you want to suppress this for other connections,
+you can use the connection property @t{"completion-use-cache"},
+@xref{Predefined connection information}.  Example:
+
+@lisp
+@group
+(add-to-list 'tramp-connection-properties
+             (list "^/sshfs:" "completion-use-cache" nil))
+@end group
+@end lisp
 
 After remote host name completion comes completion of file names on
 the remote host.  It works the same as with local host file completion
@@ -3846,15 +3861,21 @@ ssh@value{postfixhop}you@@remotehost@value{postfix}/path @key{RET}}
 
 Each involved method must be an inline method (@pxref{Inline methods}).
 
-@value{tramp} adds the ad-hoc definitions on the fly to
-@code{tramp-default-proxies-alist} and is available for reuse during
-that Emacs session.  Subsequent @value{tramp} connections to the same
-remote host can then use the shortcut form:
-@samp{@trampfn{ssh,you@@remotehost,/path}}.
+@value{tramp} adds the ad-hoc definitions as an ephemeral record to
+@code{tramp-default-proxies-alist}, which are available for reuse
+during that Emacs session.  Subsequent @value{tramp} connections to
+the same remote host can then use the abbreviated form
+@file{@trampfn{ssh,you@@remotehost,/path}}.
 
+@anchor{tramp-show-ad-hoc-proxies}
 @defopt tramp-show-ad-hoc-proxies
 If this user option is non-@code{nil}, ad-hoc definitions are kept in
-remote file names instead of showing the shortcuts.
+remote file names instead of showing the abbreviations.  This is
+useful if the ad-hoc proxy definition shall be used in further Emacs
+sessions, kept in configuration files of recentf and other packages.
+
+A non-@code{nil} setting of this option has effect only if set before
+the connection is established.
 
 @lisp
 (customize-set-variable 'tramp-show-ad-hoc-proxies t)
@@ -3865,10 +3886,18 @@ Ad-hoc definitions are removed from @code{tramp-default-proxies-alist}
 via the command @kbd{M-x tramp-cleanup-all-connections @key{RET}}
 (@pxref{Cleanup remote connections}).
 
+@anchor{tramp-save-ad-hoc-proxies}
 @defopt tramp-save-ad-hoc-proxies
 For ad-hoc definitions to be saved automatically in
 @code{tramp-default-proxies-alist} for future Emacs sessions, set
-@code{tramp-save-ad-hoc-proxies} to non-@code{nil}.
+@code{tramp-save-ad-hoc-proxies} to non-@code{nil}.  The resulting
+user option @code{tramp-default-proxies-alist} is saved in your
+@file{.emacs} file.
+
+If you use saved configuration files with abbreviated ad-hoc proxy
+definitions on another host, for example by distribution of the
+@code{recentf-save-file}, you must distribute your @file{.emacs} file
+as well.
 
 @lisp
 (customize-set-variable 'tramp-save-ad-hoc-proxies t)
@@ -3900,23 +3929,30 @@ containers on the remote host.
 
 A common use case for ad-hoc specifications is to visit a file or a
 directory with proper permissions, for example with the @option{sudo}
-method.  The command @code{tramp-revert-buffer-with-sudo} supports
-this.
+method.  The commands @code{tramp-revert-buffer-with-sudo} (@kbd{C-x x
+@@}), and @code{tramp-dired-find-file-with-sudo} (@kbd{@@} in
+@code{dired-mode}) support this.
 
+@kindex C-x x @@
 @deffn Command tramp-revert-buffer-with-sudo
-This command shows the current buffer with @option{sudo} permissions.
-The buffer must either visit a file, or a directory
-(@code{dired-mode}).
+This command visits the current buffer with @option{sudo} permissions.
+The buffer must either visit a file, or a directory in @code{dired-mode}.
+@end deffn
+
+@kindex @@ @r{(in dired})
+@deffn Command tramp-dired-find-file-with-sudo
+In @code{dired-mode}, visit the file or directory named on this line.
+This is performed with @option{sudo} permissions.
 @end deffn
 
 @defopt tramp-file-name-with-method
-The method @code{tramp-revert-buffer-with-sudo} shows an alternate
-buffer.  It defaults to @option{sudo}, other valid methods are
-@option{su}, @option{doas}, @option{run0}, and @option{ksu}.
+The method used in @code{tramp-revert-buffer-with-sudo} and
+@code{tramp-dired-find-file-with-sudo}.  It defaults to @option{sudo},
+other valid methods are @option{su}, @option{doas}, @option{run0}, and
+@option{ksu}.
 
-@lisp
-(customize-set-variable 'tramp-file-name-with-method "doas")
-@end lisp
+If a command is called with a prefix argument @kbd{C-u}, the option's
+value is read interactively.
 @end defopt
 
 These methods apply the user @samp{root} as default.  If another user
@@ -4690,7 +4726,9 @@ It cannot be killed via @code{interrupt-process}.
 It does not report the remote terminal name via @code{process-tty-name}.
 
 @item
-It does not set process property @code{remote-pid}.
+It does not set process property @code{remote-pid}.  Consequently,
+signals cannot be sent to that remote process; they are sent to the
+local process instead, which establishes the connection.
 
 @item
 It fails, when the command is too long.  This can happen on
@@ -4711,6 +4749,15 @@ connection sharing}.
 by the connection property @t{"direct-async-process"}.  This is still
 supported but deprecated, and it will be removed in a future
 @value{tramp} version.
+
+@strong{Note}: For the @option{ssh} and @option{scp} methods,
+@value{tramp} does not faithfully pass binary sequences on to the
+process.  You can change this by changing the respective connection
+argument (@pxref{Predefined connection information}) via
+
+@lisp
+(add-to-list 'tramp-connection-properties (list "/ssh:" "direct-async" t))
+@end lisp
 
 
 @node Cleanup remote connections
@@ -4755,13 +4802,13 @@ proxy definitions (@pxref{Ad-hoc multi-hops}).
 
 @deffn Command tramp-cleanup-all-buffers
 Just as for @code{tramp-cleanup-all-connections}, all remote
-connections and ad-hoc proxy definition are cleaned up in addition to
+connections and ad-hoc proxy definitions are cleaned up in addition to
 killing all buffers related to remote connections.
 @end deffn
 
 @deffn Command tramp-cleanup-some-buffers
 Similar to @code{tramp-cleanup-all-buffers}, where all remote
-connections and ad-hoc proxy definition are cleaned up.  However,
+connections and ad-hoc proxy definitions are cleaned up.  However,
 additional buffers are killed only if one of the functions in
 @code{tramp-cleanup-some-buffers-hook} returns @code{t}.
 @end deffn
@@ -4772,6 +4819,18 @@ killed when @code{tramp-cleanup-some-buffers} is called.  Per default,
 remote buffers which are linked to a remote file, remote @code{dired}
 buffers, and buffers related to a remote process are cleaned up.
 @end defopt
+
+@deffn Command tramp-cleanup-bufferless-connections
+Similar to @code{tramp-cleanup-all-connections}, remote connections and
+ad-hoc proxy definitions are flushed, but limited to those connections
+for which no associated buffers exist (except for Tramp internal
+buffers).
+
+This command is helpful to prune connections after you close remote-file
+buffers without having to either cherry pick via
+@code{tramp-cleanup-connection} or clear them all via
+@code{tramp-cleanup-all-connections}.
+@end deffn
 
 
 @node Renaming remote files
@@ -6040,18 +6099,30 @@ Thanks to @value{tramp} users for contributing to these recipes.
 
 
 @item
-Why saved multi-hop file names do not work in a new Emacs session?
+Why don't saved ad-hoc multi-hop file names work in a new Emacs session?
 
-When saving ad-hoc multi-hop @value{tramp} file names (@pxref{Ad-hoc
-multi-hops}) via bookmarks, recent files, filecache, bbdb, or another
-package, use the full ad-hoc file name including all hops, like
-@file{@trampfn{ssh,bird@@bastion|ssh@value{postfixhop}@c
-news.my.domain,/opt/news/etc}}.
+By default, ad-hoc multi-hop file names are abbreviated after
+completing the initial connection.  These abbreviated forms retain
+only the final hop, and so only the Emacs session that generated the
+abbreviated form can understand it.  @xref{Ad-hoc multi-hops}.
 
-Alternatively, when saving abbreviated multi-hop file names
-@file{@trampfn{ssh,news@@news.my.domain,/opt/news/etc}}, the user
-option @code{tramp-save-ad-hoc-proxies} must be set non-@code{nil}
-value.
+For example, after connecting to @file{@trampfn{ssh,bird@@bastion|@c
+ssh@value{postfixhop}news@@news.my.domain,/opt/news/etc}}, the file
+name becomes @file{@trampfn{ssh,news@@news.my.domain,/opt/news/etc}}.
+If the abbreviated form is saved in a bookmark, the recent files list,
+bbdb, or similar, a new Emacs session has no way to know that the
+connection must go through @samp{bird@@bastion} first.
+
+There are two mechanisms to deal with this.  The first is to customize
+@code{tramp-show-ad-hoc-proxies} to a non-@code{nil} value, which
+disables abbreviation.  Then the fully-qualified ad-hoc multi-hop file
+name is the one that will be both displayed and saved.
+@xref{tramp-show-ad-hoc-proxies}.
+
+Alternatively, you can customize @code{tramp-save-ad-hoc-proxies} to a
+non-@code{nil} value which means to save the information how an
+abbreviated multi-hop file name can be expanded.
+@xref{tramp-save-ad-hoc-proxies}.
 
 
 @item
@@ -6227,7 +6298,7 @@ as above in your @file{~/.emacs}:
 @item
 I get an error @samp{unix_listener: path
 "/very/long/path/.cache/emacs/tramp.XXX" too long for Unix domain
-socket} when connectiong via @option{ssh} to a remote host.
+socket} when connecting via @option{ssh} to a remote host.
 
 @vindex small-temporary-file-directory
 By default, @value{tramp} uses the directory @file{~/.cache/emacs/}
@@ -6698,6 +6769,15 @@ the following settings are required:
 @end group
 @end lisp
 
+@vindex warning-suppress-types
+@value{tramp} warnings are displayed in the @file{*Warnings*} buffer,
+which pops up.  If you don't want to see this buffer for every
+@value{tramp} warning, set @code{warning-suppress-types}:
+
+@lisp
+(setq warning-suppress-types '((tramp)))
+@end lisp
+
 If @code{tramp-verbose} is greater than or equal to 10, Lisp
 backtraces are also added to the @value{tramp} debug buffer in case of
 errors.
@@ -6738,6 +6818,11 @@ maintainers, analyzing the remote commands for performance analysis.
 @node Variable Index
 @unnumbered Variable Index
 @printindex vr
+
+
+@node Key Index
+@unnumbered Key Index
+@printindex ky
 
 
 @node Concept Index

@@ -1955,7 +1955,7 @@ of NEW (without destroying existing markers), swapping their text
 objects, and finally killing buffer ORIGINAL."
   (with-current-buffer original
     (let ((inhibit-read-only t))
-      (replace-buffer-contents new)))
+      (replace-region-contents (point-min) (point-max) new)))
   (with-current-buffer new
     (buffer-swap-text original))
   (kill-buffer original))
@@ -2461,12 +2461,19 @@ Unlike `vc-find-revision-save', doesn't save the buffer to the file."
                 (goto-char (point-min))
                 (if buffer
                     ;; For non-interactive, skip any questions
-                    (let ((enable-local-variables :safe) ;; to find `mode:'
+                    (let ((enable-local-variables
+                           (if (memq enable-local-variables '(:safe :all nil))
+                               enable-local-variables
+                             ;; Ignore other values that query,
+                             ;; use `:safe' to find `mode:'.
+                             :safe))
                           (buffer-file-name file))
                       ;; Don't run hooks that might assume buffer-file-name
                       ;; really associates buffer with a file (bug#39190).
                       (ignore-errors (delay-mode-hooks (set-auto-mode))))
-                  (normal-mode))
+                  ;; Use non-nil 'find-file' arg of 'normal-mode'
+                  ;; to not ignore 'enable-local-variables' when nil.
+                  (normal-mode (not enable-local-variables)))
 	        (set-buffer-modified-p nil)
                 (setq buffer-read-only t)
                 (setq failed nil))
@@ -2817,7 +2824,7 @@ or if PL-RETURN is `limit-unsupported'."
     (let ((entries 0))
       (goto-char (point-min))
       (while (re-search-forward log-view-message-re nil t)
-        (cl-incf entries))
+        (incf entries))
       (if (or (stringp limit)
               (< entries limit))
           ;; The log has been printed in full.  Perhaps it started
@@ -3236,14 +3243,21 @@ to the working revision (except for keyword expansion)."
     ;; show the changes and ask for confirmation to discard them.
     (when (or (not files) (memq (buffer-file-name) files))
       (vc-buffer-sync nil))
-    (dolist (file files)
-      (let ((buf (get-file-buffer file)))
-	(when (and buf (buffer-modified-p buf))
-	  (error "Please kill or save all modified buffers before reverting")))
-      (when (vc-up-to-date-p file)
-	(if (yes-or-no-p (format "%s seems up-to-date.  Revert anyway? " file))
-	    (setq queried t)
-	  (error "Revert canceled"))))
+    (save-some-buffers nil (lambda ()
+                             (member (buffer-file-name) files)))
+    (let (needs-save)
+      (dolist (file files)
+        (let ((buf (get-file-buffer file)))
+	  (when (and buf (buffer-modified-p buf))
+            (push buf needs-save)))
+        (when (vc-up-to-date-p file)
+	  (if (yes-or-no-p (format "%s seems up-to-date.  Revert anyway? "
+                                   file))
+	      (setq queried t)
+	    (error "Revert canceled"))))
+      (when needs-save
+        (error "Cannot revert with these buffers unsaved: %s"
+               (string-join (mapcar #'buffer-name needs-save) ", "))))
     (unwind-protect
 	(when (if vc-revert-show-diff
 		  (progn
@@ -3381,14 +3395,19 @@ its name; otherwise return nil."
 	  backup-file)))))
 
 (defun vc-revert-file (file)
-  "Revert FILE back to the repository working revision it was based on."
+  "Revert FILE back to the repository working revision it was based on.
+If FILE is a directory, revert all files inside that directory."
   (with-vc-properties
    (list file)
-   (let ((backup-file (vc-version-backup-file file)))
+   (let* ((dir (file-directory-p file))
+          (backup-file (and (not dir) (vc-version-backup-file file))))
      (when backup-file
        (copy-file backup-file file 'ok-if-already-exists)
        (vc-delete-automatic-version-backups file))
-     (vc-call revert file backup-file))
+     (vc-call-backend (if dir
+                          (vc-responsible-backend file)
+                        (vc-backend file))
+                      'revert file backup-file))
    `((vc-state . up-to-date)
      (vc-checkout-time . ,(file-attribute-modification-time
 			   (file-attributes file)))))
@@ -3542,6 +3561,15 @@ buffer's file name if it's under version control."
   "Rename file OLD to NEW in both work area and repository.
 If called interactively, read OLD and NEW, defaulting OLD to the
 current buffer's file name if it's under version control."
+  ;; FIXME: Support renaming whole directories.
+  ;; The use of `vc-call' will need to change to something like
+  ;;
+  ;;     (vc-call-backend (if dir
+  ;;                          (vc-responsible-backend file)
+  ;;                        (vc-backend file))
+  ;;                      'rename-file old new)
+  ;;
+  ;; as was done in `vc-revert-file'; see bug#43464.  --spwhitton
   (interactive (list (read-file-name "VC rename file: " nil
                                      (when (vc-backend buffer-file-name)
                                        buffer-file-name) t)
@@ -3787,7 +3815,7 @@ marked revisions, use those."
                  "text/x-patch"
                  patch-subject
                  "attachment"
-                 (format "%04d-%s" (cl-incf i) filename))))))
+                 (format "%04d-%s" (incf i) filename))))))
         (open-line 2)))))
 
 (defun vc-default-responsible-p (_backend _file)

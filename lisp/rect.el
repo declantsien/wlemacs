@@ -456,6 +456,11 @@ With a prefix (or a FILL) argument, also fill too short lines."
   :version "25.1"
   :type 'boolean)
 
+(defcustom rectangle-indicate-zero-width-rectangle t
+  "If non-nil, make zero-width rectangles visible on display."
+  :version "31.1"
+  :type 'boolean)
+
 (defun rectangle--string-preview ()
   (when rectangle-preview
     (let ((str (minibuffer-contents)))
@@ -718,13 +723,13 @@ on.  Only lasts until the region is next deactivated."
            ((and (< nextcol curcol) (< curcol col))
             (let ((curdiff (- col curcol)))
               (if (<= curdiff n)
-                (progn (cl-decf n curdiff) (setq col curcol))
+                (progn (decf n curdiff) (setq col curcol))
                 (setq col (- col n) n 0))))
            ((< nextcol 0) (ding) (setq n 0 col 0)) ;Bumping into BOL!
            ((= nextcol curcol) (funcall cmd 1))
            (t ;; (> nextcol curcol)
             (if (<= diff n)
-                (progn (cl-decf n diff) (setq col nextcol))
+                (progn (decf n diff) (setq col nextcol))
               (setq col (if (< col nextcol) (+ col n) (- col n)) n 0))))
           (setq step (1+ step))))
       ;; FIXME: This rectangle--col-pos's move-to-column is wasted!
@@ -960,7 +965,8 @@ Ignores `line-move-visual'."
                         (overlay-put ol 'after-string str))))
                    ((overlay-get ol 'after-string)
                     (overlay-put ol 'after-string nil)))
-                  (when (and (= leftcol rightcol) (display-graphic-p))
+                  (when (and (= leftcol rightcol) (display-graphic-p)
+                             rectangle-indicate-zero-width-rectangle)
                     ;; Make zero-width rectangles visible!
                     (overlay-put ol 'after-string
                                  (concat (propertize

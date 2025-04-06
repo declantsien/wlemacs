@@ -254,7 +254,7 @@ interactive command."
       (setq fn (intern val)))
     ;; These error messages are intended to be less technical for the
     ;; `describe-command' case, as they are directed at users that are
-    ;; not necessarily ELisp programmers.
+    ;; not necessarily Elisp programmers.
     (unless (and fn (symbolp fn))
       (user-error (if want-command
                       "You didn't specify a command's symbol"
@@ -651,7 +651,8 @@ the C sources, too."
          (lambda (entry level)
            (when (symbolp map)
              (setq map (symbol-function map)))
-           (when-let* ((elem (assq entry (cdr map))))
+           (when-let* ((elem (assq entry (cdr map)))
+                       (_ (proper-list-p elem)))
              (when (> level 0)
                (push sep string))
              (if (eq (nth 1 elem) 'menu-item)
@@ -761,17 +762,24 @@ the C sources, too."
               (high-doc (cdr high)))
           (unless (and (symbolp function)
                        (get function 'reader-construct))
-            (insert high-usage "\n")
-            (when-let* ((gate help-display-function-type)
-                        (res (comp-function-type-spec function))
-                        (type-spec (car res))
-                        (kind (cdr res)))
-              (insert (format
-                       (if (eq kind 'inferred)
-                           "\nInferred type: %s\n"
-                         "\nDeclared type: %s\n")
-                       type-spec))))
+            (insert high-usage "\n"))
           (fill-region fill-begin (point))
+          (when-let* (help-display-function-type
+                      (res (comp-function-type-spec function))
+                      (type-spec (car res))
+                      (kind (cdr res)))
+            (insert (if (eq kind 'inferred)
+                        "\nInferred type:\n  "
+                      "\nDeclared type:\n  "))
+            (with-demoted-errors "%S"
+              (let ((beg (point)))
+                (pp type-spec (current-buffer))
+                ;; Put it on a single line if it fits.
+                (and (eql beg (+ 2 (line-beginning-position 0)))
+                     (save-excursion
+                       (forward-char -1)
+                       (<= (current-column) (- fill-column 12)))
+                     (replace-region-contents (- beg 3) beg " " 0)))))
           high-doc)))))
 
 (defun help-fns--parent-mode (function)
@@ -945,48 +953,6 @@ TYPE indicates the namespace and is `fun' or `var'."
                       (setq first version))))))))))
     (when first
       (make-text-button first nil 'type 'help-news 'help-args place))))
-
-;; (defun help-fns--check-first-releases ()
-;;   "Compare the old liberal regexp to the new more restrictive one."
-;;   (interactive)
-;;   (let* ((quoted nil)
-;;          (rx-fun (lambda (orig-fun symbol)
-;;                    (if quoted
-;;                        (funcall orig-fun symbol)
-;;                      (format "\\_<%s\\_>"
-;;                              (regexp-quote (symbol-name symbol))))))
-;;          (count
-;;           (let ((count 0))
-;;             (obarray-map (lambda (sym)
-;;                            (when (or (fboundp sym) (boundp sym))
-;;                              (cl-incf count)))
-;;                          obarray)
-;;             count))
-;;          (p (make-progress-reporter "Check first releases..." 0 count)))
-;;     (with-current-buffer (get-buffer-create "*Check-first-release*")
-;;       (unwind-protect
-;;           (progn
-;;             (advice-add 'help-fns--first-release-regexp :around rx-fun)
-;;             (erase-buffer)
-;;             (setq count 0)
-;;             (obarray-map
-;;              (lambda (sym)
-;;                (when (or (fboundp sym) (boundp sym))
-;;                  (cl-incf count)
-;;                  (progress-reporter-update p count)
-;;                  (let ((vt (progn (setq quoted t)
-;;                                   (help-fns--first-release sym)))
-;;                        (vnil (progn (setq quoted nil)
-;;                                     (help-fns--first-release sym))))
-;;                    (when (and vnil (not (equal vt vnil)))
-;;                      (insert (symbol-name sym)
-;;                              "\nnot-quoted: " (or vnil "nil")
-;;                              "\nquoted:     " (or vt "nil")
-;;                              "\n\n")))))
-;;              obarray)
-;;             (progress-reporter-done p))
-;;         (advice-remove 'help-fns--first-release-regexp rx-fun))
-;;       (display-buffer (current-buffer)))))
 
 (add-hook 'help-fns-describe-function-functions
           #'help-fns--mention-first-function-release)
@@ -1291,7 +1257,9 @@ Returns a list of the form (REAL-FUNCTION DEF ALIASED REAL-DEF)."
 
 (defun help-fns--generalized-variable (function)
   (when (and (symbolp function)
-             (get function 'gv-expander)
+             (or (get function 'gv-expander)
+                 ;; This is a hack, see cl-macs.el:
+                 (get function 'document-generalized-variable))
              ;; Don't mention obsolete generalized variables.
              (not (get function 'byte-obsolete-generalized-variable)))
     (insert (format-message "  `%s' is also a " function)
@@ -1475,7 +1443,7 @@ it is displayed along with the global value."
 		  (let* ((sv (get variable 'standard-value))
 			 (origval (and (consp sv)
 				       (condition-case nil
-					   (eval (car sv) t)
+					   (custom--standard-value variable)
 					 (error :help-eval-error))))
                          from)
 		    (when (and (consp sv)
@@ -1598,7 +1566,8 @@ it is displayed along with the global value."
     (let ((str (read-string-from-buffer
                 (format ";; Edit the `%s' variable." (nth 0 var))
                 (prin1-to-string (nth 1 var)))))
-      (set (nth 0 var) (read str)))))
+      (set (nth 0 var) (read str))
+      (revert-buffer))))
 
 (autoload 'shortdoc-help-fns-examples-function "shortdoc")
 
@@ -1621,12 +1590,26 @@ it is displayed along with the global value."
 (defun help-fns--customize-variable (variable &optional text)
   ;; Make a link to customize if this variable can be customized.
   (when (custom-variable-p variable)
-    (let ((customize-label "customize"))
+    (let ((customize-label "customize")
+          (custom-set (get variable 'custom-set)))
       (princ (concat "  You can " customize-label (or text " this variable.")))
+      (when (and custom-set
+                 ;; Don't override manually written documentation.
+                 (not (string-match (rx word-start "setopt" word-end)
+                                    (documentation-property
+                                     variable 'variable-documentation))))
+        (princ (substitute-quotes
+                (concat "\n  Setting this variable directly with `setq' may not take effect;"
+                        "\n  use either customize or `setopt'"
+                        ;; Skip text if `custom-set' property is an
+                        ;; anonymous function.
+                        (when (symbolp custom-set)
+                          (concat ", or call `" (symbol-name custom-set) "'"))
+                        "."))))
       (with-current-buffer standard-output
 	(save-excursion
-          (re-search-backward (concat "\\(" customize-label "\\)"))
-	  (help-xref-button 1 'help-customize-variable variable)))
+          (while (re-search-backward (concat "\\(" customize-label "\\)") nil t)
+	    (help-xref-button 1 'help-customize-variable variable))))
       (terpri))))
 
 (add-hook 'help-fns-describe-variable-functions

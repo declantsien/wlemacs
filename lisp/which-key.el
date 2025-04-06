@@ -61,8 +61,8 @@ This variable should be set before activating `which-key-mode'.
 A value of zero might lead to issues, so a non-zero value is
 recommended
 (see https://github.com/justbur/emacs-which-key/issues/134)."
-  :type 'number
-  :package-version "1.0" :version "30.1")
+  :type 'float
+  :package-version '(which-key . "1.0") :version "30.1")
 
 (defcustom which-key-idle-secondary-delay nil
   "Seconds to wait for which-key to pop up after initial display.
@@ -2038,7 +2038,7 @@ that width."
           (mapcar (pcase-lambda (`(,key ,sep ,desc ,_doc))
                     (concat
                      (format col-format key sep desc)
-                     (make-string (- col-desc-width (string-width desc)) ?\s)))
+                     (make-string (max (- col-desc-width (string-width desc)) 0) ?\s)))
                   col-keys))))
 
 (defun which-key--partition-list (n list)
@@ -2213,7 +2213,8 @@ Actual lines: %s"
   (let* ((paging-key (concat prefix-keys " " which-key-paging-key))
          (paging-key-bound (eq 'which-key-C-h-dispatch
                                (key-binding (kbd paging-key))))
-         (key (key-description (vector help-char)))
+         (key (if (fboundp 'help-key) (help-key) ; 29.1
+                (key-description (vector help-char))))
          (key (if paging-key-bound
                   (concat key " or " which-key-paging-key)
                 key)))

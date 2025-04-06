@@ -903,6 +903,7 @@ DIRS must contain directory names."
     (define-key map "x" 'project-execute-extended-command)
     (define-key map "o" 'project-any-command)
     (define-key map "\C-b" 'project-list-buffers)
+    (define-key map "\C-xs" 'project-save-some-buffers)
     map)
   "Keymap for project commands.")
 
@@ -1284,6 +1285,34 @@ directories listed in `vc-directory-exclusion-list'."
         (user-error "You didn't specify the file")
       (find-file file))))
 
+;;;###autoload
+(defun project-find-matching-file ()
+  "Visit the file that matches the current one, in another project.
+It will skip to the same line number as well.
+A matching file has the same file name relative to the project root.
+When called during switching to another project, this command will
+detect it and use the override.  Otherwise, it prompts for the project
+to use from the known list."
+  (interactive)
+  (let* ((pr (project-current))
+         (line (line-number-at-pos nil t))
+         relative-name mirror-name)
+    (if project-current-directory-override
+        (let* (project-current-directory-override
+               (real-project (project-current t)))
+          (setq relative-name (file-relative-name buffer-file-name
+                                                  (project-root real-project))))
+      (setq relative-name (file-relative-name buffer-file-name (project-root pr)))
+      (setq pr (project-read-project)))
+    (setq mirror-name (expand-file-name relative-name (project-root pr)))
+    (if (not (file-exists-p mirror-name))
+        (user-error "File `%s' not found in `%s'" relative-name (project-root pr))
+      (find-file mirror-name)
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (forward-line (1- line))))))
+
 (defun project--completing-read-strict (prompt
                                         collection &optional predicate
                                         hist mb-default
@@ -1361,6 +1390,14 @@ The current buffer's `default-directory' is available as part of
   "Run VC-Dir in the current project's root."
   (interactive)
   (vc-dir (project-root (project-current t))))
+
+;;;###autoload
+(defun project-customize-dirlocals ()
+  "Run `customize-dirlocals' in current project's root."
+  (interactive)
+  (customize-dirlocals
+   (expand-file-name ".dir-locals.el"
+                     (project-root (project-current t)))))
 
 (declare-function comint-check-proc "comint")
 
@@ -1800,13 +1837,32 @@ Also see the `project-kill-buffers-display-buffer-list' variable."
           ((funcall query-user)
            (mapc #'kill-buffer bufs)))))
 
+;;;###autoload
+(defun project-save-some-buffers (arg)
+  "Like `save-some-buffers', but only for this project's buffers."
+  (interactive "P")
+  (save-some-buffers arg (save-some-buffers-root)))
+
 
 ;;; Project list
 
-(defcustom project-list-file (locate-user-emacs-file "projects")
+(defcustom project-list-file
+  (locate-user-emacs-file (if (>= emacs-major-version 31)
+                              '("projects.eld" "projects")
+                            "projects"))
   "File in which to save the list of known projects."
   :type 'file
-  :version "28.1"
+  :version "31.1"
+  :group 'project)
+
+(defcustom project-list-exclude nil
+  "Exclude projects from being remembered by `project-remember-project'.
+It should be a list of regexps and predicates for project roots and
+objects to always exclude from being remembered.  The predicate should
+take one argument, the project object, and should return non-nil if the
+project should not be remembered."
+  :type '(repeat (choice regexp function))
+  :version "31.1"
   :group 'project)
 
 (defvar project--list 'unset
@@ -1824,7 +1880,8 @@ With some possible metadata (to be decided).")
                (lambda (elem)
                  (let ((name (car elem)))
                    (list (if (file-remote-p name) name
-                           (abbreviate-file-name name)))))
+                           (file-name-as-directory
+                            (abbreviate-file-name name))))))
                (condition-case nil
                    (read (current-buffer))
                  (end-of-file
@@ -1873,9 +1930,16 @@ has changed, and NO-WRITE is nil."
 ;;;###autoload
 (defun project-remember-project (pr &optional no-write)
   "Add project PR to the front of the project list.
+If project PR satisfies `project-list-exclude', then nothing is done.
 Save the result in `project-list-file' if the list of projects
 has changed, and NO-WRITE is nil."
-  (project--remember-dir (project-root pr) no-write))
+  (let ((root (project-root pr)))
+    (unless (seq-some (lambda (r)
+                        (if (functionp r)
+                            (funcall r pr)
+                          (string-match-p r root)))
+                      project-list-exclude)
+      (project--remember-dir root no-write))))
 
 (defun project--remove-from-project-list (project-root report-message)
   "Remove directory PROJECT-ROOT of a missing project from the project list.
@@ -2027,11 +2091,13 @@ bindings from `project-prefix-map'."
   (project-any-command project-prefix-map "[execute in %s]:"))
 
 (defun project-remember-projects-under (dir &optional recursive)
-  "Index all projects below a directory DIR.
-If RECURSIVE is non-nil, recurse into all subdirectories to find
-more projects.  After finishing, a message is printed summarizing
-the progress.  The function returns the number of detected
-projects."
+  "Remember projects below a directory DIR.
+Interactively, prompt for DIR.
+Optional argument RECURSIVE, if non-nil (interactively, the prefix
+argument) means recurse into subdirectories of DIR to find more
+projects.
+Display a message at the end summarizing what was found.
+Return the number of detected projects."
   (interactive "DDirectory: \nP")
   (project--ensure-read-project-list)
   (let ((dirs (if recursive
@@ -2054,8 +2120,9 @@ projects."
     (if (zerop count)
         (message "No projects were found")
       (project--write-project-list)
-      (message "%d project%s were found"
-               count (if (= count 1) "" "s")))
+      (message (ngettext "%d project was found"
+                         "%d projects were found"
+                         count) count))
     count))
 
 (defun project-forget-zombie-projects ()
@@ -2067,10 +2134,12 @@ projects."
 
 (defun project-forget-projects-under (dir &optional recursive)
   "Forget all known projects below a directory DIR.
-If RECURSIVE is non-nil, recurse into all subdirectories to
-remove all known projects.  After finishing, a message is printed
-summarizing the progress.  The function returns the number of
-forgotten projects."
+Interactively, prompt for DIR.
+Optional argument RECURSIVE, if non-nil (interactively, the prefix
+argument), means recurse into subdirectories under DIR
+to remove those projects from the index.
+Display a message at the end summarizing what was forgotten.
+Return the number of forgotten projects."
   (interactive "DDirectory: \nP")
   (let ((count 0))
     (if recursive
@@ -2085,8 +2154,9 @@ forgotten projects."
     (if (zerop count)
         (message "No projects were forgotten")
       (project--write-project-list)
-      (message "%d project%s were forgotten"
-               count (if (= count 1) "" "s")))
+      (message (ngettext "%d project was forgotten"
+                         "%d projects were forgotten"
+                         count) count))
     count))
 
 
@@ -2180,7 +2250,7 @@ Otherwise, use the face `help-key-binding' in the prompt."
    project-switch-commands
    "  "))
 
-(defun project--switch-project-command ()
+(defun project--switch-project-command (&optional dir)
   (let* ((commands-menu
           (mapcar
            (lambda (row)
@@ -2210,7 +2280,14 @@ Otherwise, use the face `help-key-binding' in the prompt."
                                        (propertize "Unrecognized input"
                                                    'face 'warning)
                                        (help-key-description choice nil)))))
-        (setq choice (read-key-sequence (concat "Choose: " prompt)))
+        (setq choice (read-key-sequence (concat
+                                         (if dir
+                                             (format-message "Command in `%s': "
+                                                             (propertize
+                                                              dir 'face
+                                                              'font-lock-string-face))
+                                           "Command: ")
+                                         prompt)))
         (when (setq command (lookup-key commands-map choice))
           (when (numberp command) (setq command nil))
           (unless (or project-switch-use-entire-map
@@ -2232,10 +2309,10 @@ made from `project-switch-commands'.
 When called in a program, it will use the project corresponding
 to directory DIR."
   (interactive (list (funcall project-prompter)))
-  (project--remember-dir dir)
+  (project-remember-project (project-current t dir))
   (let ((command (if (symbolp project-switch-commands)
                      project-switch-commands
-                   (project--switch-project-command)))
+                   (project--switch-project-command dir)))
         (buffer (current-buffer)))
     (unwind-protect
         (progn

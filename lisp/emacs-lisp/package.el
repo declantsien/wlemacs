@@ -1171,11 +1171,11 @@ Signal an error if the entire string was not used."
 
 (declare-function lm-header "lisp-mnt" (header))
 (declare-function lm-package-requires "lisp-mnt" (&optional file))
+(declare-function lm-package-version "lisp-mnt" (&optional file))
 (declare-function lm-website "lisp-mnt" (&optional file))
 (declare-function lm-keywords-list "lisp-mnt" (&optional file))
 (declare-function lm-maintainers "lisp-mnt" (&optional file))
 (declare-function lm-authors "lisp-mnt" (&optional file))
-(declare-function lm-package-needs-footer-line "lisp-mnt" (&optional file))
 
 (defun package-buffer-info ()
   "Return a `package-desc' describing the package in the current buffer.
@@ -1187,32 +1187,16 @@ boundaries."
   (unless (re-search-forward "^;;; \\([^ ]*\\)\\.el ---[ \t]*\\(.*?\\)[ \t]*\\(-\\*-.*-\\*-[ \t]*\\)?$" nil t)
     (error "Package lacks a file header"))
   (let ((file-name (match-string-no-properties 1))
-        (desc      (match-string-no-properties 2))
-        (start     (line-beginning-position)))
+        (desc      (match-string-no-properties 2)))
     (require 'lisp-mnt)
-    ;; This warning was added in Emacs 27.1, and should be removed at
-    ;; the earliest in version 31.1.  The idea is to phase out the
-    ;; requirement for a "footer line" without unduly impacting users
-    ;; on earlier Emacs versions.  See Bug#26490 for more details.
-    (unless (search-forward (concat ";;; " file-name ".el ends here") nil 'move)
-      (when (lm-package-needs-footer-line)
-        (lwarn '(package package-format) :warning
-               "Package lacks a terminating comment")))
-    ;; Try to include a trailing newline.
-    (forward-line)
-    (narrow-to-region start (point))
-    ;; Use some headers we've invented to drive the process.
-    (let* (;; Prefer Package-Version; if defined, the package author
-           ;; probably wants us to use it.  Otherwise try Version.
-           (version-info
-            (or (lm-header "package-version") (lm-header "version")))
+    (let* ((version-info (lm-package-version))
            (pkg-version (package-strip-rcs-id version-info))
            (keywords (lm-keywords-list))
            (website (lm-website)))
       (unless pkg-version
-         (if version-info
-             (error "Unrecognized package version: %s" version-info)
-           (error "Package lacks a \"Version\" or \"Package-Version\" header")))
+        (if version-info
+            (error "Unrecognized package version: %s" version-info)
+          (error "Package lacks a \"Version\" or \"Package-Version\" header")))
       (package-desc-from-define
        file-name pkg-version desc
        (lm-package-requires)
@@ -1861,8 +1845,11 @@ For each archive configured in the variable `package-archives',
 inform Emacs about the latest versions of all packages it offers,
 and make them available for download.
 Optional argument ASYNC specifies whether to perform the
-downloads in the background."
-  (interactive)
+downloads in the background.  This is always the case when the command
+is invoked interactively."
+  (interactive (list t))
+  (when async
+    (message "Refreshing package contents..."))
   (unless (file-exists-p package-user-dir)
     (make-directory package-user-dir t))
   (let ((default-keyring (expand-file-name "package-keyring.gpg"
@@ -2212,8 +2199,9 @@ built-in package with a (possibly newer) version from a package archive."
 ;;;###autoload
 (defun package-install (pkg &optional dont-select)
   "Install the package PKG.
-PKG can be a `package-desc' or a symbol naming one of the
-available packages in an archive in `package-archives'.
+
+PKG can be a `package-desc', or a symbol naming one of the available
+packages in an archive in `package-archives'.
 
 Mark the installed package as selected by adding it to
 `package-selected-packages'.
@@ -2245,6 +2233,7 @@ had been enabled."
                      package-archive-contents)
                     nil t))
            nil)))
+  (cl-check-type pkg (or symbol package-desc))
   (package--archives-initialize)
   (add-hook 'post-command-hook #'package-menu--post-refresh)
   (let ((name (if (package-desc-p pkg)
@@ -2272,21 +2261,22 @@ had been enabled."
 
 ;;;###autoload
 (defun package-upgrade (name)
-  "Upgrade package NAME if a newer version exists."
+  "Upgrade package NAME if a newer version exists.
+
+NAME should be a symbol."
   (interactive
-   (list (completing-read
-          "Upgrade package: " (package--upgradeable-packages t) nil t)))
-  (let* ((package (if (symbolp name)
-                      name
-                    (intern name)))
-         (pkg-desc (cadr (assq package package-alist)))
+   (list (intern (completing-read
+                  "Upgrade package: "
+                  (package--upgradeable-packages t) nil t))))
+  (cl-check-type name symbol)
+  (let* ((pkg-desc (cadr (assq name package-alist)))
          (package-install-upgrade-built-in (not pkg-desc)))
     ;; `pkg-desc' will be nil when the package is an "active built-in".
     (if (and pkg-desc (package-vc-p pkg-desc))
         (package-vc-upgrade pkg-desc)
       (when pkg-desc
         (package-delete pkg-desc 'force 'dont-unselect))
-      (package-install package
+      (package-install name
                        ;; An active built-in has never been "selected"
                        ;; before.  Mark it as installed explicitly.
                        (and pkg-desc 'dont-select)))))
@@ -2681,7 +2671,7 @@ in a clean environment."
 	    (list
              (cl-loop for c in
                       (completing-read-multiple
-                       "Packages to isolate, as comma-separated list: " table
+                       "Packages to isolate: " table
                        nil t)
 		           collect (alist-get c table nil nil #'string=))
                   current-prefix-arg)))
@@ -2837,7 +2827,8 @@ Helper function for `describe-package'."
          (status (if desc (package-desc-status desc) "orphan"))
          (incompatible-reason (package--incompatible-p desc))
          (signed (if desc (package-desc-signed desc)))
-         (maintainers (cdr (assoc :maintainer extras)))
+         (maintainers (or (cdr (assoc :maintainer extras))
+                          (cdr (assoc :maintainers extras))))
          (authors (cdr (assoc :authors extras)))
          (news (and-let* (pkg-dir
                           ((not built-in))
@@ -3998,7 +3989,7 @@ Return nil if there were no errors; non-nil otherwise."
               (package-menu--transaction-status))
           (dolist (pkg install-list)
             (setq package-menu--transaction-status
-                  (format status-format (cl-incf i)))
+                  (format status-format (incf i)))
             (force-mode-line-update)
             (redisplay 'force)
             ;; Don't mark as selected, `package-menu-execute' already
@@ -4305,7 +4296,7 @@ string, show all packages.
 When called interactively, prompt for ARCHIVE.  To specify
 several archives, type their names separated by commas."
   (interactive (list (completing-read-multiple
-                      "Filter by archive (comma separated): "
+                      "Filter by archive: "
                       (mapcar #'car package-archives)))
                package-menu-mode)
   (package--ensure-package-menu-mode)
@@ -4349,7 +4340,7 @@ or \"built-in\" or \"obsolete\".
 When called interactively, prompt for KEYWORD.  To specify several
 keywords, type them separated by commas."
   (interactive (list (completing-read-multiple
-                      "Keywords (comma separated): "
+                      "Keywords: "
                       (package-all-keywords)))
                package-menu-mode)
   (package--ensure-package-menu-mode)
@@ -4541,7 +4532,7 @@ of an installed ELPA package.
 The return value is a string (or nil in case we can't find it).
 It works in more cases if the call is in the file which contains
 the `Version:' header."
-  ;; In a sense, this is a lie, but it does just what we want: precompute
+  ;; In a sense, this is a lie, but it does just what we want: precomputes
   ;; the version at compile time and hardcodes it into the .elc file!
   (declare (pure t))
   ;; Hack alert!
@@ -4562,10 +4553,7 @@ the `Version:' header."
         (unless (file-readable-p mainfile) (setq mainfile file))
         (when (file-readable-p mainfile)
           (require 'lisp-mnt)
-          (with-temp-buffer
-            (insert-file-contents mainfile)
-            (or (lm-header "package-version")
-                (lm-header "version")))))))))
+          (lm-package-version mainfile)))))))
 
 
 ;;;; Quickstart: precompute activation actions for faster start up.

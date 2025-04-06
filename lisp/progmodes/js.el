@@ -982,7 +982,7 @@ top-most pitem.  Otherwise, return nil."
            with func-depth = 0
            with func-pitem
            if (eq 'function (js--pitem-type pitem))
-           do (cl-incf func-depth)
+           do (incf func-depth)
            and do (setq func-pitem pitem)
            finally return (if (eq func-depth 1) func-pitem)))
 
@@ -1017,7 +1017,7 @@ Return the pitem of the function we went to the beginning of."
   (setq arg (or arg 1))
   (let ((found))
     (while (and (not (eobp)) (< arg 0))
-      (cl-incf arg)
+      (incf arg)
       (when (and (not js-flat-functions)
                  (or (eq (js-syntactic-context) 'function)
                      (js--function-prologue-beginning)))
@@ -1031,7 +1031,7 @@ Return the pitem of the function we went to the beginning of."
         (setq found nil)))
 
     (while (> arg 0)
-      (cl-decf arg)
+      (decf arg)
       ;; If we're just past the end of a function, the user probably wants
       ;; to go to the beginning of *that* function
       (when (eq (char-before) ?})
@@ -1360,14 +1360,14 @@ LIMIT defaults to point."
   "Value of `end-of-defun-function' for `js-mode'."
   (setq arg (or arg 1))
   (while (and (not (bobp)) (< arg 0))
-    (cl-incf arg)
+    (incf arg)
     (js-beginning-of-defun)
     (js-beginning-of-defun)
     (unless (bobp)
       (js-end-of-defun)))
 
   (while (> arg 0)
-    (cl-decf arg)
+    (decf arg)
     ;; look for function backward. if we're inside it, go to that
     ;; function's end. otherwise, search for the next function's end and
     ;; go there
@@ -3180,7 +3180,7 @@ the broken-down class name of the item to insert."
       (setq pitem-name (js--pitem-strname pitem))
       (when (eq pitem-name t)
         (setq pitem-name (format "[unknown %s]"
-                                 (cl-incf (car unknown-ctr)))))
+                                 (incf (car unknown-ctr)))))
 
       (cond
        ((memq pitem-type '(function macro))
@@ -3255,7 +3255,7 @@ the broken-down class name of the item to insert."
                      (ctr 0))
 
                 (while (gethash name2 symbols)
-                  (setq name2 (format "%s<%d>" name (cl-incf ctr))))
+                  (setq name2 (format "%s<%d>" name (incf ctr))))
 
                 (puthash name2 (cdr item) symbols))))
 
@@ -3490,7 +3490,10 @@ Check if a node type is available, then return the right indent rules."
        ((match "/" "jsx_self_closing_element") parent 0)
        ((parent-is "jsx_self_closing_element") parent js-indent-level)
        ;; FIXME(Theo): This no-node catch-all should be removed.  When is it needed?
-       (no-node parent-bol 0)))))
+       (no-node parent-bol 0))
+      (jsdoc
+       ((and (parent-is "document") c-ts-common-looking-at-star)
+        c-ts-common-comment-start-after-first-star -1)))))
 
 (defvar js--treesit-keywords
   '("as" "async" "await" "break" "case" "catch" "class" "const" "continue"
@@ -3540,6 +3543,9 @@ Check if a node type is available, then return the right indent rules."
    :language 'javascript
    :feature 'definition
    `(,@(js--treesit-font-lock-compatibility-definition-feature)
+
+     (class
+      name: (identifier) @font-lock-type-face)
 
      (class_declaration
       name: (identifier) @font-lock-type-face)
@@ -3705,7 +3711,7 @@ Return nil if there is no name or if NODE is not a defun node."
   (treesit-node-text
    (treesit-node-child-by-field-name
     (pcase (treesit-node-type node)
-      ("lexical_declaration"
+      ((or "lexical_declaration" "variable_declaration")
        (treesit-search-subtree node "variable_declarator" nil nil 1))
       ((or "function_declaration" "method_definition" "class_declaration")
        node))
@@ -3713,10 +3719,32 @@ Return nil if there is no name or if NODE is not a defun node."
    t))
 
 (defun js--treesit-valid-imenu-entry (node)
-  "Return nil if NODE is a non-top-level \"lexical_declaration\"."
+  "Return nil if NODE is a non-top-level lexical/variable declaration."
   (pcase (treesit-node-type node)
-    ("lexical_declaration" (treesit-node-top-level node))
+    ((or "lexical_declaration" "variable_declaration")
+     (not (treesit-node-top-level
+           node (rx bos (or "class_declaration"
+                            "method_definition"
+                            "function_declaration"
+                            "function_expression")
+                    eos))))
     (_ t)))
+
+(defun js--treesit-language-at-point (point)
+  "Return the language at POINT."
+  (let* ((node (treesit-node-at point 'javascript))
+         (node-type (treesit-node-type node))
+         (node-start (treesit-node-start node))
+         (node-end (treesit-node-end node)))
+    (if (not (treesit-ready-p 'jsdoc t))
+        'javascript
+      (if (equal node-type "comment")
+          (save-excursion
+            (goto-char node-start)
+            (if (search-forward "/**" node-end t)
+                'jsdoc
+              'javascript))
+        'javascript))))
 
 ;;; Main Function
 
@@ -3838,8 +3866,9 @@ Currently there are `js-mode' and `js-ts-mode'."
     "labeled_statement"
     "variable_declaration"
     "lexical_declaration"
-    "jsx_element"
-    "jsx_self_closing_element")
+    "jsx_opening_element"
+    "jsx_attribute"
+    "jsx_closing_element")
   "Nodes that designate sentences in JavaScript.
 See `treesit-thing-settings' for more information.")
 
@@ -3887,9 +3916,11 @@ See `treesit-thing-settings' for more information.")
     "object_pattern"
     "array"
     "array_pattern"
+    "jsx_element"
     "jsx_expression"
-    "_jsx_string"
-    "string"
+    "jsx_self_closing_element"
+    "template_string"
+    "template_substitution"
     "regex"
     "arguments"
     "class_body"
@@ -3900,6 +3931,54 @@ See `treesit-thing-settings' for more information.")
 
 (defvar js--treesit-jsdoc-beginning-regexp (rx bos "/**")
   "Regular expression matching the beginning of a jsdoc block comment.")
+
+(defvar js--treesit-thing-settings
+  `((javascript
+     (sexp ,(js--regexp-opt-symbol js--treesit-sexp-nodes))
+     (list ,(js--regexp-opt-symbol js--treesit-list-nodes))
+     (sentence ,(js--regexp-opt-symbol js--treesit-sentence-nodes))
+     (text ,(js--regexp-opt-symbol '("comment"
+                                     "string_fragment")))))
+  "Settings for `treesit-thing-settings'.")
+
+(defvar js--treesit-font-lock-feature-list
+  '(( comment document definition)
+    ( keyword string)
+    ( assignment constant escape-sequence jsx number
+      pattern string-interpolation)
+    ( bracket delimiter function operator property))
+  "Settings for `treesit-font-lock-feature-list'.")
+
+(defvar js--treesit-simple-imenu-settings
+  `(("Class" "\\`class_declaration\\'" nil nil)
+    ("Method" "\\`method_definition\\'" nil nil)
+    ("Function" "\\`function_declaration\\'" nil nil)
+    ("Variable" ,(rx bos (or "lexical_declaration"
+                             "variable_declaration")
+                     eos)
+     ,#'js--treesit-valid-imenu-entry nil))
+  "Settings for `treesit-simple-imenu'.")
+
+(defvar js-ts-mode--outline-predicate
+  `(or (and "\\`class\\'" named)
+       ,(rx bos (or "class_declaration"
+                    "method_definition"
+                    "function_declaration"
+                    "function_expression")
+            eos)))
+
+(defvar js--treesit-defun-type-regexp
+  (rx bos (or "class_declaration"
+              "method_definition"
+              "function_declaration"
+              "lexical_declaration"
+              "variable_declaration")
+      eos)
+  "Settings for `treesit-defun-type-regexp'.")
+
+(defvar js--treesit-jsdoc-comment-regexp
+  (rx bos (or "comment" "line_comment" "block_comment" "description") eos)
+  "Regexp for `c-ts-common--comment-regexp'.")
 
 ;;;###autoload
 (define-derived-mode js-ts-mode js-base-mode "JavaScript"
@@ -3927,33 +4006,18 @@ See `treesit-thing-settings' for more information.")
 
     ;; Tree-sitter setup.
     (setq-local treesit-primary-parser (treesit-parser-create 'javascript))
+    (setq-local treesit-language-at-point-function #'js--treesit-language-at-point)
 
     ;; Indent.
     (setq-local treesit-simple-indent-rules js--treesit-indent-rules)
     ;; Navigation.
-    (setq-local treesit-defun-type-regexp
-                (rx (or "class_declaration"
-                        "method_definition"
-                        "function_declaration"
-                        "lexical_declaration")))
+    (setq-local treesit-defun-type-regexp js--treesit-defun-type-regexp)
     (setq-local treesit-defun-name-function #'js--treesit-defun-name)
-
-    (setq-local treesit-thing-settings
-                `((javascript
-                   (sexp ,(js--regexp-opt-symbol js--treesit-sexp-nodes))
-                   (list ,(js--regexp-opt-symbol js--treesit-list-nodes))
-                   (sentence ,(js--regexp-opt-symbol js--treesit-sentence-nodes))
-                   (text ,(js--regexp-opt-symbol '("comment"
-                                                   "string_fragment"))))))
+    (setq-local treesit-thing-settings js--treesit-thing-settings)
 
     ;; Fontification.
     (setq-local treesit-font-lock-settings js--treesit-font-lock-settings)
-    (setq-local treesit-font-lock-feature-list
-                '(( comment document definition)
-                  ( keyword string)
-                  ( assignment constant escape-sequence jsx number
-                    pattern string-interpolation)
-                  ( bracket delimiter function operator property)))
+    (setq-local treesit-font-lock-feature-list js--treesit-font-lock-feature-list)
 
     (when (treesit-ready-p 'jsdoc t)
       (setq-local treesit-range-settings
@@ -3963,17 +4027,13 @@ See `treesit-thing-settings' for more information.")
                    :local t
                    `(((comment) @capture (:match ,js--treesit-jsdoc-beginning-regexp @capture)))))
 
-      (setq c-ts-common--comment-regexp (rx (or "comment" "line_comment" "block_comment" "description"))))
+      (setq c-ts-common--comment-regexp js--treesit-jsdoc-comment-regexp))
 
     ;; Imenu
-    (setq-local treesit-simple-imenu-settings
-                `(("Function" "\\`function_declaration\\'" nil nil)
-                  ("Variable" "\\`lexical_declaration\\'"
-                   js--treesit-valid-imenu-entry nil)
-                  ("Class" ,(rx bos (or "class_declaration"
-                                        "method_definition")
-                                eos)
-                   nil nil)))
+    (setq-local treesit-simple-imenu-settings js--treesit-simple-imenu-settings)
+    ;; Outline minor mode
+    (setq-local treesit-outline-predicate js-ts-mode--outline-predicate)
+
     (treesit-major-mode-setup)
 
     (add-to-list 'auto-mode-alist
@@ -3998,8 +4058,8 @@ See `treesit-thing-settings' for more information.")
              (ne (treesit-node-end node))
              (syntax (pcase-exhaustive name
                        ('regexp
-                        (cl-decf ns)
-                        (cl-incf ne)
+                        (decf ns)
+                        (incf ne)
                         (string-to-syntax "\"/"))
                        ('jsx
                         (string-to-syntax "|")))))
@@ -4062,7 +4122,7 @@ one of the aforementioned options instead of using this mode."
 
 ;;;###autoload
 (dolist (name (list "node" "nodejs" "gjs" "rhino"))
-  (add-to-list 'interpreter-mode-alist (cons (purecopy name) 'js-mode)))
+  (add-to-list 'interpreter-mode-alist (cons name 'js-mode)))
 
 (provide 'js)
 

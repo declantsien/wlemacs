@@ -109,7 +109,7 @@ When it is used for regexp matching, the regexp groups are
   3 for the verbosity level.")
 
 (defconst tramp-debug-font-lock-keywords
-  ;; FIXME: Make it a function instead of an ELisp expression, so you
+  ;; FIXME: Make it a function instead of a Lisp expression, so you
   ;; can evaluate it with `funcall' rather than `eval'!
   ;; Also, in `font-lock-defaults' you can specify a function name for
   ;; the "KEYWORDS" part, so font-lock calls it to get the actual keywords!
@@ -464,7 +464,7 @@ the resulting error message."
   "Show a warning.
 VEC-OR-PROC identifies the connection to use, remaining arguments passed
 to `tramp-message'."
-  (declare (tramp-suppress-trace t))
+  (declare (indent 1) (tramp-suppress-trace t))
   (let (signal-hook-function)
     (apply 'tramp-message vec-or-proc 2 fmt-string arguments)
     (apply 'lwarn 'tramp :warning fmt-string arguments)))

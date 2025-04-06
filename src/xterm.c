@@ -14878,6 +14878,14 @@ x_fast_mouse_position (struct frame **fp, int insist, Lisp_Object *bar_window,
       return;
     }
 
+  FOR_EACH_FRAME (tail, frame)
+    {
+      if (FRAME_X_P (XFRAME (frame))
+	  && (FRAME_DISPLAY_INFO (XFRAME (frame))
+	      == dpyinfo))
+	XFRAME (frame)->mouse_moved = false;
+    }
+
   if (!EQ (Vx_use_fast_mouse_position, Qreally_fast))
     {
       /* This means that Emacs should select a frame and report the
@@ -14885,14 +14893,6 @@ x_fast_mouse_position (struct frame **fp, int insist, Lisp_Object *bar_window,
 	 making multiple roundtrips to the X server querying for the
 	 window beneath the pointer, and was borrowed from
 	 haiku_mouse_position in haikuterm.c.  */
-
-      FOR_EACH_FRAME (tail, frame)
-	{
-	  if (FRAME_X_P (XFRAME (frame))
-	      && (FRAME_DISPLAY_INFO (XFRAME (frame))
-		  == dpyinfo))
-	    XFRAME (frame)->mouse_moved = false;
-	}
 
       if (gui_mouse_grabbed (dpyinfo)
 	  && !EQ (track_mouse, Qdropping)
@@ -14952,8 +14952,8 @@ x_fast_mouse_position (struct frame **fp, int insist, Lisp_Object *bar_window,
     }
   else
     {
-      /* This means Emacs should only report the coordinates of the
-	 last mouse motion.  */
+      /* This means Emacs should only report the coordinates of the last
+	 mouse motion.  */
 
       if (dpyinfo->last_mouse_motion_frame)
 	{
@@ -14963,15 +14963,6 @@ x_fast_mouse_position (struct frame **fp, int insist, Lisp_Object *bar_window,
 	  *y = make_fixnum (dpyinfo->last_mouse_motion_y);
 	  *bar_window = Qnil;
 	  *part = scroll_bar_nowhere;
-
-	  FOR_EACH_FRAME (tail, frame)
-	    {
-	      if (FRAME_X_P (XFRAME (frame))
-		  && (FRAME_DISPLAY_INFO (XFRAME (frame))
-		      == dpyinfo))
-		XFRAME (frame)->mouse_moved = false;
-	    }
-
 	  dpyinfo->last_mouse_motion_frame->mouse_moved = false;
 	}
     }
@@ -21291,8 +21282,6 @@ handle_one_xevent (struct x_display_info *dpyinfo,
 		&& (f == XFRAME (selected_frame)
 		    || !NILP (focus_follows_mouse)))
 	      {
-		static Lisp_Object last_mouse_window;
-
 		if (xmotion.window != FRAME_X_WINDOW (f))
 		  {
 		    x_translate_coordinates (f, xmotion.x_root, xmotion.y_root,
@@ -23231,7 +23220,6 @@ handle_one_xevent (struct x_display_info *dpyinfo,
 		      && (f == XFRAME (selected_frame)
 			  || !NILP (focus_follows_mouse)))
 		    {
-		      static Lisp_Object last_mouse_window;
 		      Lisp_Object window = window_from_coordinates (f, ev.x, ev.y, 0, false, false,
 								    false);
 
@@ -27515,7 +27503,7 @@ x_calc_absolute_position (struct frame *f)
 
   /* Treat negative positions as relative to the leftmost bottommost
      position that fits on the screen.  */
-  if ((flags & XNegative) && (f->left_pos <= 0))
+  if (flags & XNegative)
     {
       int width = FRAME_PIXEL_WIDTH (f);
 
@@ -27542,7 +27530,7 @@ x_calc_absolute_position (struct frame *f)
 
     }
 
-  if ((flags & YNegative) && (f->top_pos <= 0))
+  if (flags & YNegative)
     {
       int height = FRAME_PIXEL_HEIGHT (f);
 
@@ -30382,7 +30370,7 @@ static bool x_timeout_atimer_activated_flag;
 
 #endif /* USE_X_TOOLKIT */
 
-static int x_initialized;
+static bool x_initialized;
 
 /* Test whether two display-name strings agree up to the dot that separates
    the screen number from the server number.  */
@@ -30594,10 +30582,13 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
 
   block_input ();
 
+#ifdef USE_GTK
+  bool was_initialized = x_initialized;
+#endif /* USE_GTK */
   if (!x_initialized)
     {
       x_initialize ();
-      ++x_initialized;
+      x_initialized = true;
     }
 
 #if defined USE_X_TOOLKIT || defined USE_GTK
@@ -30615,7 +30606,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
     char **argv2 = argv;
     guint id;
 
-    if (x_initialized++ > 1)
+    if (was_initialized)
       {
         xg_display_open (SSDATA (display_name), &dpy);
       }
@@ -30650,8 +30641,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
            Call before gtk_init so Gtk+ event filters comes after our.  */
         gdk_window_add_filter (NULL, event_handler_gdk, NULL);
 
-        /* gtk_init does set_locale.  Fix locale before and after.  */
-        fixup_locale ();
+        gtk_disable_setlocale ();
         unrequest_sigio (); /* See comment in x_display_ok.  */
         gtk_init (&argc, &argv2);
         request_sigio ();
@@ -30660,8 +30650,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
 
         xg_initialize ();
 
-	/* Do this after the call to xg_initialize, because when
-	   Fontconfig is used, xg_initialize calls its initialization
+	/* When Fontconfig is used, xg_initialize calls its initialization
 	   function which in some versions of Fontconfig calls setlocale.  */
 	fixup_locale ();
 
@@ -32591,7 +32580,7 @@ syms_of_xterm (void)
   DEFSYM (Qwheel_right, "wheel-right");
 
 #ifdef USE_GTK
-  xg_default_icon_file = build_pure_c_string ("icons/hicolor/scalable/apps/emacs.svg");
+  xg_default_icon_file = build_string ("icons/hicolor/scalable/apps/emacs.svg");
   staticpro (&xg_default_icon_file);
 
   DEFSYM (Qx_gtk_map_stock, "x-gtk-map-stock");
@@ -32740,7 +32729,7 @@ If set to a non-float value, there will be no wait at all.  */);
 
   DEFVAR_LISP ("x-keysym-table", Vx_keysym_table,
     doc: /* Hash table of character codes indexed by X keysym codes.  */);
-  Vx_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None, false);
+  Vx_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None);
 
   DEFVAR_BOOL ("x-frame-normalize-before-maximize",
 	       x_frame_normalize_before_maximize,

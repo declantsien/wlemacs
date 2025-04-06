@@ -38,7 +38,7 @@
   :group 'tools)
 
 ;;;###autoload
-(defcustom diff-switches (purecopy "-u")
+(defcustom diff-switches "-u"
   "A string or list of strings specifying switches to be passed to diff.
 
 This variable is also used in the `vc-diff' command (and related
@@ -48,7 +48,7 @@ set (`vc-git-diff-switches' for git, for instance), and
   :type '(choice string (repeat string)))
 
 ;;;###autoload
-(defcustom diff-command (purecopy "diff")
+(defcustom diff-command "diff"
   "The command to use to run diff."
   :type 'string)
 
@@ -203,21 +203,24 @@ returns the buffer used."
       (setq diff-default-directory default-directory)
       (let ((inhibit-read-only t))
 	(insert command "\n"))
-      (if (and (not no-async) (fboundp 'make-process))
-	  (let ((proc (start-process "Diff" buf shell-file-name
-                                     shell-command-switch command)))
-	    (set-process-filter proc #'diff-process-filter)
-            (set-process-sentinel
-             proc (lambda (proc _msg)
-                    (with-current-buffer (process-buffer proc)
-                      (diff-sentinel (process-exit-status proc)
-                                     old-alt new-alt)))))
-	;; Async processes aren't available.
-	(let ((inhibit-read-only t))
-	  (diff-sentinel
-	   (call-process shell-file-name nil buf nil
-			 shell-command-switch command)
-           old-alt new-alt))))
+      (with-file-modes #o600
+        (if (and (not no-async) (fboundp 'make-process))
+	    (let* ((default-directory temporary-file-directory)
+                   (proc (start-process "Diff" buf shell-file-name
+                                        shell-command-switch command)))
+	      (set-process-filter proc #'diff-process-filter)
+              (set-process-sentinel
+               proc (lambda (proc _msg)
+                      (with-current-buffer (process-buffer proc)
+                        (diff-sentinel (process-exit-status proc)
+                                       old-alt new-alt)))))
+	  ;; Async processes aren't available.
+	  (let* ((default-directory temporary-file-directory)
+                 (inhibit-read-only t))
+	    (diff-sentinel
+	     (call-process shell-file-name nil buf nil
+			   shell-command-switch command)
+             old-alt new-alt)))))
     buf))
 
 (defun diff-process-filter (proc string)

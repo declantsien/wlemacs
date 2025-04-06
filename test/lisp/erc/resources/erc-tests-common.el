@@ -75,7 +75,10 @@ Assign the result to `erc-server-process' in the current buffer."
 ;; `get-buffer-create' with INHIBIT-BUFFER-HOOKS.
 (defun erc-tests-common-kill-buffers (&rest extra-buffers)
   "Kill all ERC buffers and possibly EXTRA-BUFFERS."
-  (let (erc-kill-channel-hook erc-kill-server-hook erc-kill-buffer-hook)
+  (let (erc-kill-channel-hook erc-kill-server-hook erc-kill-buffer-hook
+        ;; To facilitate automatic testing when a fake-server has already
+	;; been created by an earlier ERT test.
+	(kill-buffer-query-functions nil))
     (dolist (buf (erc-buffer-list))
       (kill-buffer buf))
     (named-let doit ((buffers extra-buffers))
@@ -356,15 +359,17 @@ interspersing \"-l\" between members."
              (require 'erc)
              (cl-assert (equal erc-version ,erc-version) t)
              ,code))
-         (proc (apply #'start-process
-                      (symbol-name (ert-test-name (ert-running-test)))
-                      (current-buffer)
-                      (concat invocation-directory invocation-name)
-                      `(,@(or init '("-Q"))
-                        ,@switches
-                        ,@(mapcan (lambda (f) (list "-l" f)) libs)
-                        "-eval" ,(format "%S" prog)))))
-    (set-process-query-on-exit-flag proc t)
+         (proc (make-process
+                :name (symbol-name (ert-test-name (ert-running-test)))
+                :buffer (current-buffer)
+                :command `(,(concat invocation-directory invocation-name)
+                           ,@(or init '("-Q"))
+                           ,@switches
+                           ,@(mapcan (lambda (f) (list "-l" f)) libs)
+                           "-eval" ,(format "%S" prog))
+                :connection-type 'pipe
+                :stderr (messages-buffer)
+                :noquery t)))
     proc))
 
 (declare-function erc-track--setup "erc-track" ())

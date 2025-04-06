@@ -362,7 +362,7 @@ string is passed through `substitute-command-keys'.  */)
      from the DOC file (bug in src/Makefile.in).  */
   if (BASE_EQ (doc, make_fixnum (0)))
     doc = Qnil;
-  if (FIXNUMP (doc) || CONSP (doc))
+  if (FIXNUMP (doc) || (CONSP (doc) && FIXNUMP (XCDR (doc))))
     {
       Lisp_Object tem = get_doc_string (doc, 0);
       if (NILP (tem) && try_reload)
@@ -549,7 +549,6 @@ the same file name is found in the `doc-directory'.  */)
       int i = ARRAYELTS (buildobj);
       while (0 <= --i)
 	Vbuild_files = Fcons (build_string (buildobj[i]), Vbuild_files);
-      Vbuild_files = Fpurecopy (Vbuild_files);
     }
 
   doc_fd fd = doc_open (name, O_RDONLY, 0);

@@ -145,8 +145,8 @@ attempts to open the file with the wrapper will fail.
 @cindex /content/by-authority directory, android
 @cindex /content/by-authority-named directory, android
   Some files are given to Emacs as ``content identifiers'' that the
-system provides access to outside the normal filesystem APIs.  Emacs
-uses pseudo-directories named @file{/content/by-authority} and
+system provides access to independently of the normal filesystem APIs.
+Emacs uses pseudo-directories named @file{/content/by-authority} and
 @file{/content/by-authority-named} to access those files.  Do not make
 any assumptions about the contents of these directories, or try to open
 files in it yourself.
@@ -227,9 +227,9 @@ system settings.
 
 @item
 Directories provided by @dfn{document providers} on Android 5.0 and
-later.  These directories exist outside the normal Unix filesystem,
-containing files provided by external programs (@pxref{Android
-Document Providers}.)
+later.  These directories exist independently of the Unix virtual
+filesystem, containing files provided by external programs
+(@pxref{Android Document Providers}.)
 @end itemize
 
   Despite ordinary installations of Android not having files within
@@ -324,9 +324,8 @@ its name to the command @code{android-relinquish-directory-access}.
   The same limitations applied to the @file{/assets} directory
 (@pxref{Android File System}) are applied when creating sub-processes
 within those directories, because they do not exist within the Unix
-file-system.  In addition, although Emacs can normally write and
-create files inside these directories, it cannot create symlinks or
-hard links.
+file-system.  In addition, although Emacs can normally write and create
+files inside these directories, it cannot create symlinks or hard links.
 
   Since document providers are allowed to perform expensive network
 operations to obtain file contents, a file access operation within one
@@ -354,11 +353,11 @@ directories and the app data directories of other applications.
   The Emacs distribution also incorporates several binaries.  While
 being executable files, they are packaged as libraries in the library
 directory, because otherwise the system will not unpack them while
-Emacs is being installed.  This means that instead of @code{ctags} or
-@code{emacsclient}, Lisp code must specify @code{libctags.so} or
+Emacs is being installed.  This means that instead of
+@code{emacsclient}, Lisp code must specify
 @code{libemacsclient.so} on the command line when starting either of
 those programs in a subprocess; to determine which names to use,
-consult the values of the variables @code{ctags-program-name},
+consult the values of the variables
 @code{etags-program-name}, @code{hexl-program-name},
 @code{emacsclient-program-name}, @code{movemail-program-name},
 @code{ebrowse-program-name}, and @code{rcs2log-program-name}.
@@ -1179,7 +1178,7 @@ from improved reproductions of Unix command-line utilities to package
 repositories providing extensive collections of free GNU and Unix
 software.
 
-  @uref{http://busybox.net, Busybox} provides Unix utilities and
+  @uref{https://busybox.net, Busybox} provides Unix utilities and
 limited replicas of certain popular GNU programs such as
 @command{wget} in a single statically-linked Linux binary, which is
 capable of running under Android.
@@ -1204,3 +1203,45 @@ installation within Emacs's home directory.
   In addition to the projects mentioned above, statically linked
 binaries for most Linux kernel-based systems can also be run on
 Android.
+
+@cindex XDG MIME database, Android
+@cindex displaying SVG images with embeds, Android
+  Emacs can be configured with support for viewing SVG image files by
+means of the @code{librsvg} library.  In SVG files, there may be
+references to other images on the file-system, whose format
+@code{librsvg} cannot detect by default, and which will be rendered as
+blank squares unless an XDG-compliant @dfn{MIME database} is installed
+into the directory @file{.local/share/mime} within your home directory.
+
+  As the XDG @code{shared-mime-info} tools must be available to generate
+such a database, it is recommended to produce this database in a
+temporary directory on a GNU/Linux or Unix system, before transferring
+the same to the recipient Android device.  With the latest release of
+@code{shared-mime-info} installed, create a temporary directory in which
+to generate the MIME database, copy the default
+@file{freedesktop.org.in} MIME catalog to a directory named
+@file{packages}, and execute @code{update-mime-info} to generate the
+database:
+
+@example
+$ mkdir -p my-mime-database/packages
+$ cp /usr/share/mime/packages/freedesktop.org.xml my-mime-database/packages
+$ update-mime-info my-mime-database
+@end example
+
+This may print a series of notices stating that the MIME database
+specified is not in the search path on your host system, which are of no
+consequence.  Proceed by transferring the contents of the MIME database
+to the recipient system, e.g., to
+@file{/sdcard/Download/my-mime-database.tar.gz}:
+
+@example
+$ cd; mkdir -p .local/share
+$ tar xfz /sdcard/Download/my-mime-database.tar.gz
+$ mv my-mime-database .local/share/mime
+$ rm /sdcard/Download/my-mime-database.tar.gz
+@end example
+
+If your Emacs session has already attempted to display an SVG image with
+embeds, Emacs must be restarted before the new MIME database will enter
+into effect.

@@ -638,7 +638,7 @@ will ensure that any results will actually have a :secret
 property.
 
 :delete t means to delete any found entries.  nil by default.
-Use `auth-source-delete' in ELisp code instead of calling
+Use `auth-source-delete' in Lisp code instead of calling
 `auth-source-search' directly with this parameter.
 
 :type (X Y Z) will check only those backend types.  `netrc' and
@@ -852,7 +852,7 @@ while \(:host t) would find all host entries."
                   (auth-source-specmatchp spec (cdr key)))
          ;; remove that key
          (password-cache-remove key)
-         (cl-incf count)))
+         (incf count)))
      password-data)
     count))
 
@@ -2514,15 +2514,11 @@ Adapt also mode line."
         (force-mode-line-update 'all)
         (read-passwd--hide-password)))))
 
-(defvar read-passwd-map
-  ;; BEWARE: `defconst' would purecopy it, breaking the sharing with
-  ;; minibuffer-local-map along the way!
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map minibuffer-local-map)
-    (define-key map "\C-u" #'delete-minibuffer-contents) ;bug#12570
-    (define-key map "\t" #'read-passwd-toggle-visibility)
-    map)
-  "Keymap used while reading passwords.")
+(defvar-keymap read-passwd-map
+  :doc "Keymap used while reading passwords."
+  :parent minibuffer-local-map
+  "C-u" #'delete-minibuffer-contents ;bug#12570
+  "TAB" #'read-passwd-toggle-visibility)
 
 (define-minor-mode read-passwd-mode
   "Toggle visibility of password in minibuffer."
@@ -2551,7 +2547,7 @@ Adapt also mode line."
 
 ;;;###autoload
 (defun read-passwd (prompt &optional confirm default)
-  "Read a password, prompting with PROMPT, and return it.
+  "Read a password, prompting with PROMPT, and return password as a string.
 If optional CONFIRM is non-nil, read the password twice to make sure.
 Optional DEFAULT is a default password to use instead of empty input.
 

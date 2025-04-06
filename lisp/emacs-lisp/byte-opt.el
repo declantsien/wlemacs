@@ -172,7 +172,7 @@ Earlier variables shadow later ones with the same name.")
        ;; When the function comes from another file, we byte-compile
        ;; the inlined function first, and then inline its byte-code.
        ;; This also has the advantage that the final code does not
-       ;; depend on the order of compilation of ELisp files, making
+       ;; depend on the order of compilation of Elisp files, making
        ;; the build more reproducible.
        (if (eq fn localfn)
            ;; From the same file => same mode.
@@ -1861,7 +1861,7 @@ See Info node `(elisp) Integer Basics'."
       (side-effect-and-error-free-fns
        '(
          ;; alloc.c
-         bool-vector cons list make-marker purecopy record vector
+         bool-vector cons list make-marker record vector
          ;; buffer.c
          buffer-list buffer-live-p current-buffer overlay-lists overlayp
          ;; casetab.c

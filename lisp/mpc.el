@@ -634,7 +634,7 @@ The songs are returned as alists."
                        (i 0))
                    (mapcar (lambda (s)
                              (prog1 (cons (cons 'Pos (number-to-string i)) s)
-                               (cl-incf i)))
+                               (incf i)))
                            l)))
                 ((eq tag 'Search)
                  (mpc-proc-buf-to-alists
@@ -869,8 +869,8 @@ If PLAYLIST is t or nil or missing, use the main playlist."
                          (list "move" song-pos dest-pos))
                   (if (< song-pos dest-pos)
                       ;; This move has shifted dest-pos by 1.
-                      (cl-decf dest-pos))
-                  (cl-incf i)))
+                      (decf dest-pos))
+                  (incf i)))
               ;; Sort them from last to first, so the renumbering
               ;; caused by the earlier deletions affect
               ;; later ones a bit less.
@@ -1212,6 +1212,7 @@ string POST."
      :selected (alist-get 'xfade mpc-status)]
     "--"
     ["Add new browser" mpc-tagbrowser]
+    ["Server Stats" mpc-server-stats]
     ["Update DB" mpc-update]
     ["Quit" mpc-quit]))
 
@@ -1419,12 +1420,12 @@ string POST."
           (while (and (zerop (forward-line 1))
                       (get-char-property (point) 'mpc-select))
             (setq end (1+ (point)))
-            (cl-incf after))
+            (incf after))
           (goto-char mid)
           (while (and (zerop (forward-line -1))
                       (get-char-property (point) 'mpc-select))
             (setq start (point))
-            (cl-incf before))
+            (incf before))
           (if (and (= after 0) (= before 0))
               ;; Shortening an already minimum-size region: do nothing.
               nil
@@ -1448,13 +1449,13 @@ string POST."
               (start (line-beginning-position)))
           (while (and (zerop (forward-line 1))
                       (not (get-char-property (point) 'mpc-select)))
-            (cl-incf count))
+            (incf count))
           (unless (get-char-property (point) 'mpc-select)
             (setq count nil))
           (goto-char start)
           (while (and (zerop (forward-line -1))
                       (not (get-char-property (point) 'mpc-select)))
-            (cl-incf before))
+            (incf before))
           (unless (get-char-property (point) 'mpc-select)
             (setq before nil))
           (when (and before (or (null count) (< before count)))
@@ -2062,7 +2063,7 @@ This is used so that they can be compared with `eq', which is needed for
                                                 (cdr (assq 'file song1))
                                                 (cdr (assq 'file song2)))))
                                       (and (integerp cmp) (< cmp 0)))))))
-              (cl-incf totaltime (string-to-number (or (cdr (assq 'Time song)) "0")))
+              (incf totaltime (string-to-number (or (cdr (assq 'Time song)) "0")))
               (mpc-format mpc-songs-format song)
               (delete-char (- (skip-chars-backward " "))) ;Remove trailing space.
               (insert "\n")
@@ -2304,12 +2305,12 @@ This is used so that they can be compared with `eq', which is needed for
     (dolist (song (car context))
       (and (zerop (forward-line -1))
            (eq (get-text-property (point) 'mpc-file) song)
-           (cl-incf count)))
+           (incf count)))
     (goto-char pos)
     (dolist (song (cdr context))
       (and (zerop (forward-line 1))
            (eq (get-text-property (point) 'mpc-file) song)
-           (cl-incf count)))
+           (incf count)))
     count))
 
 (defun mpc-songpointer-refresh-hairy ()
@@ -2350,13 +2351,13 @@ This is used so that they can be compared with `eq', which is needed for
                ((< score context-size) nil)
                (t
                 ;; Score is equal and increasing context might help: try it.
-                (cl-incf context-size)
+                (incf context-size)
                 (let ((new-context
                        (mpc-songpointer-context context-size plbuf)))
                   (if (null new-context)
                       ;; There isn't more context: choose one arbitrarily
                       ;; and keep looking for a better match elsewhere.
-                      (cl-decf context-size)
+                      (decf context-size)
                     (setq context new-context)
                     (setq score (mpc-songpointer-score context pos))
                     (save-excursion
@@ -2874,17 +2875,17 @@ will be used.  See `mpc-format' for the definition of FORMAT-SPEC."
 
 ;;; Song Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defface mpc-song-viewer-value
+(defface mpc-table-value
   '((t (:inherit vtable)))
-  "Face for tag values in the MPC song viewer.")
+  "Face for values in MPC tables.")
 
-(defface mpc-song-viewer-tag
-  '((t (:inherit (mpc-song-viewer-value bold))))
-  "Face for tag types in the MPC song viewer.")
+(defface mpc-table-key
+  '((t (:inherit (mpc-table-value bold))))
+  "Face for keys in MPC tables.")
 
-(defface mpc-song-viewer-empty
-  '((t (:inherit (mpc-song-viewer-value italic shadow))))
-  "Face for empty tag values in the MPC song viewer.")
+(defface mpc-table-empty
+  '((t (:inherit (mpc-table-value italic shadow))))
+  "Face for empty values in MPC tables.")
 
 (defcustom mpc-song-viewer-tags
   '("Title" "Artist" "Album" "Performer" "Composer"
@@ -2929,15 +2930,15 @@ playing song is displayed."
                         :min-width 3
                         :displayer
                         (lambda (tag &rest _)
-                          (propertize tag 'face 'mpc-song-viewer-tag)))
+                          (propertize tag 'face 'mpc-table-key)))
                       ( :name "Value"
                         :align left
                         :min-width 5
                         :displayer
                         (lambda (value &rest _)
                           (if (and value (not (string-blank-p value)))
-                              (propertize value 'face 'mpc-song-viewer-value)
-                            (propertize "empty" 'face 'mpc-song-viewer-empty)))))
+                              (propertize value 'face 'mpc-table-value)
+                            (propertize "empty" 'face 'mpc-table-empty)))))
            :objects (mapcar
                      (lambda (tag)
                        (pcase tag
@@ -2963,6 +2964,56 @@ playing song is displayed."
       (pop-to-buffer buffer '((display-buffer-reuse-window
                                display-buffer-same-window)
                               (reusable-frames . t))))))
+
+;;; Stats viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar mpc--server-stats-date "%c"
+  "Format used for dates in `mpc-server-stats'.
+See `format-time-string' for formatting details.")
+
+(defvar mpc--server-stats-duration "%Y, %D, %z%h:%.2m:%.2s"
+  "Format used for durations in `mpc-server-stats'.
+See `format-seconds' for formatting details.")
+
+(defun mpc--server-stats-date (seconds)
+  "Format SECONDS as a date for display by `mpc-server-stats'."
+  (format-time-string mpc--server-stats-date (string-to-number seconds)))
+
+(defun mpc--server-stats-duration (seconds)
+  "Format SECONDS as a duration for display by `mpc-server-stats'."
+  (format-seconds mpc--server-stats-duration (string-to-number seconds)))
+
+(defun mpc--server-stats-format (stat)
+  "Format STAT data for display by `mpc-server-stats'."
+  (let ((key (seq-reduce (lambda (string from-to)
+                           (string-replace (car from-to) (cdr from-to) string))
+                         '(("Db_" . "DB_") ("_" . " "))
+                         (capitalize (symbol-name (car stat)))))
+        (val (cdr stat)))
+    (list key (cond
+               ((string-match-p "time\\'" key) (mpc--server-stats-duration val))
+               ((string-match-p "date\\'" key) (mpc--server-stats-date val))
+               (t val)))))
+
+(defun mpc-server-stats ()
+  "Display stats about the connected MPD server."
+  (interactive)
+  (let ((buffer "*MPC Stats Viewer*"))
+    (with-current-buffer (get-buffer-create buffer)
+      (special-mode)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (make-vtable
+         :columns '((:name "Server Stats" :align right :min-width 10) "")
+         :formatter (lambda (value column &rest _)
+                      (propertize value 'face (if (= column 0)
+                                                  'mpc-table-key
+                                                'mpc-table-value)))
+         :objects (mapcar #'mpc--server-stats-format
+                          (mpc-proc-cmd-to-alist (list "stats")))))
+      (pop-to-buffer buffer '((display-buffer-reuse-window)
+                              (reusable-frames . t)
+                              (window-height . 10))))))
 
 ;;; Toplevel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -305,7 +305,7 @@ right of \"%x\", trailing zero units are not output."
                  ("x")))
         (case-fold-search t)
         spec match usedunits zeroflag larger prev name unit num
-        leading-zeropos trailing-zeropos fraction
+	leading-zeropos trailing-zeropos fraction minus
         chop-leading chop-trailing)
     (while (string-match "%\\.?[0-9]*\\(,[0-9]\\)?\\(.\\)" string start)
       (setq start (match-end 0)
@@ -327,8 +327,11 @@ right of \"%x\", trailing zero units are not output."
       (error "Units are not in decreasing order of size"))
     (unless (numberp seconds)
       (setq seconds (float-time seconds)))
-    (setq fraction (mod seconds 1)
-          seconds (round seconds))
+    (setq minus (when (< seconds 0) "-") ; Treat -0.0 like 0.0.
+	  seconds (abs seconds)
+	  seconds (let ((s (floor seconds)))
+		    (setq fraction (- seconds s))
+		    s))
     (dolist (u units)
       (setq spec (car u)
             name (cadr u)
@@ -392,8 +395,8 @@ right of \"%x\", trailing zero units are not output."
       ;; string in full.
       (when (equal string "")
         (setq string pre)))
-    (setq string (replace-regexp-in-string "%[zx]" "" string)))
-  (string-trim (string-replace "%%" "%" string)))
+    (setq string (replace-regexp-in-string "%[zx]" "" string))
+    (concat minus (string-trim (string-replace "%%" "%" string)))))
 
 (defvar seconds-to-string
   (list (list 1 "ms" 0.001)
@@ -417,7 +420,7 @@ The format is an alist, with string keys ABBREV-UNIT, and elements like:
 
   (ABBREV-UNIT UNIT UNIT-PLURAL SECS)
 
-where UNIT is a unit of time, ABBREV-UNIT is the abreviated form of
+where UNIT is a unit of time, ABBREV-UNIT is the abbreviated form of
 UNIT, UNIT-PLURAL is the plural form of UNIT, and SECS is the number of
 seconds per UNIT.")
 
@@ -538,13 +541,13 @@ changes in daylight saving time are not taken into account."
         seconds)
     ;; Years are simple.
     (when (decoded-time-year delta)
-      (cl-incf (decoded-time-year time) (decoded-time-year delta)))
+      (incf (decoded-time-year time) (decoded-time-year delta)))
 
     ;; Months are pretty simple, but start at 1 (for January).
     (when (decoded-time-month delta)
       (let ((new (+ (1- (decoded-time-month time)) (decoded-time-month delta))))
         (setf (decoded-time-month time) (1+ (mod new 12)))
-        (cl-incf (decoded-time-year time) (/ new 12))))
+        (incf (decoded-time-year time) (- (/ new 12) (if (< new 0) 1 0)))))
 
     ;; Adjust for month length (as described in the doc string).
     (setf (decoded-time-day time)
@@ -558,7 +561,7 @@ changes in daylight saving time are not taken into account."
             (days (abs days)))
         (while (> days 0)
           (decoded-time--alter-day time increase)
-          (cl-decf days))))
+          (decf days))))
 
     ;; Do the time part, which is pretty simple (except for leap
     ;; seconds, I guess).
@@ -578,26 +581,26 @@ changes in daylight saving time are not taken into account."
   "Increase or decrease the month in TIME by 1."
   (if increase
       (progn
-        (cl-incf (decoded-time-month time))
+        (incf (decoded-time-month time))
         (when (> (decoded-time-month time) 12)
           (setf (decoded-time-month time) 1)
-          (cl-incf (decoded-time-year time))))
-    (cl-decf (decoded-time-month time))
+          (incf (decoded-time-year time))))
+    (decf (decoded-time-month time))
     (when (zerop (decoded-time-month time))
       (setf (decoded-time-month time) 12)
-      (cl-decf (decoded-time-year time)))))
+      (decf (decoded-time-year time)))))
 
 (defun decoded-time--alter-day (time increase)
   "Increase or decrease the day in TIME by 1."
   (if increase
       (progn
-        (cl-incf (decoded-time-day time))
+        (incf (decoded-time-day time))
         (when (> (decoded-time-day time)
                  (date-days-in-month (decoded-time-year time)
                                      (decoded-time-month time)))
           (setf (decoded-time-day time) 1)
           (decoded-time--alter-month time t)))
-    (cl-decf (decoded-time-day time))
+    (decf (decoded-time-day time))
     (when (zerop (decoded-time-day time))
       (decoded-time--alter-month time nil)
       (setf (decoded-time-day time)

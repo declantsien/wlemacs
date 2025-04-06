@@ -41,7 +41,7 @@
 
 ;; The `assert' macro from the cl package signals
 ;; `cl-assertion-failed' at runtime so always define it.
-(define-error 'cl-assertion-failed (purecopy "Assertion failed"))
+(define-error 'cl-assertion-failed "Assertion failed")
 
 (defun cl--assertion-failed (form &optional string sargs args)
   (if debug-on-error
@@ -161,7 +161,7 @@
                                   (car slot) (nth 1 slot)
                                   type props)))
                      (puthash (car slot) (+ i offset) index-table)
-                     (cl-incf i))
+                     (incf i))
                    v))
          (class (cl--struct-new-class
                  name docstring
@@ -183,20 +183,7 @@
     (add-to-list 'current-load-list `(define-type . ,name))
     (cl--struct-register-child parent-class tag)
     (unless (or (eq named t) (eq tag name))
-      ;; We used to use `defconst' instead of `set' but that
-      ;; has a side-effect of purecopying during the dump, so that the
-      ;; class object stored in the tag ends up being a *copy* of the
-      ;; one stored in the `cl--class' property!  We could have fixed
-      ;; this needless duplication by using the purecopied object, but
-      ;; that then breaks down a bit later when we modify the
-      ;; cl-structure-class class object to close the recursion
-      ;; between cl-structure-object and cl-structure-class (because
-      ;; modifying purecopied objects is not allowed.  Since this is
-      ;; done during dumping, we could relax this rule and allow the
-      ;; modification, but it's cumbersome).
-      ;; So in the end, it's easier to just avoid the duplication by
-      ;; avoiding the use of the purespace here.
-      (set tag class)
+      (eval `(defconst ,tag ',class) t)
       ;; In the cl-generic support, we need to be able to check
       ;; if a vector is a cl-struct object, without knowing its particular type.
       ;; So we use the (otherwise) unused function slots of the tag symbol
@@ -305,7 +292,13 @@
                (:include cl--class)
                (:noinline t)
                (:constructor nil)
-               (:constructor built-in-class--make (name docstring parents))
+               (:constructor built-in-class--make
+                (name docstring parent-types
+                      &aux (parents
+                            (mapcar (lambda (type)
+                                      (or (get type 'cl--class)
+                                          (error "Unknown type: %S" type)))
+                                    parent-types))))
                (:copier nil))
   "Type descriptors for built-in types.
 The `slots' (and hence `index-table') are currently unused."
@@ -335,13 +328,7 @@ The `slots' (and hence `index-table') are currently unused."
           ;; (message "Missing predicate for: %S" name)
           nil)
        (put ',name 'cl--class
-            (built-in-class--make ',name ,docstring
-                                  (mapcar (lambda (type)
-                                            (let ((class (get type 'cl--class)))
-                                              (unless class
-                                                (error "Unknown type: %S" type))
-                                              class))
-                                          ',parents))))))
+            (built-in-class--make ',name ,docstring ',parents)))))
 
 ;; FIXME: Our type DAG has various quirks:
 ;; - Some `keyword's are also `symbol-with-pos' but that's not reflected
