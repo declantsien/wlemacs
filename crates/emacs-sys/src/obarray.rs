@@ -4,7 +4,6 @@ use crate::bindings::check_obarray;
 use crate::bindings::globals;
 use crate::bindings::intern_driver;
 use crate::bindings::oblookup;
-use crate::bindings::Fpurecopy;
 use crate::lisp::LispObject;
 use crate::multibyte::LispStringRef;
 use crate::multibyte::LispSymbolOrString;
@@ -76,13 +75,7 @@ impl LispObarrayRef {
         if tem.is_symbol() {
             tem
         } else {
-            let string_copy: LispObject = if unsafe { globals.Vpurify_flag }.is_not_nil() {
-                // When Emacs is running lisp code to dump to an executable, make
-                // use of pure storage.
-                unsafe { Fpurecopy(string.into()) }
-            } else {
-                string.into()
-            };
+            let string_copy: LispObject = string.into();
             unsafe { intern_driver(string_copy, self.into(), tem) }
         }
     }

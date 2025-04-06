@@ -1024,7 +1024,7 @@ pub extern "C" fn syms_of_winit_term() {
         Fprovide(QHaiku, Qnil);
     }
 
-    let winit_keysym_table = unsafe { make_hash_table(&hashtest_eql, 900, Weak_None, false) };
+    let winit_keysym_table = unsafe { make_hash_table(&hashtest_eql, 900, Weak_None) };
 
     // Hash table of character codes indexed by X keysym codes.
     #[rustfmt::skip]
