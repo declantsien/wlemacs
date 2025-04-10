@@ -8,6 +8,7 @@
 // https://servo.zulipchat.com/
 
 mod frame;
+mod output_data;
 
 // pub mod bindings;
 mod bitmap;
