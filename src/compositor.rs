@@ -45,9 +45,9 @@ use webrender_api::{
 };
 use winit::window::WindowId;
 
+use crate::output_data::OutputData;
 use crate::rendering::RenderingContext;
 use crate::touch::{TouchAction, TouchHandler};
-use crate::output_data::OutputData;
 
 /// Data used to construct a compositor.
 pub struct InitialCompositorState {

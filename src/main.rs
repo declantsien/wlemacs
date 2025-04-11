@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use versoview::display_info::EventLoopProxyMessage;
-use versoview::{Result, DisplayInfo};
+use versoview::{DisplayInfo, Result};
 use winit::application::ApplicationHandler;
 use winit::event_loop::{self, DeviceEvents};
 use winit::event_loop::{EventLoop, EventLoopProxy};

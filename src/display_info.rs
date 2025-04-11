@@ -46,8 +46,8 @@ use winit::{
 use crate::{
     compositor::{IOCompositor, InitialCompositorState, ShutdownState},
     config::{Config, parse_cli_args},
-    webview::execute_script,
     output_data::OutputData,
+    webview::execute_script,
 };
 
 /// Main entry point of Verso browser.

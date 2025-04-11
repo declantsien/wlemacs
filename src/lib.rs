@@ -9,24 +9,24 @@
 pub mod compositor;
 /// Utilities to read options and preferences.
 pub mod config;
+/// Main entry types and functions.
+pub mod display_info;
 /// Error and result types.
 pub mod errors;
 /// Utilities to handle keyboard inputs and states.
 pub mod keyboard;
+/// Verso's window types to handle Winit's window.
+pub mod output_data;
 /// Verso's rendering context.
 pub mod rendering;
 /// Utilities to handle touch inputs and states.
 pub mod touch;
-/// Main entry types and functions.
-pub mod display_info;
 /// Web view types to handle web browsing contexts.
 pub mod webview;
-/// Verso's window types to handle Winit's window.
-pub mod output_data;
-pub use errors::{Error, Result};
 /// Utilities to write tests.
 // pub mod test;
 pub use display_info::DisplayInfo;
+pub use errors::{Error, Result};
 /// Re-exporting Winit for the sake of convenience.
 pub use winit;
 /// Window tabs manager

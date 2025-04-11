@@ -43,10 +43,10 @@ use winit::{
 
 use crate::{
     compositor::IOCompositor,
+    display_info::send_to_constellation,
     keyboard::keyboard_event_from_winit,
     rendering::{RenderingContext, gl_config_picker},
     tab::TabManager,
-    display_info::send_to_constellation,
     webview::{
         Panel, WebView,
         context_menu::{ContextMenu, Menu},

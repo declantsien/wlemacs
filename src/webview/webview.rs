@@ -16,10 +16,10 @@ use webrender_api::units::DeviceIntRect;
 
 use crate::{
     compositor::IOCompositor,
-    tab::{TabActivateRequest, TabCloseRequest, TabCreateResponse},
     display_info::send_to_constellation,
-    webview::prompt::{HttpBasicAuthInputResult, PromptDialog, PromptInputResult, PromptSender},
     output_data::OutputData,
+    tab::{TabActivateRequest, TabCloseRequest, TabCreateResponse},
+    webview::prompt::{HttpBasicAuthInputResult, PromptDialog, PromptInputResult, PromptSender},
 };
 
 #[cfg(linux)]
