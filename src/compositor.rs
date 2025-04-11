@@ -47,7 +47,7 @@ use winit::window::WindowId;
 
 use crate::rendering::RenderingContext;
 use crate::touch::{TouchAction, TouchHandler};
-use crate::window::OutputData;
+use crate::output_data::OutputData;
 
 /// Data used to construct a compositor.
 pub struct InitialCompositorState {

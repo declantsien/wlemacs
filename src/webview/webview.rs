@@ -19,7 +19,7 @@ use crate::{
     tab::{TabActivateRequest, TabCloseRequest, TabCreateResponse},
     verso::send_to_constellation,
     webview::prompt::{HttpBasicAuthInputResult, PromptDialog, PromptInputResult, PromptSender},
-    window::OutputData,
+    output_data::OutputData,
 };
 
 #[cfg(linux)]
@@ -96,7 +96,7 @@ impl OutputData {
             }
             EmbedderMsg::NotifyLoadStatusChanged(_webview_id, status) => match status {
                 LoadStatus::Complete => {
-                    self.window.request_redraw();
+                    self.winit_window.request_redraw();
                     send_to_constellation(
                         sender,
                         EmbedderToConstellationMessage::FocusWebView(webview_id),
@@ -408,7 +408,7 @@ impl OutputData {
             }
             EmbedderMsg::NotifyLoadStatusChanged(_webview_id, status) => {
                 if status == LoadStatus::Complete {
-                    self.window.request_redraw();
+                    self.winit_window.request_redraw();
                     send_to_constellation(
                         sender,
                         EmbedderToConstellationMessage::FocusWebView(panel_id),
@@ -503,16 +503,16 @@ impl OutputData {
                                 return true;
                             }
                             "MINIMIZE" => {
-                                self.window.set_minimized(true);
+                                self.winit_window.set_minimized(true);
                                 return false;
                             }
                             "MAXIMIZE" | "DBCLICK_PANEL" => {
-                                let is_maximized = self.window.is_maximized();
-                                self.window.set_maximized(!is_maximized);
+                                let is_maximized = self.winit_window.is_maximized();
+                                self.winit_window.set_maximized(!is_maximized);
                                 return false;
                             }
                             "DRAG_WINDOW" => {
-                                let _ = self.window.drag_window();
+                                let _ = self.winit_window.drag_window();
                                 return false;
                             }
                             _ => {}

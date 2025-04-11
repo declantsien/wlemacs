@@ -8,7 +8,7 @@ use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 /* Wayland Implementation */
 #[cfg(linux)]
-use crate::{verso::send_to_constellation, webview::WebView, window::OutputData};
+use crate::{verso::send_to_constellation, webview::WebView, output_data::OutputData};
 #[cfg(linux)]
 use base::id::WebViewId;
 #[cfg(linux)]

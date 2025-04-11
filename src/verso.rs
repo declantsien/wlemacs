@@ -47,7 +47,7 @@ use crate::{
     compositor::{IOCompositor, InitialCompositorState, ShutdownState},
     config::{Config, parse_cli_args},
     webview::execute_script,
-    window::OutputData,
+    output_data::OutputData,
 };
 
 /// Main entry point of Verso browser.

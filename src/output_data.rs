@@ -75,7 +75,7 @@ pub(crate) struct EventListeners {
 /// A Verso window is a Winit window containing several web views.
 pub struct OutputData {
     /// Access to Winit window
-    pub(crate) window: WinitWindow,
+    pub(crate) winit_window: WinitWindow,
     /// GL surface of the window
     pub(crate) surface: Surface<WindowSurface>,
     /// The main panel of this window.
@@ -137,7 +137,7 @@ impl OutputData {
 
         (
             Self {
-                window,
+                winit_window: window,
                 surface,
                 panel: None,
                 event_listeners: Default::default(),
@@ -181,7 +181,7 @@ impl OutputData {
             .unwrap();
 
         let mut window = Self {
-            window,
+            winit_window: window,
             surface,
             panel: None,
             // webview: None,
@@ -222,7 +222,7 @@ impl OutputData {
         constellation_sender: &Sender<EmbedderToConstellationMessage>,
         initial_url: url::Url,
     ) {
-        let size = self.window.inner_size();
+        let size = self.winit_window.inner_size();
         let size = Size2D::new(size.width as i32, size.height as i32);
         let panel_id = WebViewId::new();
         self.panel = Some(Panel {
@@ -371,7 +371,7 @@ impl OutputData {
         match event {
             WindowEvent::RedrawRequested => {
                 if compositor.ready_to_present {
-                    self.window.pre_present_notify();
+                    self.winit_window.pre_present_notify();
                     if let Err(err) = compositor.rendering_context.present(&self.surface) {
                         log::warn!("Failed to present surface: {:?}", err);
                     }
@@ -384,7 +384,7 @@ impl OutputData {
                 }
             }
             WindowEvent::Resized(size) => {
-                if self.window.has_focus() {
+                if self.winit_window.has_focus() {
                     self.resizing = true;
                 }
                 let size = Size2D::new(size.width, size.height);
@@ -533,7 +533,7 @@ impl OutputData {
                         (*x as f64, (*y * LINE_HEIGHT) as f64, WheelMode::DeltaLine)
                     }
                     winit::event::MouseScrollDelta::PixelDelta(position) => {
-                        let position = position.to_logical::<f64>(self.window.scale_factor());
+                        let position = position.to_logical::<f64>(self.winit_window.scale_factor());
                         (position.x, position.y, WheelMode::DeltaPixel)
                     }
                 };
@@ -738,29 +738,29 @@ impl OutputData {
 
     /// Queues a Winit `WindowEvent::RedrawRequested` event to be emitted that aligns with the windowing system drawing loop.
     pub fn request_redraw(&self) {
-        self.window.request_redraw()
+        self.winit_window.request_redraw()
     }
 
     /// Size of the window that's used by webrender.
     pub fn size(&self) -> DeviceIntSize {
-        let size = self.window.inner_size();
+        let size = self.winit_window.inner_size();
         Size2D::new(size.width as i32, size.height as i32)
     }
 
     /// Size of the window, including the window decorations.
     pub fn outer_size(&self) -> DeviceIntSize {
-        let size = self.window.outer_size();
+        let size = self.winit_window.outer_size();
         Size2D::new(size.width as i32, size.height as i32)
     }
 
     /// Get Winit window ID of the window.
     pub fn id(&self) -> WindowId {
-        self.window.id()
+        self.winit_window.id()
     }
 
     /// Scale factor of the window. This is also known as HIDPI.
     pub fn scale_factor(&self) -> f64 {
-        self.window.scale_factor()
+        self.winit_window.scale_factor()
     }
 
     /// Check if the window has such webview.
@@ -901,7 +901,7 @@ impl OutputData {
             Cursor::ZoomOut => CursorIcon::ZoomOut,
             _ => CursorIcon::Default,
         };
-        self.window.set_cursor(winit_cursor);
+        self.winit_window.set_cursor(winit_cursor);
     }
 
     /// This method enables IME and set the IME cursor area of the window.
@@ -913,13 +913,13 @@ impl OutputData {
         _multilinee: bool,
         position: euclid::Box2D<i32, webrender_api::units::DevicePixel>,
     ) {
-        self.window.set_ime_allowed(true);
+        self.winit_window.set_ime_allowed(true);
         let height: f64 = if self.tab_manager.count() > 1 {
             PANEL_HEIGHT + TAB_HEIGHT + PANEL_PADDING
         } else {
             PANEL_HEIGHT + PANEL_PADDING
         };
-        self.window.set_ime_cursor_area(
+        self.winit_window.set_ime_cursor_area(
             LogicalPosition::new(position.min.x, position.min.y + height as i32),
             LogicalSize::new(0, position.max.y - position.min.y),
         );
@@ -927,7 +927,7 @@ impl OutputData {
 
     /// This method disables IME of the window.
     pub fn hide_ime(&self) {
-        self.window.set_ime_allowed(false);
+        self.winit_window.set_ime_allowed(false);
     }
 
     /// Show notification
@@ -984,7 +984,7 @@ impl OutputData {
         let _ = menu.append_items(&[&back, &forward, &reload]);
 
         let context_menu = ContextMenu::new_with_menu(servo_sender, Menu(menu));
-        context_menu.show(self.window.window_handle().unwrap());
+        context_menu.show(self.winit_window.window_handle().unwrap());
 
         context_menu
     }

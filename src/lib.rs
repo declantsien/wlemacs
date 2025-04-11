@@ -22,7 +22,7 @@ pub mod verso;
 /// Web view types to handle web browsing contexts.
 pub mod webview;
 /// Verso's window types to handle Winit's window.
-pub mod window;
+pub mod output_data;
 pub use errors::{Error, Result};
 /// Utilities to write tests.
 // pub mod test;
