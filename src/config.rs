@@ -322,7 +322,7 @@ impl Config {
 
         let mut window_attributes = winit::window::Window::default_attributes()
             .with_transparent(config.transparent)
-            .with_decorations(config.decorated)
+            .with_decorations(config.decorated || true)
             .with_title(config.title.unwrap_or("Verso".to_owned()));
         // set min inner size
         // should be at least able to show the whole control panel

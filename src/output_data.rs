@@ -1244,6 +1244,7 @@ use raw_window_handle::{AppKitWindowHandle, RawWindowHandle};
 /// Window decoration for macOS.
 #[cfg(macos)]
 pub unsafe fn decorate_window(view: *mut AnyObject, _position: LogicalPosition<f64>) {
+    return;
     use objc2::rc::Id;
     use objc2_app_kit::{NSView, NSWindowStyleMask, NSWindowTitleVisibility};
 
