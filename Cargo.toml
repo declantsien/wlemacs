@@ -1,0 +1,212 @@
+[workspace]
+members = []
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+ipc-channel = "0.19"
+bincode = "1"
+url = { version = "2.5.2", features = ["serde"] }
+log = "0.4"
+headers = "0.4"
+http = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+dpi = { version = "0.1", features = ["serde"] }
+
+[package]
+name = "versoview"
+version = "0.0.1"
+authors = ["Wu Yu Wei"]
+edition = "2024"
+license = "Apache-2.0 OR MIT"
+description = "An innovative web browser"
+readme = "README.md"
+homepage = "https://versotile.org/verso"
+repository = "https://github.com/versotile-org/verso"
+documentation = "https://docs.versotile.org/verso"
+categories = ["web-programming"]
+
+[package.metadata.packager]
+name = "verso"
+product-name = "verso"
+identifier = "org.versotile.verso"
+version = "0.0.1"
+before-each-package-command = "python etc/package_libs.py"
+resources = [
+  "resources",
+  "icons",
+  "target/release/build/**/libEGL.dll",
+  "target/release/build/**/libGLESv2.dll",
+  "target/release/lib",
+]
+icons = ["icons/icon256x256.png", "icons/icon.ico"]
+
+[package.metadata.packager.nsis]
+appdata-paths = ["$LOCALAPPDATA/$IDENTIFIER"]
+
+[package.metadata.docs.rs]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+  "x86_64-apple-darwin",
+]
+
+[features]
+default = []
+packager = ["dep:cargo-packager-resource-resolver"]
+flatpak = []
+tracing = []
+
+[build-dependencies]
+cfg_aliases = "0.2"
+
+[dependencies]
+arboard = "3.4.0"
+crossbeam-channel = "0.5"
+env_logger = "0.11"
+euclid = "0.22"
+getopts = "0.2.17"
+gleam = "0.15"
+glutin = "0.32.0"
+glutin-winit = "0.5.0"
+ipc-channel = { workspace = true }
+keyboard-types = "0.7"
+log = { workspace = true }
+raw-window-handle = { version = "0.6", features = ["std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs"] }
+sparkle = "0.1.26"
+thiserror = "1.0"
+winit = { version = "0.30", features = ["rwh_06"] }
+dpi = { workspace = true }
+url = { workspace = true }
+headers = { workspace = true }
+http = { workspace = true }
+versoview_messages = { path = "../verso/versoview_messages" }
+serde = { workspace = true }
+serde_json = "1.0"
+bincode = { workspace = true }
+mime = "0.3"
+uuid = { workspace = true }
+rfd = "0.15"
+# Servo repo crates
+background_hang_monitor = { path = "../servo/components/background_hang_monitor/", features = ["sampler"] }
+base.path = "../servo/components/shared/base/"
+bluetooth.path = "../servo/components/bluetooth/"
+bluetooth_traits.path = "../servo/components/shared/bluetooth/"
+canvas.path = "../servo/components/canvas/"
+compositing_traits.path = "../servo/components/shared/compositing/"
+constellation = { path = "../servo/components/constellation", features = ["webgpu", "bluetooth"] }
+constellation_traits = { path = "../servo/components/shared/constellation/", features = ["webgpu", "bluetooth"] }
+devtools.path = "../servo/components/devtools/"
+embedder_traits.path = "../servo/components/shared/embedder/"
+fonts.path = "../servo/components/fonts/"
+layout_thread_2020.path = "../servo/components/layout_thread_2020/"
+media.path = "../servo/components/media/"
+net.path = "../servo/components/net/"
+net_traits.path = "../servo/components/shared/net/"
+profile.path = "../servo/components/profile/"
+profile_traits.path = "../servo/components/shared/profile/"
+script = { path = "../servo/components/script", features = ["webgpu", "bluetooth"] }
+script_traits = { path = "../servo/components/shared/script", features = ["bluetooth"] }
+servo_config.path = "../servo/components/config/"
+servo_geometry.path = "../servo/components/geometry/"
+servo_url.path = "../servo/components/url/"
+webdriver_server.path = "../servo/components/webdriver_server/"
+# webrender_traits.path = "../servo/components/shared/webrender/"
+webgpu.path = "../servo/components/webgpu/"
+webgpu_traits.path = "../servo/components/shared/webgpu/"
+# Servo org crates
+servo-media.path = "../servo-media/servo-media/"
+servo-media-dummy.path = "../servo-media/backends/dummy/"
+stylo = { path = "../stylo/style", features = ["servo"] }
+stylo_traits = { path = "../stylo/style_traits", features = ["servo"] }
+webrender = { path = "../webrender/webrender", features = ["capture"] }
+webrender_api = { path = "../webrender/webrender_api" }
+# Packager feature
+cargo-packager-resource-resolver = { version = "0.1.1", features = [
+  "auto-detect-format",
+], optional = true }
+
+[target.'cfg(all(unix, not(target_os = "macos"), not(target_os = "ios"), not(target_os = "android")))'.dependencies]
+notify-rust = { version = "4.11.5", features = ["images"] }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+notify-rust = "4.11.5"
+muda = "0.15"
+
+[target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
+objc2 = "0.5"
+objc2-foundation = { version = "0.2.2", features = ["NSThread"] }
+objc2-app-kit = { version = "0.2", features = [
+  "NSView",
+  "NSResponder",
+  "NSWindow",
+] }
+
+# [[test]]
+# name = "general"
+# harness = false
+
+[profile.release-lto]
+inherits = "release"
+lto = true
+
+# Tell clippy to allow e.g. #[cfg(macos)]
+[lints.clippy]
+mismatched_target_os = "allow"
+
+[patch."https://github.com/servo/servo.git"]
+background_hang_monitor.path = "../servo/components/background_hang_monitor/"
+base.path = "../servo/components/shared/base/"
+bluetooth.path = "../servo/components/bluetooth/"
+bluetooth_traits.path = "../servo/components/shared/bluetooth/"
+canvas.path = "../servo/components/canvas/"
+compositing_traits.path = "../servo/components/shared/compositing/"
+constellation.path = "../servo/components/constellation/"
+constellation_traits.path = "../servo/components/shared/constellation/"
+devtools.path = "../servo/components/devtools/"
+embedder_traits.path = "../servo/components/shared/embedder/"
+fonts.path = "../servo/components/fonts/"
+layout_thread_2020.path = "../servo/components/layout_thread_2020/"
+media.path = "../servo/components/media/"
+net.path = "../servo/components/net/"
+net_traits.path = "../servo/components/shared/net/"
+profile.path = "../servo/components/profile/"
+profile_traits.path = "../servo/components/shared/profile/"
+script.path = "../servo/components/script/"
+script_traits.path = "../servo/components/shared/script/"
+servo_config.path = "../servo/components/config/"
+servo_geometry.path = "../servo/components/geometry/"
+servo_url.path = "../servo/components/url/"
+webdriver_server.path = "../servo/components/webdriver_server/"
+# webrender_traits.path = "../servo/components/shared/webrender/"
+webgpu.path = "../servo/components/webgpu/"
+
+[patch."https://github.com/servo/webrender"]
+webrender = { path = "../webrender/webrender" }
+webrender_api = { path = "../webrender/webrender_api" }
+wr_malloc_size_of = { path = "../webrender/wr_malloc_size_of" }
+
+[patch."https://github.com/servo/stylo"]
+selectors = { path = "../stylo/selectors" }
+servo_arc = { path = "../stylo/servo_arc" }
+stylo_atoms = { path = "../stylo/stylo_atoms" }
+stylo_static_prefs = { path = "../stylo/stylo_static_prefs" }
+stylo = { path = "../stylo/style" }
+stylo_config = { path = "../stylo/stylo_config" }
+stylo_derive = { path = "../stylo/style_derive" }
+stylo_dom = { path = "../stylo/stylo_dom" }
+stylo_malloc_size_of = { path = "../stylo/malloc_size_of" }
+stylo_traits = { path = "../stylo/style_traits" }
+to_shmem = { path = "../stylo/to_shmem" }
+
+[patch."https://github.com/servo/media"]
+servo-media.path = "../servo-media/servo-media/"
+servo-media-dummy.path = "../servo-media/backends/dummy/"
+
+[patch."https://github.com/servo/mozjs"]
+mozjs = { path = "../mozjs/mozjs/" }
+mozjs_sys = { path = "../mozjs/mozjs-sys/" }
+
+[patch."https://github.com/gfx-rs/wgpu"]
+wgpu-core = { path = "../wgpu/wgpu-core/" }
+wgpu-types = { path = "../wgpu/wgpu-types/" }
