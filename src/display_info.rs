@@ -51,7 +51,7 @@ use crate::{
 };
 
 /// Main entry point of Verso browser.
-pub struct Verso {
+pub struct DisplayInfo {
     windows: HashMap<WindowId, (OutputData, DocumentId)>,
     compositor: Option<IOCompositor>,
     constellation_sender: Sender<EmbedderToConstellationMessage>,
@@ -66,7 +66,7 @@ pub struct Verso {
     config: Config,
 }
 
-impl Verso {
+impl DisplayInfo {
     /// Create a Verso instance from Winit's window and event loop proxy.
     ///
     /// Following threads will be created while initializing Verso based on configurations:
@@ -354,7 +354,7 @@ impl Verso {
         windows.insert(window.id(), (window, webrender_document));
 
         // Create Verso instance
-        let verso = Verso {
+        let verso = DisplayInfo {
             windows,
             compositor: Some(compositor),
             constellation_sender,

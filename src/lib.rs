@@ -18,7 +18,7 @@ pub mod rendering;
 /// Utilities to handle touch inputs and states.
 pub mod touch;
 /// Main entry types and functions.
-pub mod verso;
+pub mod display_info;
 /// Web view types to handle web browsing contexts.
 pub mod webview;
 /// Verso's window types to handle Winit's window.
@@ -26,7 +26,7 @@ pub mod output_data;
 pub use errors::{Error, Result};
 /// Utilities to write tests.
 // pub mod test;
-pub use verso::Verso;
+pub use display_info::DisplayInfo;
 /// Re-exporting Winit for the sake of convenience.
 pub use winit;
 /// Window tabs manager

@@ -17,7 +17,7 @@ use webrender_api::units::DeviceIntRect;
 use crate::{
     compositor::IOCompositor,
     tab::{TabActivateRequest, TabCloseRequest, TabCreateResponse},
-    verso::send_to_constellation,
+    display_info::send_to_constellation,
     webview::prompt::{HttpBasicAuthInputResult, PromptDialog, PromptInputResult, PromptSender},
     output_data::OutputData,
 };

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use servo_url::ServoUrl;
 use webrender_api::units::DeviceIntRect;
 
-use crate::{verso::send_to_constellation, webview::WebView};
+use crate::{display_info::send_to_constellation, webview::WebView};
 
 /// Prompt Type
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

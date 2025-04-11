@@ -1,20 +1,20 @@
 // Prevent console window from appearing on Windows
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use versoview::verso::EventLoopProxyMessage;
-use versoview::{Result, Verso};
+use versoview::display_info::EventLoopProxyMessage;
+use versoview::{Result, DisplayInfo};
 use winit::application::ApplicationHandler;
 use winit::event_loop::{self, DeviceEvents};
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
 struct App {
-    verso: Option<Verso>,
+    verso: Option<DisplayInfo>,
     proxy: EventLoopProxy<EventLoopProxyMessage>,
 }
 
 impl ApplicationHandler<EventLoopProxyMessage> for App {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.verso = Some(Verso::new(event_loop, self.proxy.clone()));
+        self.verso = Some(DisplayInfo::new(event_loop, self.proxy.clone()));
     }
 
     fn window_event(

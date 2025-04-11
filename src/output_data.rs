@@ -46,7 +46,7 @@ use crate::{
     keyboard::keyboard_event_from_winit,
     rendering::{RenderingContext, gl_config_picker},
     tab::TabManager,
-    verso::send_to_constellation,
+    display_info::send_to_constellation,
     webview::{
         Panel, WebView,
         context_menu::{ContextMenu, Menu},
