@@ -47,12 +47,12 @@ use crate::{
     compositor::{IOCompositor, InitialCompositorState, ShutdownState},
     config::{Config, parse_cli_args},
     webview::execute_script,
-    window::Window,
+    window::OutputData,
 };
 
 /// Main entry point of Verso browser.
 pub struct Verso {
-    windows: HashMap<WindowId, (Window, DocumentId)>,
+    windows: HashMap<WindowId, (OutputData, DocumentId)>,
     compositor: Option<IOCompositor>,
     constellation_sender: Sender<EmbedderToConstellationMessage>,
     to_controller_sender: Option<IpcSender<ToControllerMessage>>,
@@ -97,7 +97,7 @@ impl Verso {
         config.init();
         // Reserving a namespace to create WebViewId.
         PipelineNamespace::install(PipelineNamespaceId(0));
-        let (mut window, rendering_context) = Window::new(evl, window_settings);
+        let (mut window, rendering_context) = OutputData::new(evl, window_settings);
         let event_loop_waker = Box::new(Waker(proxy));
         let opts = opts::get();
 
@@ -477,7 +477,7 @@ impl Verso {
                                     self.clipboard.as_mut(),
                                     compositor,
                                 ) {
-                                    let mut window = Window::new_with_compositor(
+                                    let mut window = OutputData::new_with_compositor(
                                         evl,
                                         self.config.window_attributes.clone(),
                                         compositor,
@@ -835,11 +835,11 @@ impl Verso {
     //     }
     // }
 
-    fn first_window(&self) -> Option<&Window> {
+    fn first_window(&self) -> Option<&OutputData> {
         self.windows.values().next().map(|(window, _)| window)
     }
 
-    fn first_window_mut(&mut self) -> Option<&mut Window> {
+    fn first_window_mut(&mut self) -> Option<&mut OutputData> {
         self.windows.values_mut().next().map(|(window, _)| window)
     }
 

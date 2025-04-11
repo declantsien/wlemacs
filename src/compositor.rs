@@ -47,7 +47,7 @@ use winit::window::WindowId;
 
 use crate::rendering::RenderingContext;
 use crate::touch::{TouchAction, TouchHandler};
-use crate::window::Window;
+use crate::window::OutputData;
 
 /// Data used to construct a compositor.
 pub struct InitialCompositorState {
@@ -476,7 +476,7 @@ impl IOCompositor {
     fn handle_browser_message(
         &mut self,
         msg: CompositorMsg,
-        windows: &mut HashMap<WindowId, (Window, DocumentId)>,
+        windows: &mut HashMap<WindowId, (OutputData, DocumentId)>,
     ) -> bool {
         match self.shutdown_state {
             ShutdownState::NotShuttingDown => {}
@@ -951,7 +951,7 @@ impl IOCompositor {
     /// Set the root pipeline for our WebRender scene to a display list that consists of an iframe
     /// for each visible top-level browsing context, applying a transformation on the root for
     /// pinch zoom, page zoom, and HiDPI scaling.
-    pub fn send_root_pipeline_display_list(&mut self, window: &Window) {
+    pub fn send_root_pipeline_display_list(&mut self, window: &OutputData) {
         let mut transaction = Transaction::new();
         self.send_root_pipeline_display_list_in_transaction(&mut transaction, window);
         self.generate_frame(&mut transaction, RenderReasons::SCENE);
@@ -965,7 +965,7 @@ impl IOCompositor {
     fn send_root_pipeline_display_list_in_transaction(
         &self,
         transaction: &mut Transaction,
-        window: &Window,
+        window: &OutputData,
     ) {
         // Every display list needs a pipeline, but we'd like to choose one that is unlikely
         // to conflict with our content pipelines, which start at (1, 1). (0, 0) is WebRender's
@@ -1095,7 +1095,7 @@ impl IOCompositor {
     fn create_or_update_webview(
         &mut self,
         frame_tree: &SendableFrameTree,
-        windows: &mut HashMap<WindowId, (Window, DocumentId)>,
+        windows: &mut HashMap<WindowId, (OutputData, DocumentId)>,
     ) {
         let pipeline_id = frame_tree.pipeline.id;
         let webview_id = frame_tree.pipeline.webview_id;
@@ -1119,7 +1119,7 @@ impl IOCompositor {
     fn remove_webview(
         &mut self,
         webview_id: WebViewId,
-        windows: &mut HashMap<WindowId, (Window, DocumentId)>,
+        windows: &mut HashMap<WindowId, (OutputData, DocumentId)>,
     ) {
         debug!("Verso Compositor is removing webview {}", webview_id);
         let mut window_id = None;
@@ -1236,7 +1236,7 @@ impl IOCompositor {
     }
 
     /// Change the current window of the compositor should display.
-    pub fn swap_current_window(&mut self, window: &mut Window) {
+    pub fn swap_current_window(&mut self, window: &mut OutputData) {
         if window.id() != self.current_window {
             debug!(
                 "Verso Compositor swap current window from {:?} to {:?}",
@@ -1250,7 +1250,7 @@ impl IOCompositor {
     }
 
     /// Resize the rendering context and all web views.
-    pub fn resize(&mut self, size: Size2D<i32, DevicePixel>, window: &mut Window) {
+    pub fn resize(&mut self, size: Size2D<i32, DevicePixel>, window: &mut OutputData) {
         if size.height == 0 || size.width == 0 {
             return;
         }
@@ -1286,7 +1286,7 @@ impl IOCompositor {
     }
 
     /// Handle the window resize event.
-    pub fn on_resize_window_event(&mut self, new_viewport: DeviceIntSize, window: &Window) {
+    pub fn on_resize_window_event(&mut self, new_viewport: DeviceIntSize, window: &OutputData) {
         if self.shutdown_state != ShutdownState::NotShuttingDown {
             return;
         }
@@ -1303,7 +1303,7 @@ impl IOCompositor {
 
     /// Handle the window scale factor event and return a boolean to tell embedder if it should further
     /// handle the scale factor event.
-    pub fn on_scale_factor_event(&mut self, scale_factor: f32, window: &Window) -> bool {
+    pub fn on_scale_factor_event(&mut self, scale_factor: f32, window: &OutputData) -> bool {
         if self.shutdown_state != ShutdownState::NotShuttingDown {
             return false;
         }
@@ -1564,7 +1564,7 @@ impl IOCompositor {
             }));
     }
 
-    fn process_pending_scroll_events(&mut self, window: &Window) {
+    fn process_pending_scroll_events(&mut self, window: &OutputData) {
         // Batch up all scroll events into one, or else we'll do way too much painting.
         let mut combined_scroll_event: Option<ScrollEvent> = None;
         let mut combined_magnification = 1.0;
@@ -1761,7 +1761,7 @@ impl IOCompositor {
     }
 
     /// Handle zoom reset event
-    pub fn on_zoom_reset_window_event(&mut self, window: &Window) {
+    pub fn on_zoom_reset_window_event(&mut self, window: &OutputData) {
         if self.shutdown_state != ShutdownState::NotShuttingDown {
             return;
         }
@@ -1771,7 +1771,7 @@ impl IOCompositor {
     }
 
     /// Handle zoom event in the window
-    pub fn on_zoom_window_event(&mut self, magnification: f32, window: &Window) {
+    pub fn on_zoom_window_event(&mut self, magnification: f32, window: &OutputData) {
         if self.shutdown_state != ShutdownState::NotShuttingDown {
             return;
         }
@@ -1781,7 +1781,7 @@ impl IOCompositor {
         self.update_after_zoom_or_hidpi_change(window);
     }
 
-    fn update_after_zoom_or_hidpi_change(&mut self, window: &Window) {
+    fn update_after_zoom_or_hidpi_change(&mut self, window: &OutputData) {
         for webview in window.painting_order() {
             self.send_window_size_message_for_top_level_browser_context(
                 webview.rect,
@@ -1898,7 +1898,7 @@ impl IOCompositor {
     }
 
     /// Composite to the given target if any, or the current target otherwise.
-    pub fn composite(&mut self, window: &Window) {
+    pub fn composite(&mut self, window: &OutputData) {
         match self.composite_specific_target(window) {
             Ok(_) => {
                 if self.wait_for_stable_image {
@@ -1915,7 +1915,7 @@ impl IOCompositor {
     }
 
     /// Composite to the given target if any, or the current target otherwise.
-    fn composite_specific_target(&mut self, window: &Window) -> Result<(), UnableToComposite> {
+    fn composite_specific_target(&mut self, window: &OutputData) -> Result<(), UnableToComposite> {
         if let Err(err) = self
             .rendering_context
             .make_gl_context_current(&window.surface)
@@ -1996,7 +1996,7 @@ impl IOCompositor {
     /// Receive and handle compositor messages.
     pub fn receive_messages(
         &mut self,
-        windows: &mut HashMap<WindowId, (Window, DocumentId)>,
+        windows: &mut HashMap<WindowId, (OutputData, DocumentId)>,
     ) -> bool {
         // Check for new messages coming from the other threads in the system.
         let mut compositor_messages = vec![];
@@ -2026,7 +2026,7 @@ impl IOCompositor {
     /// Perform composition and related actions.
     pub fn perform_updates(
         &mut self,
-        windows: &mut HashMap<WindowId, (Window, DocumentId)>,
+        windows: &mut HashMap<WindowId, (OutputData, DocumentId)>,
     ) -> bool {
         if self.shutdown_state == ShutdownState::FinishedShuttingDown {
             return false;

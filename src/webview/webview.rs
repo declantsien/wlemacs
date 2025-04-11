@@ -19,7 +19,7 @@ use crate::{
     tab::{TabActivateRequest, TabCloseRequest, TabCreateResponse},
     verso::send_to_constellation,
     webview::prompt::{HttpBasicAuthInputResult, PromptDialog, PromptInputResult, PromptSender},
-    window::Window,
+    window::OutputData,
 };
 
 #[cfg(linux)]
@@ -64,7 +64,7 @@ pub struct Panel {
     pub(crate) initial_url: servo_url::ServoUrl,
 }
 
-impl Window {
+impl OutputData {
     /// Handle servo messages with corresponding web view ID.
     pub fn handle_servo_messages_with_webview(
         &mut self,

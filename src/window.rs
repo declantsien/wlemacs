@@ -73,7 +73,7 @@ pub(crate) struct EventListeners {
 }
 
 /// A Verso window is a Winit window containing several web views.
-pub struct Window {
+pub struct OutputData {
     /// Access to Winit window
     pub(crate) window: WinitWindow,
     /// GL surface of the window
@@ -102,7 +102,7 @@ pub struct Window {
     pub(crate) focused_webview_id: Option<WebViewId>,
 }
 
-impl Window {
+impl OutputData {
     /// Create a Verso window from Winit window and return the rendering context.
     pub fn new(
         evl: &ActiveEventLoop,
@@ -960,7 +960,7 @@ impl Window {
 }
 
 // Context Menu methods
-impl Window {
+impl OutputData {
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     pub(crate) fn show_context_menu(
         &self,
@@ -1117,7 +1117,7 @@ impl Window {
 }
 
 // Prompt methods
-impl Window {
+impl OutputData {
     /// Close window's prompt dialog
     pub(crate) fn close_prompt_dialog(&mut self, tab_id: WebViewId) {
         if let Some(sender) = self
@@ -1148,7 +1148,7 @@ impl Window {
 
 // Non-decorated window resizing for Windows and Linux.
 #[cfg(any(linux, target_os = "windows"))]
-impl Window {
+impl OutputData {
     /// Check current window state is allowed to drag-resize.
     fn is_resizable(&self) -> bool {
         // TODO: Check if the window is in fullscreen mode.
