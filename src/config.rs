@@ -296,7 +296,7 @@ impl Config {
         );
         Self::from_controller_config(ConfigFromController {
             url: cli_args.url,
-            with_panel: !cli_args.no_panel,
+            with_panel: false,
             devtools_port: cli_args.devtools_port,
             profiler_settings: cli_args.profiler_settings,
             user_agent: cli_args.user_agent,
@@ -315,7 +315,7 @@ impl Config {
         let resource_dir = config
             .resources_directory
             .unwrap_or_else(resources_dir_path);
-        let with_panel = config.with_panel;
+        let with_panel = false;
         let user_agent = config
             .user_agent
             .unwrap_or_else(|| default_user_agent_string().to_string());
