@@ -7210,9 +7210,9 @@ if test "${HAVE_W32}" = "yes"; then
     RUST_ARCHIVE_EXTENSION=".lib"
 fi
 
-WR_OBJ=
-WR_LIBS=
-LIBWR_ARCHIVE=
+WRGUI_OBJ=
+WRGUI_LIBS=
+LIBWRGUI_ARCHIVE=
 if test "${with_webrender}" = "yes" ; then
 
   if test "${window_system}" != "pgtk" && test "${window_system}" != "wlc" \
@@ -7230,13 +7230,13 @@ if test "${with_webrender}" = "yes" ; then
   AC_DEFINE(HAVE_NATIVE_IMAGE_API, 1, [Define to use native OS APIs for images.])
             NATIVE_IMAGE_API="yes (webrender)"
 
-  WR_OBJ="wr.o"
-  LIBWR_ARCHIVE="libwr$RUST_ARCHIVE_EXTENSION"
-  dnl WR_LIBS="$LIBWR_ARCHIVE"
+  WRGUI_OBJ="wrgui.o"
+  LIBWRGUI_ARCHIVE="libwrgui$RUST_ARCHIVE_EXTENSION"
+  dnl WRGUI_LIBS="$LIBWRGUI_ARCHIVE"
 fi
-AC_SUBST(WR_LIBS)
-AC_SUBST(WR_OBJ)
-AC_SUBST(LIBWR_ARCHIVE)
+AC_SUBST(WRGUI_LIBS)
+AC_SUBST(WRGUI_OBJ)
+AC_SUBST(LIBWRGUI_ARCHIVE)
 
 WIDGET_OBJ=
 MOTIF_LIBW=
@@ -7417,13 +7417,12 @@ CARGO_TEST="$CARGO test"
 CARGO_CLIPPY="$CARGO clippy"
 CARGO_RUN="$CARGO run"
 CARGO_DOC="$CARGO doc --all --open --document-private-items"
-if test x$ac_enable_rust_debug != x ; then
-CARGO_FLAGS="$CARGO_FLAGS"
-else
-CARGO_FLAGS="$CARGO_FLAGS --release"
+CARGO_ARTIFACT_DIR="target/debug"
+CARGO_FLAGS="$CARGO_FLAGS --no-default-features"
+if test x$ac_enable_rust_debug = x ; then
+  CARGO_FLAGS="$CARGO_FLAGS --release"
+  CARGO_ARTIFACT_DIR="target/release"
 fi
-CARGO_FLAGS="$CARGO_FLAGS -Zgitoxide=fetch -Zgit=shallow-deps,shallow-index"
-CARGO_FLAGS="$CARGO_FLAGS -Z unstable-options --no-default-features"
 
 RUST_CFLAGS=
 case "${opsys}" in
@@ -7458,6 +7457,7 @@ AC_SUBST(CARGO_CLEAN)
 AC_SUBST(CARGO_CLIPPY)
 AC_SUBST(CARGO_DOC)
 AC_SUBST(CARGO_FLAGS)
+AC_SUBST(CARGO_ARTIFACT_DIR)
 AC_SUBST(CARGO_RUN)
 AC_SUBST(CARGO_TEST)
 AC_SUBST(RUSTFLAGS)
