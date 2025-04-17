@@ -39,7 +39,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #endif
 
 #ifdef USE_WEBRENDER
-#include "wr.h"
+#include "wrgui.h"
 #endif
 
 #if defined HAVE_ANDROID && !defined ANDROID_STUBIFY

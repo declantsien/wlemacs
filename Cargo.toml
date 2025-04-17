@@ -1,7 +1,8 @@
 ### Workspace configurations
 [workspace]
-members = [ "src/winitterm","src/wrgui"]
+members = ["src/wrgui"]
 exclude = [
+	"rust/emacs-sys/"
 ]
 resolver = "2"
 
@@ -40,6 +41,7 @@ default-features = false
 # rev = "6766059a74135ee6ff26fd4f0f1f25db5c8e772e"
 path = "../webrender/webrender_api"
 default-features = false
+features = ["serialize"]
 
 [workspace.dependencies.wr_glyph_rasterizer]
 # git = "https://github.com/declantsien/webrender.git"

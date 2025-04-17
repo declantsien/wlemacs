@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use std::slice;
 use crate::types::{EmacsIntPoint, EmacsIntRect, EmacsIntSize, EmacsRect};
+use std::slice;
 
 pub trait HandyDandyRectBuilder {
     fn to(&self, x2: i32, y2: i32) -> EmacsRect;

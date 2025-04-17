@@ -11,19 +11,28 @@ const RGB_TXT_PATH: &str = "../../etc/rgb.txt";
 fn main() -> anyhow::Result<()> {
     generate_color_map()?;
 
-    // Setup cfg aliases
+    // Setup alias to reduce `cfg` boilerplate.
     cfg_aliases! {
+        // Systems.
         android_platform: { target_os = "android" },
-        wasm_platform: { target_arch = "wasm32" },
+        ohos_platform: { target_env = "ohos" },
+        wasm_platform: { target_family = "wasm" },
         macos_platform: { target_os = "macos" },
         ios_platform: { target_os = "ios" },
-        windows_platform: { target_os = "windows" },
-        apple: { any(target_os = "ios", target_os = "macos") },
-        free_unix: { all(unix, not(apple), not(android_platform)) },
+        apple: { any(ios_platform, macos_platform) },
+        free_unix: { all(unix, not(apple), not(android_platform), not(ohos_platform)) },
 
-        x11_platform: { all(feature = "x11", free_unix, not(wasm))},
-        wayland_platform: { all(feature = "wayland", free_unix, not(wasm)) },
+        // Native displays.
+        x11_platform: { all(feature = "x11", free_unix, not(wasm_platform)) },
+        wayland_platform: { all(feature = "wayland", free_unix, not(wasm_platform)) },
+
+        // Backends.
+        egl_backend: { all(feature = "egl", any(windows, unix), not(apple), not(wasm_platform)) },
+        glx_backend: { all(feature = "glx", x11_platform, not(wasm_platform)) },
+        wgl_backend: { all(feature = "wgl", windows, not(wasm_platform)) },
+        cgl_backend: { all(macos_platform, not(wasm_platform)) },
     }
+
     Ok(())
 }
 

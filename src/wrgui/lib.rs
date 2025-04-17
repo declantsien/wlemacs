@@ -8,7 +8,7 @@
 // https://servo.zulipchat.com/
 
 mod frame;
-mod output_data;
+// mod output_data;
 
 // pub mod bindings;
 mod bitmap;
@@ -24,6 +24,8 @@ mod window;
 // mod face;
 // mod fringe;
 mod canvas;
+// /// Error and result types.
+// pub mod errors;
 pub mod font;
 pub mod gui;
 pub mod types;

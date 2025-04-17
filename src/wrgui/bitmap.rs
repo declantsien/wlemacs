@@ -1,9 +1,12 @@
 use parking_lot::Mutex;
-use webrender_api::units::{DeviceIntSize, TexelRect};
-use webrender_api::{ExternalImage, ExternalImageHandler, ExternalImageId, ExternalImageSource, ImageDescriptor, ImageDescriptorFlags, ImageFormat};
 use std::os::raw::c_void;
 use std::sync::LazyLock;
 use webrender::FastHashMap;
+use webrender_api::units::{DeviceIntSize, TexelRect};
+use webrender_api::{
+    ExternalImage, ExternalImageHandler, ExternalImageId, ExternalImageSource, ImageDescriptor,
+    ImageDescriptorFlags, ImageFormat,
+};
 
 use webrender::api::ImageKey;
 
@@ -20,7 +23,6 @@ pub enum OpacityType {
     Opaque = 0,
     HasAlphaChannel = 1,
 }
-
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -44,7 +46,11 @@ impl<'a> From<&'a WrImageDescriptor> for ImageDescriptor {
 
         ImageDescriptor {
             size: DeviceIntSize::new(desc.width, desc.height),
-            stride: if desc.stride != 0 { Some(desc.stride) } else { None },
+            stride: if desc.stride != 0 {
+                Some(desc.stride)
+            } else {
+                None
+            },
             format: desc.format,
             offset: 0,
             flags,
@@ -83,7 +89,11 @@ extern "C" {
         external_image_id: ExternalImageId,
         channel_index: u8,
     ) -> WrExternalImage;
-    fn wr_renderer_unlock_external_image(renderer: *mut c_void, external_image_id: ExternalImageId, channel_index: u8);
+    fn wr_renderer_unlock_external_image(
+        renderer: *mut c_void,
+        external_image_id: ExternalImageId,
+        channel_index: u8,
+    );
 }
 
 #[repr(C)]
@@ -94,14 +104,17 @@ pub struct WrExternalImageHandler {
 
 impl ExternalImageHandler for WrExternalImageHandler {
     fn lock(&mut self, id: ExternalImageId, channel_index: u8) -> ExternalImage {
-        let image = unsafe { wr_renderer_lock_external_image(self.external_image_obj, id, channel_index) };
+        let image =
+            unsafe { wr_renderer_lock_external_image(self.external_image_obj, id, channel_index) };
         ExternalImage {
             uv: TexelRect::new(image.u0, image.v0, image.u1, image.v1),
             source: match image.image_type {
-                WrExternalImageType::NativeTexture => ExternalImageSource::NativeTexture(image.handle),
+                WrExternalImageType::NativeTexture => {
+                    ExternalImageSource::NativeTexture(image.handle)
+                }
                 WrExternalImageType::RawData => {
                     ExternalImageSource::RawData(unsafe { make_slice(image.buff, image.size) })
-                },
+                }
                 WrExternalImageType::Invalid => ExternalImageSource::Invalid,
             },
         }
