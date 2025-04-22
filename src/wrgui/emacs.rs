@@ -169,8 +169,13 @@ impl<T> ::std::fmt::Debug for __IncompleteArrayField<T> {
 }
 pub const FONT_INVALID_CODE: u32 = 4294967295;
 pub type bool_bf = bool;
+pub type __int64_t = ::libc::c_longlong;
 pub type __darwin_time_t = ::libc::c_long;
+pub type __darwin_off_t = __int64_t;
 pub type intmax_t = ::libc::c_long;
+pub type uintmax_t = ::libc::c_ulong;
+pub type off_t = __darwin_off_t;
+pub type time_t = __darwin_time_t;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct timespec {
@@ -2217,6 +2222,12 @@ unsafe extern "C" {
 unsafe extern "C" {
     pub fn XFIXNUM(a: Lisp_Object) -> EMACS_INT;
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct interval {
+    _unused: [u8; 0],
+}
+pub type INTERVAL = *mut interval;
 unsafe extern "C" {
     pub fn AREF(array: Lisp_Object, idx: isize) -> Lisp_Object;
 }
@@ -2250,6 +2261,113 @@ const _: () = {
         [::std::mem::offset_of!(Lisp_Char_Table, extras) - 552usize];
 };
 #[repr(C)]
+#[derive(Copy, Clone)]
+pub struct Lisp_Marker {
+    pub header: vectorlike_header,
+    pub buffer: *mut buffer,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
+    pub next: *mut Lisp_Marker,
+    pub charpos: isize,
+    pub bytepos: isize,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of Lisp_Marker"][::std::mem::size_of::<Lisp_Marker>() - 48usize];
+    ["Alignment of Lisp_Marker"][::std::mem::align_of::<Lisp_Marker>() - 8usize];
+    ["Offset of field: Lisp_Marker::header"][::std::mem::offset_of!(Lisp_Marker, header) - 0usize];
+    ["Offset of field: Lisp_Marker::buffer"][::std::mem::offset_of!(Lisp_Marker, buffer) - 8usize];
+    ["Offset of field: Lisp_Marker::next"][::std::mem::offset_of!(Lisp_Marker, next) - 24usize];
+    ["Offset of field: Lisp_Marker::charpos"]
+        [::std::mem::offset_of!(Lisp_Marker, charpos) - 32usize];
+    ["Offset of field: Lisp_Marker::bytepos"]
+        [::std::mem::offset_of!(Lisp_Marker, bytepos) - 40usize];
+};
+impl Lisp_Marker {
+    #[inline]
+    pub fn need_adjustment(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_need_adjustment(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn need_adjustment_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_need_adjustment_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn insertion_type(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_insertion_type(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn insertion_type_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_insertion_type_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        need_adjustment: bool_bf,
+        insertion_type: bool_bf,
+    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let need_adjustment: u8 = unsafe { ::std::mem::transmute(need_adjustment) };
+            need_adjustment as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let insertion_type: u8 = unsafe { ::std::mem::transmute(insertion_type) };
+            insertion_type as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct kboard {
     _unused: [u8; 0],
@@ -2265,6 +2383,773 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn unblock_input();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct itree_node {
+    pub parent: *mut itree_node,
+    pub left: *mut itree_node,
+    pub right: *mut itree_node,
+    pub begin: isize,
+    pub end: isize,
+    pub limit: isize,
+    pub offset: isize,
+    pub otick: uintmax_t,
+    pub data: Lisp_Object,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
+    pub __bindgen_padding_0: [u8; 7usize],
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of itree_node"][::std::mem::size_of::<itree_node>() - 80usize];
+    ["Alignment of itree_node"][::std::mem::align_of::<itree_node>() - 8usize];
+    ["Offset of field: itree_node::parent"][::std::mem::offset_of!(itree_node, parent) - 0usize];
+    ["Offset of field: itree_node::left"][::std::mem::offset_of!(itree_node, left) - 8usize];
+    ["Offset of field: itree_node::right"][::std::mem::offset_of!(itree_node, right) - 16usize];
+    ["Offset of field: itree_node::begin"][::std::mem::offset_of!(itree_node, begin) - 24usize];
+    ["Offset of field: itree_node::end"][::std::mem::offset_of!(itree_node, end) - 32usize];
+    ["Offset of field: itree_node::limit"][::std::mem::offset_of!(itree_node, limit) - 40usize];
+    ["Offset of field: itree_node::offset"][::std::mem::offset_of!(itree_node, offset) - 48usize];
+    ["Offset of field: itree_node::otick"][::std::mem::offset_of!(itree_node, otick) - 56usize];
+    ["Offset of field: itree_node::data"][::std::mem::offset_of!(itree_node, data) - 64usize];
+};
+impl itree_node {
+    #[inline]
+    pub fn red(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_red(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn red_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_red_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn rear_advance(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_rear_advance(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn rear_advance_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_rear_advance_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn front_advance(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_front_advance(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn front_advance_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                2usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_front_advance_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                2usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        red: bool_bf,
+        rear_advance: bool_bf,
+        front_advance: bool_bf,
+    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let red: u8 = unsafe { ::std::mem::transmute(red) };
+            red as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let rear_advance: u8 = unsafe { ::std::mem::transmute(rear_advance) };
+            rear_advance as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let front_advance: u8 = unsafe { ::std::mem::transmute(front_advance) };
+            front_advance as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct itree_tree {
+    pub root: *mut itree_node,
+    pub otick: uintmax_t,
+    pub size: intmax_t,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of itree_tree"][::std::mem::size_of::<itree_tree>() - 24usize];
+    ["Alignment of itree_tree"][::std::mem::align_of::<itree_tree>() - 8usize];
+    ["Offset of field: itree_tree::root"][::std::mem::offset_of!(itree_tree, root) - 0usize];
+    ["Offset of field: itree_tree::otick"][::std::mem::offset_of!(itree_tree, otick) - 8usize];
+    ["Offset of field: itree_tree::size"][::std::mem::offset_of!(itree_tree, size) - 16usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct buffer_text {
+    pub beg: *mut ::libc::c_uchar,
+    pub gpt: isize,
+    pub z: isize,
+    pub gpt_byte: isize,
+    pub z_byte: isize,
+    pub gap_size: isize,
+    pub modiff: modiff_count,
+    pub chars_modiff: modiff_count,
+    pub save_modiff: modiff_count,
+    pub overlay_modiff: modiff_count,
+    pub compact: modiff_count,
+    pub beg_unchanged: isize,
+    pub end_unchanged: isize,
+    pub unchanged_modified: modiff_count,
+    pub overlay_unchanged_modified: modiff_count,
+    pub intervals: INTERVAL,
+    pub markers: *mut Lisp_Marker,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
+    pub __bindgen_padding_0: [u8; 7usize],
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of buffer_text"][::std::mem::size_of::<buffer_text>() - 144usize];
+    ["Alignment of buffer_text"][::std::mem::align_of::<buffer_text>() - 8usize];
+    ["Offset of field: buffer_text::beg"][::std::mem::offset_of!(buffer_text, beg) - 0usize];
+    ["Offset of field: buffer_text::gpt"][::std::mem::offset_of!(buffer_text, gpt) - 8usize];
+    ["Offset of field: buffer_text::z"][::std::mem::offset_of!(buffer_text, z) - 16usize];
+    ["Offset of field: buffer_text::gpt_byte"]
+        [::std::mem::offset_of!(buffer_text, gpt_byte) - 24usize];
+    ["Offset of field: buffer_text::z_byte"][::std::mem::offset_of!(buffer_text, z_byte) - 32usize];
+    ["Offset of field: buffer_text::gap_size"]
+        [::std::mem::offset_of!(buffer_text, gap_size) - 40usize];
+    ["Offset of field: buffer_text::modiff"][::std::mem::offset_of!(buffer_text, modiff) - 48usize];
+    ["Offset of field: buffer_text::chars_modiff"]
+        [::std::mem::offset_of!(buffer_text, chars_modiff) - 56usize];
+    ["Offset of field: buffer_text::save_modiff"]
+        [::std::mem::offset_of!(buffer_text, save_modiff) - 64usize];
+    ["Offset of field: buffer_text::overlay_modiff"]
+        [::std::mem::offset_of!(buffer_text, overlay_modiff) - 72usize];
+    ["Offset of field: buffer_text::compact"]
+        [::std::mem::offset_of!(buffer_text, compact) - 80usize];
+    ["Offset of field: buffer_text::beg_unchanged"]
+        [::std::mem::offset_of!(buffer_text, beg_unchanged) - 88usize];
+    ["Offset of field: buffer_text::end_unchanged"]
+        [::std::mem::offset_of!(buffer_text, end_unchanged) - 96usize];
+    ["Offset of field: buffer_text::unchanged_modified"]
+        [::std::mem::offset_of!(buffer_text, unchanged_modified) - 104usize];
+    ["Offset of field: buffer_text::overlay_unchanged_modified"]
+        [::std::mem::offset_of!(buffer_text, overlay_unchanged_modified) - 112usize];
+    ["Offset of field: buffer_text::intervals"]
+        [::std::mem::offset_of!(buffer_text, intervals) - 120usize];
+    ["Offset of field: buffer_text::markers"]
+        [::std::mem::offset_of!(buffer_text, markers) - 128usize];
+};
+impl buffer_text {
+    #[inline]
+    pub fn inhibit_shrinking(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_inhibit_shrinking(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn inhibit_shrinking_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_inhibit_shrinking_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn redisplay(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_redisplay(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn redisplay_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_redisplay_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        inhibit_shrinking: bool_bf,
+        redisplay: bool_bf,
+    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let inhibit_shrinking: u8 = unsafe { ::std::mem::transmute(inhibit_shrinking) };
+            inhibit_shrinking as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let redisplay: u8 = unsafe { ::std::mem::transmute(redisplay) };
+            redisplay as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct buffer {
+    pub header: vectorlike_header,
+    pub name_: Lisp_Object,
+    pub last_name_: Lisp_Object,
+    pub filename_: Lisp_Object,
+    pub directory_: Lisp_Object,
+    pub backed_up_: Lisp_Object,
+    pub save_length_: Lisp_Object,
+    pub auto_save_file_name_: Lisp_Object,
+    pub read_only_: Lisp_Object,
+    pub mark_: Lisp_Object,
+    pub local_var_alist_: Lisp_Object,
+    pub major_mode_: Lisp_Object,
+    pub local_minor_modes_: Lisp_Object,
+    pub mode_name_: Lisp_Object,
+    pub mode_line_format_: Lisp_Object,
+    pub header_line_format_: Lisp_Object,
+    pub tab_line_format_: Lisp_Object,
+    pub keymap_: Lisp_Object,
+    pub abbrev_table_: Lisp_Object,
+    pub syntax_table_: Lisp_Object,
+    pub category_table_: Lisp_Object,
+    pub tab_width_: Lisp_Object,
+    pub fill_column_: Lisp_Object,
+    pub left_margin_: Lisp_Object,
+    pub auto_fill_function_: Lisp_Object,
+    pub downcase_table_: Lisp_Object,
+    pub upcase_table_: Lisp_Object,
+    pub case_canon_table_: Lisp_Object,
+    pub case_eqv_table_: Lisp_Object,
+    pub truncate_lines_: Lisp_Object,
+    pub word_wrap_: Lisp_Object,
+    pub ctl_arrow_: Lisp_Object,
+    pub bidi_display_reordering_: Lisp_Object,
+    pub bidi_paragraph_direction_: Lisp_Object,
+    pub bidi_paragraph_separate_re_: Lisp_Object,
+    pub bidi_paragraph_start_re_: Lisp_Object,
+    pub selective_display_: Lisp_Object,
+    pub selective_display_ellipses_: Lisp_Object,
+    pub overwrite_mode_: Lisp_Object,
+    pub abbrev_mode_: Lisp_Object,
+    pub display_table_: Lisp_Object,
+    pub mark_active_: Lisp_Object,
+    pub enable_multibyte_characters_: Lisp_Object,
+    pub buffer_file_coding_system_: Lisp_Object,
+    pub file_format_: Lisp_Object,
+    pub auto_save_file_format_: Lisp_Object,
+    pub cache_long_scans_: Lisp_Object,
+    pub width_table_: Lisp_Object,
+    pub pt_marker_: Lisp_Object,
+    pub begv_marker_: Lisp_Object,
+    pub zv_marker_: Lisp_Object,
+    pub point_before_scroll_: Lisp_Object,
+    pub file_truename_: Lisp_Object,
+    pub invisibility_spec_: Lisp_Object,
+    pub last_selected_window_: Lisp_Object,
+    pub display_count_: Lisp_Object,
+    pub left_margin_cols_: Lisp_Object,
+    pub right_margin_cols_: Lisp_Object,
+    pub left_fringe_width_: Lisp_Object,
+    pub right_fringe_width_: Lisp_Object,
+    pub fringes_outside_margins_: Lisp_Object,
+    pub scroll_bar_width_: Lisp_Object,
+    pub scroll_bar_height_: Lisp_Object,
+    pub vertical_scroll_bar_type_: Lisp_Object,
+    pub horizontal_scroll_bar_type_: Lisp_Object,
+    pub indicate_empty_lines_: Lisp_Object,
+    pub indicate_buffer_boundaries_: Lisp_Object,
+    pub fringe_indicator_alist_: Lisp_Object,
+    pub fringe_cursor_alist_: Lisp_Object,
+    pub display_time_: Lisp_Object,
+    pub scroll_up_aggressively_: Lisp_Object,
+    pub scroll_down_aggressively_: Lisp_Object,
+    pub cursor_type_: Lisp_Object,
+    pub extra_line_spacing_: Lisp_Object,
+    pub ts_parser_list_: Lisp_Object,
+    pub text_conversion_style_: Lisp_Object,
+    pub cursor_in_non_selected_windows_: Lisp_Object,
+    pub own_text: buffer_text,
+    pub text: *mut buffer_text,
+    pub pt: isize,
+    pub pt_byte: isize,
+    pub begv: isize,
+    pub begv_byte: isize,
+    pub zv: isize,
+    pub zv_byte: isize,
+    pub base_buffer: *mut buffer,
+    pub indirections: ::libc::c_int,
+    pub window_count: ::libc::c_int,
+    pub local_flags: [::libc::c_char; 50usize],
+    pub modtime: timespec,
+    pub modtime_size: off_t,
+    pub auto_save_modified: modiff_count,
+    pub display_error_modiff: modiff_count,
+    pub auto_save_failure_time: time_t,
+    pub last_window_start: isize,
+    pub newline_cache: *mut region_cache,
+    pub width_run_cache: *mut region_cache,
+    pub bidi_paragraph_cache: *mut region_cache,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
+    pub overlays: *mut itree_tree,
+    pub undo_list_: Lisp_Object,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of buffer"][::std::mem::size_of::<buffer>() - 992usize];
+    ["Alignment of buffer"][::std::mem::align_of::<buffer>() - 8usize];
+    ["Offset of field: buffer::header"][::std::mem::offset_of!(buffer, header) - 0usize];
+    ["Offset of field: buffer::name_"][::std::mem::offset_of!(buffer, name_) - 8usize];
+    ["Offset of field: buffer::last_name_"][::std::mem::offset_of!(buffer, last_name_) - 16usize];
+    ["Offset of field: buffer::filename_"][::std::mem::offset_of!(buffer, filename_) - 24usize];
+    ["Offset of field: buffer::directory_"][::std::mem::offset_of!(buffer, directory_) - 32usize];
+    ["Offset of field: buffer::backed_up_"][::std::mem::offset_of!(buffer, backed_up_) - 40usize];
+    ["Offset of field: buffer::save_length_"]
+        [::std::mem::offset_of!(buffer, save_length_) - 48usize];
+    ["Offset of field: buffer::auto_save_file_name_"]
+        [::std::mem::offset_of!(buffer, auto_save_file_name_) - 56usize];
+    ["Offset of field: buffer::read_only_"][::std::mem::offset_of!(buffer, read_only_) - 64usize];
+    ["Offset of field: buffer::mark_"][::std::mem::offset_of!(buffer, mark_) - 72usize];
+    ["Offset of field: buffer::local_var_alist_"]
+        [::std::mem::offset_of!(buffer, local_var_alist_) - 80usize];
+    ["Offset of field: buffer::major_mode_"][::std::mem::offset_of!(buffer, major_mode_) - 88usize];
+    ["Offset of field: buffer::local_minor_modes_"]
+        [::std::mem::offset_of!(buffer, local_minor_modes_) - 96usize];
+    ["Offset of field: buffer::mode_name_"][::std::mem::offset_of!(buffer, mode_name_) - 104usize];
+    ["Offset of field: buffer::mode_line_format_"]
+        [::std::mem::offset_of!(buffer, mode_line_format_) - 112usize];
+    ["Offset of field: buffer::header_line_format_"]
+        [::std::mem::offset_of!(buffer, header_line_format_) - 120usize];
+    ["Offset of field: buffer::tab_line_format_"]
+        [::std::mem::offset_of!(buffer, tab_line_format_) - 128usize];
+    ["Offset of field: buffer::keymap_"][::std::mem::offset_of!(buffer, keymap_) - 136usize];
+    ["Offset of field: buffer::abbrev_table_"]
+        [::std::mem::offset_of!(buffer, abbrev_table_) - 144usize];
+    ["Offset of field: buffer::syntax_table_"]
+        [::std::mem::offset_of!(buffer, syntax_table_) - 152usize];
+    ["Offset of field: buffer::category_table_"]
+        [::std::mem::offset_of!(buffer, category_table_) - 160usize];
+    ["Offset of field: buffer::tab_width_"][::std::mem::offset_of!(buffer, tab_width_) - 168usize];
+    ["Offset of field: buffer::fill_column_"]
+        [::std::mem::offset_of!(buffer, fill_column_) - 176usize];
+    ["Offset of field: buffer::left_margin_"]
+        [::std::mem::offset_of!(buffer, left_margin_) - 184usize];
+    ["Offset of field: buffer::auto_fill_function_"]
+        [::std::mem::offset_of!(buffer, auto_fill_function_) - 192usize];
+    ["Offset of field: buffer::downcase_table_"]
+        [::std::mem::offset_of!(buffer, downcase_table_) - 200usize];
+    ["Offset of field: buffer::upcase_table_"]
+        [::std::mem::offset_of!(buffer, upcase_table_) - 208usize];
+    ["Offset of field: buffer::case_canon_table_"]
+        [::std::mem::offset_of!(buffer, case_canon_table_) - 216usize];
+    ["Offset of field: buffer::case_eqv_table_"]
+        [::std::mem::offset_of!(buffer, case_eqv_table_) - 224usize];
+    ["Offset of field: buffer::truncate_lines_"]
+        [::std::mem::offset_of!(buffer, truncate_lines_) - 232usize];
+    ["Offset of field: buffer::word_wrap_"][::std::mem::offset_of!(buffer, word_wrap_) - 240usize];
+    ["Offset of field: buffer::ctl_arrow_"][::std::mem::offset_of!(buffer, ctl_arrow_) - 248usize];
+    ["Offset of field: buffer::bidi_display_reordering_"]
+        [::std::mem::offset_of!(buffer, bidi_display_reordering_) - 256usize];
+    ["Offset of field: buffer::bidi_paragraph_direction_"]
+        [::std::mem::offset_of!(buffer, bidi_paragraph_direction_) - 264usize];
+    ["Offset of field: buffer::bidi_paragraph_separate_re_"]
+        [::std::mem::offset_of!(buffer, bidi_paragraph_separate_re_) - 272usize];
+    ["Offset of field: buffer::bidi_paragraph_start_re_"]
+        [::std::mem::offset_of!(buffer, bidi_paragraph_start_re_) - 280usize];
+    ["Offset of field: buffer::selective_display_"]
+        [::std::mem::offset_of!(buffer, selective_display_) - 288usize];
+    ["Offset of field: buffer::selective_display_ellipses_"]
+        [::std::mem::offset_of!(buffer, selective_display_ellipses_) - 296usize];
+    ["Offset of field: buffer::overwrite_mode_"]
+        [::std::mem::offset_of!(buffer, overwrite_mode_) - 304usize];
+    ["Offset of field: buffer::abbrev_mode_"]
+        [::std::mem::offset_of!(buffer, abbrev_mode_) - 312usize];
+    ["Offset of field: buffer::display_table_"]
+        [::std::mem::offset_of!(buffer, display_table_) - 320usize];
+    ["Offset of field: buffer::mark_active_"]
+        [::std::mem::offset_of!(buffer, mark_active_) - 328usize];
+    ["Offset of field: buffer::enable_multibyte_characters_"]
+        [::std::mem::offset_of!(buffer, enable_multibyte_characters_) - 336usize];
+    ["Offset of field: buffer::buffer_file_coding_system_"]
+        [::std::mem::offset_of!(buffer, buffer_file_coding_system_) - 344usize];
+    ["Offset of field: buffer::file_format_"]
+        [::std::mem::offset_of!(buffer, file_format_) - 352usize];
+    ["Offset of field: buffer::auto_save_file_format_"]
+        [::std::mem::offset_of!(buffer, auto_save_file_format_) - 360usize];
+    ["Offset of field: buffer::cache_long_scans_"]
+        [::std::mem::offset_of!(buffer, cache_long_scans_) - 368usize];
+    ["Offset of field: buffer::width_table_"]
+        [::std::mem::offset_of!(buffer, width_table_) - 376usize];
+    ["Offset of field: buffer::pt_marker_"][::std::mem::offset_of!(buffer, pt_marker_) - 384usize];
+    ["Offset of field: buffer::begv_marker_"]
+        [::std::mem::offset_of!(buffer, begv_marker_) - 392usize];
+    ["Offset of field: buffer::zv_marker_"][::std::mem::offset_of!(buffer, zv_marker_) - 400usize];
+    ["Offset of field: buffer::point_before_scroll_"]
+        [::std::mem::offset_of!(buffer, point_before_scroll_) - 408usize];
+    ["Offset of field: buffer::file_truename_"]
+        [::std::mem::offset_of!(buffer, file_truename_) - 416usize];
+    ["Offset of field: buffer::invisibility_spec_"]
+        [::std::mem::offset_of!(buffer, invisibility_spec_) - 424usize];
+    ["Offset of field: buffer::last_selected_window_"]
+        [::std::mem::offset_of!(buffer, last_selected_window_) - 432usize];
+    ["Offset of field: buffer::display_count_"]
+        [::std::mem::offset_of!(buffer, display_count_) - 440usize];
+    ["Offset of field: buffer::left_margin_cols_"]
+        [::std::mem::offset_of!(buffer, left_margin_cols_) - 448usize];
+    ["Offset of field: buffer::right_margin_cols_"]
+        [::std::mem::offset_of!(buffer, right_margin_cols_) - 456usize];
+    ["Offset of field: buffer::left_fringe_width_"]
+        [::std::mem::offset_of!(buffer, left_fringe_width_) - 464usize];
+    ["Offset of field: buffer::right_fringe_width_"]
+        [::std::mem::offset_of!(buffer, right_fringe_width_) - 472usize];
+    ["Offset of field: buffer::fringes_outside_margins_"]
+        [::std::mem::offset_of!(buffer, fringes_outside_margins_) - 480usize];
+    ["Offset of field: buffer::scroll_bar_width_"]
+        [::std::mem::offset_of!(buffer, scroll_bar_width_) - 488usize];
+    ["Offset of field: buffer::scroll_bar_height_"]
+        [::std::mem::offset_of!(buffer, scroll_bar_height_) - 496usize];
+    ["Offset of field: buffer::vertical_scroll_bar_type_"]
+        [::std::mem::offset_of!(buffer, vertical_scroll_bar_type_) - 504usize];
+    ["Offset of field: buffer::horizontal_scroll_bar_type_"]
+        [::std::mem::offset_of!(buffer, horizontal_scroll_bar_type_) - 512usize];
+    ["Offset of field: buffer::indicate_empty_lines_"]
+        [::std::mem::offset_of!(buffer, indicate_empty_lines_) - 520usize];
+    ["Offset of field: buffer::indicate_buffer_boundaries_"]
+        [::std::mem::offset_of!(buffer, indicate_buffer_boundaries_) - 528usize];
+    ["Offset of field: buffer::fringe_indicator_alist_"]
+        [::std::mem::offset_of!(buffer, fringe_indicator_alist_) - 536usize];
+    ["Offset of field: buffer::fringe_cursor_alist_"]
+        [::std::mem::offset_of!(buffer, fringe_cursor_alist_) - 544usize];
+    ["Offset of field: buffer::display_time_"]
+        [::std::mem::offset_of!(buffer, display_time_) - 552usize];
+    ["Offset of field: buffer::scroll_up_aggressively_"]
+        [::std::mem::offset_of!(buffer, scroll_up_aggressively_) - 560usize];
+    ["Offset of field: buffer::scroll_down_aggressively_"]
+        [::std::mem::offset_of!(buffer, scroll_down_aggressively_) - 568usize];
+    ["Offset of field: buffer::cursor_type_"]
+        [::std::mem::offset_of!(buffer, cursor_type_) - 576usize];
+    ["Offset of field: buffer::extra_line_spacing_"]
+        [::std::mem::offset_of!(buffer, extra_line_spacing_) - 584usize];
+    ["Offset of field: buffer::ts_parser_list_"]
+        [::std::mem::offset_of!(buffer, ts_parser_list_) - 592usize];
+    ["Offset of field: buffer::text_conversion_style_"]
+        [::std::mem::offset_of!(buffer, text_conversion_style_) - 600usize];
+    ["Offset of field: buffer::cursor_in_non_selected_windows_"]
+        [::std::mem::offset_of!(buffer, cursor_in_non_selected_windows_) - 608usize];
+    ["Offset of field: buffer::own_text"][::std::mem::offset_of!(buffer, own_text) - 616usize];
+    ["Offset of field: buffer::text"][::std::mem::offset_of!(buffer, text) - 760usize];
+    ["Offset of field: buffer::pt"][::std::mem::offset_of!(buffer, pt) - 768usize];
+    ["Offset of field: buffer::pt_byte"][::std::mem::offset_of!(buffer, pt_byte) - 776usize];
+    ["Offset of field: buffer::begv"][::std::mem::offset_of!(buffer, begv) - 784usize];
+    ["Offset of field: buffer::begv_byte"][::std::mem::offset_of!(buffer, begv_byte) - 792usize];
+    ["Offset of field: buffer::zv"][::std::mem::offset_of!(buffer, zv) - 800usize];
+    ["Offset of field: buffer::zv_byte"][::std::mem::offset_of!(buffer, zv_byte) - 808usize];
+    ["Offset of field: buffer::base_buffer"]
+        [::std::mem::offset_of!(buffer, base_buffer) - 816usize];
+    ["Offset of field: buffer::indirections"]
+        [::std::mem::offset_of!(buffer, indirections) - 824usize];
+    ["Offset of field: buffer::window_count"]
+        [::std::mem::offset_of!(buffer, window_count) - 828usize];
+    ["Offset of field: buffer::local_flags"]
+        [::std::mem::offset_of!(buffer, local_flags) - 832usize];
+    ["Offset of field: buffer::modtime"][::std::mem::offset_of!(buffer, modtime) - 888usize];
+    ["Offset of field: buffer::modtime_size"]
+        [::std::mem::offset_of!(buffer, modtime_size) - 904usize];
+    ["Offset of field: buffer::auto_save_modified"]
+        [::std::mem::offset_of!(buffer, auto_save_modified) - 912usize];
+    ["Offset of field: buffer::display_error_modiff"]
+        [::std::mem::offset_of!(buffer, display_error_modiff) - 920usize];
+    ["Offset of field: buffer::auto_save_failure_time"]
+        [::std::mem::offset_of!(buffer, auto_save_failure_time) - 928usize];
+    ["Offset of field: buffer::last_window_start"]
+        [::std::mem::offset_of!(buffer, last_window_start) - 936usize];
+    ["Offset of field: buffer::newline_cache"]
+        [::std::mem::offset_of!(buffer, newline_cache) - 944usize];
+    ["Offset of field: buffer::width_run_cache"]
+        [::std::mem::offset_of!(buffer, width_run_cache) - 952usize];
+    ["Offset of field: buffer::bidi_paragraph_cache"]
+        [::std::mem::offset_of!(buffer, bidi_paragraph_cache) - 960usize];
+    ["Offset of field: buffer::overlays"][::std::mem::offset_of!(buffer, overlays) - 976usize];
+    ["Offset of field: buffer::undo_list_"][::std::mem::offset_of!(buffer, undo_list_) - 984usize];
+};
+impl buffer {
+    #[inline]
+    pub fn prevent_redisplay_optimizations_p(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_prevent_redisplay_optimizations_p(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn prevent_redisplay_optimizations_p_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_prevent_redisplay_optimizations_p_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn clip_changed(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_clip_changed(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn clip_changed_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_clip_changed_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn inhibit_buffer_hooks(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_inhibit_buffer_hooks(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn inhibit_buffer_hooks_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                2usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_inhibit_buffer_hooks_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                2usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn long_line_optimizations_p(&self) -> bool_bf {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u8) }
+    }
+    #[inline]
+    pub fn set_long_line_optimizations_p(&mut self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            self._bitfield_1.set(3usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn long_line_optimizations_p_raw(this: *const Self) -> bool_bf {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                3usize,
+                1u8,
+            ) as u8)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_long_line_optimizations_p_raw(this: *mut Self, val: bool_bf) {
+        unsafe {
+            let val: u8 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                3usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        prevent_redisplay_optimizations_p: bool_bf,
+        clip_changed: bool_bf,
+        inhibit_buffer_hooks: bool_bf,
+        long_line_optimizations_p: bool_bf,
+    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let prevent_redisplay_optimizations_p: u8 =
+                unsafe { ::std::mem::transmute(prevent_redisplay_optimizations_p) };
+            prevent_redisplay_optimizations_p as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let clip_changed: u8 = unsafe { ::std::mem::transmute(clip_changed) };
+            clip_changed as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let inhibit_buffer_hooks: u8 = unsafe { ::std::mem::transmute(inhibit_buffer_hooks) };
+            inhibit_buffer_hooks as u64
+        });
+        __bindgen_bitfield_unit.set(3usize, 1u8, {
+            let long_line_optimizations_p: u8 =
+                unsafe { ::std::mem::transmute(long_line_optimizations_p) };
+            long_line_optimizations_p as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+unsafe extern "C" {
+    pub fn XBUFFER(a: Lisp_Object) -> *mut buffer;
+}
+unsafe extern "C" {
+    pub fn BUF_BEGV(buf: *mut buffer) -> isize;
+}
+unsafe extern "C" {
+    pub fn BUF_PT(buf: *mut buffer) -> isize;
+}
+unsafe extern "C" {
+    pub fn BUF_ZV(buf: *mut buffer) -> isize;
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -14282,7 +15167,7 @@ unsafe extern "C" {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct buffer {
+pub struct region_cache {
     pub _address: u8,
 }
 #[repr(C)]

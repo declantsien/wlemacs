@@ -24,7 +24,8 @@ use crate::types::{
     gui_draw_glyphless_glyph_string_foreground, gui_fix_overlapping_area, gui_get_glyph_overhangs,
     gui_insert_glyphs, gui_produce_glyphs, gui_write_glyphs, ns_frame_parm_handlers,
     prepare_face_for_display, redisplay_interface, run, text_cursor_kinds, unblock_input, window,
-    x_draw_xwidget_glyph_string, ExternalPtr, WrRect, NILP, WINDOWP,
+    x_draw_xwidget_glyph_string, ExternalPtr, WrRect, BUF_BEGV, BUF_PT, BUF_ZV, NILP, WINDOWP,
+    XBUFFER,
 };
 use crate::util::HandyDandyRectBuilder;
 
@@ -47,7 +48,7 @@ impl glyph_matrix {
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "C" fn wrgui_init(f: *mut frame) {
-    println!("winit_init");
+    log::trace!("winit_init");
     use crate::types::{EmacsIntSize, EmacsToDeviceScale};
     let f = frame::from_ptr(f).unwrap();
     let scale_factor = f.scale_factor();
@@ -102,7 +103,7 @@ pub static mut wr_redisplay_interface: redisplay_interface = redisplay_interface
 
 #[allow(unused_variables)]
 extern "C" fn scroll_run(w: *mut window, run: *mut run) {
-    println!("scroll_run");
+    log::trace!("scroll_run");
     let win = window::from_ptr(w).unwrap();
     let win_mut = window::from_ptr_mut(w).unwrap();
     let f = win.x_frame_mut().unwrap();
@@ -175,7 +176,14 @@ extern "C" fn update_window_begin(w: *mut window) {
 extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_overwritten_p: bool) {
     let w = window::from_ptr(w).unwrap();
     let current_matrix = unsafe { w.current_matrix.as_ref().unwrap() };
-    let desired_matrix = unsafe { w.desired_matrix.as_ref().unwrap() };
+    let buffer = unsafe { XBUFFER(w.contents) };
+    log::trace!(
+        "PT = {}, BEGV = {}. ZV = {}",
+        unsafe { BUF_PT(buffer) },
+        unsafe { BUF_BEGV(buffer) },
+        unsafe { BUF_ZV(buffer) }
+    );
+    log::trace!("Cursor pos {:?}", w.cursor);
     // println!("current_matrix: {current_matrix:?}");
     // println!("current_matrix rows: {:?}", current_matrix.rows()[0].glyphs().len());
     // println!("desired_matrix: {desired_matrix:?}");
@@ -185,6 +193,7 @@ extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_ov
 type GsRef = ExternalPtr<glyph_string>;
 #[allow(unused_variables)]
 extern "C" fn draw_glyph_string(s: *mut glyph_string) {
+    log::trace!("draw_glyph_string");
     println!("draw_glyph_string");
     use glyph_type::*;
 
@@ -280,7 +289,7 @@ extern "C" fn draw_fringe_bitmap(
     row: *mut glyph_row,
     p: *mut draw_fringe_bitmap_params,
 ) {
-    println!("draw_fringe_bitmap");
+    // println!("draw_fringe_bitmap");
     let w = window::from_ptr_mut(w).unwrap();
     let f = window::from_ptr(w).unwrap().x_frame_mut().unwrap();
     let row = unsafe { row.as_ref().unwrap() };
@@ -326,10 +335,10 @@ extern "C" fn flush_display(f: *mut frame) {
     // walk_throught_window_tree(frame::from_ptr(f).unwrap());
 
     if let Some(r) = frame::from_ptr(f).and_then(|f| f.renderer_mut()) {
-        build_display_list_from_window_tree(
-            window::from_lisp(frame::from_ptr(f).unwrap().root_window),
-            r,
-        );
+        // build_display_list_from_window_tree(
+        //     window::from_lisp(frame::from_ptr(f).unwrap().root_window),
+        //     r,
+        // );
         r.flush();
     }
 }
@@ -342,7 +351,7 @@ extern "C" fn clear_frame_area(
     width: ::libc::c_int,
     height: ::libc::c_int,
 ) {
-    println!("clear_frame_area");
+    log::trace!("clear_frame_area");
     let f = frame::from_ptr(f).unwrap();
     let r = (x, y).by(width, height);
     f.clear_area(r.to_i32());
@@ -359,8 +368,8 @@ extern "C" fn draw_window_cursor(
     on_p: bool,
     active_p: bool,
 ) {
-    println!("draw_window_cursor");
-    println!("window addr {} {:?}", w.addr(), cursor_type);
+    // println!("draw_window_cursor");
+    // println!("window addr {} {:?}", w.addr(), cursor_type);
     return;
     use text_cursor_kinds::*;
     let win = window::from_ptr_mut(w).unwrap();
@@ -496,7 +505,7 @@ extern "C" fn draw_vertical_window_border(
     y0: ::libc::c_int,
     y1: ::libc::c_int,
 ) {
-    println!("draw_vertical_window_border");
+    // println!("draw_vertical_window_border");
     let win = window::from_ptr(w);
     let f = || window::from_ptr_mut(w).unwrap().x_frame_mut().unwrap();
     let face = f().face_from_id_or_null(face_id::VERTICAL_BORDER_FACE_ID);
@@ -520,7 +529,7 @@ extern "C" fn draw_window_divider(
     y0: ::libc::c_int,
     y1: ::libc::c_int,
 ) {
-    println!("draw_window_divider");
+    // println!("draw_window_divider");
     let win = window::from_ptr(w);
     let f = || window::from_ptr_mut(w).unwrap().x_frame_mut().unwrap();
     let get_color = |id| {
@@ -596,7 +605,7 @@ extern "C" fn define_fringe_bitmap(
         {
             Ok(_) => {}
             Err(e) => {
-                println!("Failed to write bitmap {} {:?}", which, e)
+                log::trace!("Failed to write bitmap {} {:?}", which, e)
             }
         };
     }
@@ -711,7 +720,7 @@ pub extern "C" fn wr_font_draw(
     y: ::libc::c_int,
     with_background: bool,
 ) {
-    println!("wr_font_draw");
+    log::trace!("wr_font_draw");
     let gs = || unsafe { s.as_ref().unwrap() };
     let gs_mut = || unsafe { s.as_mut().unwrap() };
     let f_mut = || gs_mut().f_mut();
@@ -764,7 +773,7 @@ extern "C" fn draw_border(
 }
 
 fn draw_stretch_glyph_string(s: *mut glyph_string) {
-    println!("draw_stretch_glyph_string");
+    // println!("draw_stretch_glyph_string");
     let gs = glyph_string::from_ptr(s).unwrap();
     let wr = glyph_string::from_ptr_mut(s)
         .and_then(|s| Some(s.f_mut()))
@@ -918,7 +927,7 @@ fn build_display_list_from_window_tree(
     wr: &mut WrCanvas, // f->desired_matrix,
                        // XWINDOW (FRAME_ROOT_WINDOW (f))
 ) {
-    println!("window tree {}", (w.unwrap() as *const window).addr());
+    // println!("window tree {}", (w.unwrap() as *const window).addr());
     // let w = window::from_lisp(f.root_window);
     let mut win = w;
     while let Some(w) = win {
@@ -967,5 +976,5 @@ fn build_display_list_from_leaf_window(
         (w.pixel_left, w.pixel_top).by(w.pixel_width, w.pixel_height),
         None,
     );
-    println!("window leaf {}", (w as *const window).addr());
+    // println!("window leaf {}", (w as *const window).addr());
 }

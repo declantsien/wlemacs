@@ -773,6 +773,10 @@ nsterm.o pgtkterm.o wlcterm.o macfont.o ftfont.o: wr_ffi_generated.h
 	--allowlist-function XFRAME \
 	--allowlist-function XWINDOW \
 	--allowlist-function WINDOWP \
+	--allowlist-function XBUFFER \
+	--allowlist-function BUF_PT \
+	--allowlist-function BUF_BEGV \
+	--allowlist-function BUF_ZV \
 	--allowlist-function FACE_FROM_ID \
 	--allowlist-function FACE_FROM_ID_OR_NULL \
 	--allowlist-function window_box \

@@ -17447,6 +17447,9 @@ redisplay_internal (void)
   ++clear_image_cache_count;
 #endif
 
+  /* FOR_EACH_FRAME (tail, frame) */
+  /*   clear_current_matrices (XFRAME (frame)); */
+
   /* Build desired matrices, and update the display.  If
      consider_all_windows_p, do it for all windows on all frames that
      require redisplay, as specified by their 'redisplay' flag.
