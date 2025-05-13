@@ -10827,6 +10827,9 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn window_text_bottom_y(arg1: *mut window) -> ::libc::c_int;
+}
+unsafe extern "C" {
     pub fn gui_get_glyph_overhangs(
         arg1: *mut glyph,
         arg2: *mut frame,
@@ -12755,6 +12758,9 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn window_to_frame_pixel_y(w: *mut window, y: ::libc::c_int) -> ::libc::c_int;
+}
+unsafe extern "C" {
+    pub fn window_scroll_bar_area_height(w: *mut window) -> ::libc::c_int;
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]

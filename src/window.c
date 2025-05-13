@@ -9352,4 +9352,9 @@ int
 window_to_frame_pixel_y (struct window *w, int y) {
   return WINDOW_TO_FRAME_PIXEL_Y (w, y);
 }
+
+int
+window_scroll_bar_area_height (struct window *w) {
+  return WINDOW_SCROLL_BAR_AREA_HEIGHT (w);
+}
 #endif

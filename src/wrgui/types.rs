@@ -407,6 +407,19 @@ impl font {
     }
 }
 
+impl Into<i32> for glyph_row_area {
+    fn into(self) -> i32 {
+        use glyph_row_area::*;
+        match self {
+            ANY_AREA => -1,
+            LEFT_MARGIN_AREA => 0,
+            TEXT_AREA => 1,
+            RIGHT_MARGIN_AREA => 2,
+            LAST_AREA => 3,
+        }
+    }
+}
+
 impl From<u32> for glyph_type {
     fn from(value: u32) -> Self {
         use glyph_type::*;

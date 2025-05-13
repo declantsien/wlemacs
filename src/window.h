@@ -1263,6 +1263,8 @@ overlay_matches_window (const struct window *w, Lisp_Object ov)
 
 #ifdef USE_WEBRENDER
 extern int window_to_frame_pixel_y(struct window *w, int y);
+extern int window_scroll_bar_area_height(struct window *w);
+
 #endif
 
 INLINE_HEADER_END

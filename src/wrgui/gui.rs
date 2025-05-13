@@ -34,15 +34,7 @@ unsafe impl Send for redisplay_interface {}
 
 use crate::types::glyph_matrix;
 
-impl glyph_matrix {
-    // TODO needs to verify that
-    pub fn row(&self, row: libc::c_int) -> Option<&mut glyph_row> {
-        assert!(!self.rows.is_null());
-        assert!(row >= 0 && row < self.nrows);
-
-        unsafe { self.rows.offset(row as isize).as_mut() }
-    }
-}
+impl glyph_matrix {}
 
 /// cbindgen:ignore
 #[allow(unused_variables)]
@@ -184,10 +176,9 @@ extern "C" fn update_window_end(w: *mut window, cursor_on_p: bool, mouse_face_ov
         unsafe { BUF_ZV(buffer) }
     );
     log::trace!("Cursor pos {:?}", w.cursor);
-    // println!("current_matrix: {current_matrix:?}");
-    // println!("current_matrix rows: {:?}", current_matrix.rows()[0].glyphs().len());
-    // println!("desired_matrix: {desired_matrix:?}");
-    // println!("desired_matrix rows: {:?}", desired_matrix.rows());
+    println!("current_matrix: {current_matrix:?}");
+    current_matrix.build_display_list();
+    // println!("current_matrix rows: {:?}", current_matrix.rows()[0].glyphs());
 }
 
 type GsRef = ExternalPtr<glyph_string>;
@@ -440,9 +431,9 @@ extern "C" fn draw_window_cursor(
             if cursor_glyph.type_() == glyph_type::IMAGE_GLYPH as u32 {
                 let win = window::from_ptr(w).unwrap();
                 let metrix = unsafe { win.current_matrix.as_ref().unwrap() };
-                if let Some(r) = metrix.row(win.phys_cursor.vpos) {
-                    unsafe { draw_phys_cursor_glyph(w, r, draw_glyphs_face::DRAW_CURSOR) };
-                }
+                // if let Some(r) = metrix.row(win.phys_cursor.vpos) {
+                //     unsafe { draw_phys_cursor_glyph(w, r, draw_glyphs_face::DRAW_CURSOR) };
+                // }
             } else {
                 //TODO
             }
